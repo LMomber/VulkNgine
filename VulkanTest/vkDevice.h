@@ -27,6 +27,7 @@ private:
 	GLFWwindow* window;
 	VkInstance m_instance;
 	VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+	VkDevice m_device;
 
 	VkDebugUtilsMessengerEXT m_debugMessenger;
 
@@ -42,6 +43,8 @@ private:
 	bool IsDeviceSuitable(const VkPhysicalDevice& device) const;
 
 	QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device) const;
+
+	void CreateLogicalDevice();
 
 	std::vector<const char*> GetRequiredExtensions();
 

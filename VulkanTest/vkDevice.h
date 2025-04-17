@@ -31,6 +31,7 @@ private:
 	VkDevice m_device;
 
 	VkQueue m_graphicsQueue;
+	VkQueue m_presentQueue;
 
 	VkSurfaceKHR m_surface;
 	VkDebugUtilsMessengerEXT m_debugMessenger;

@@ -4,6 +4,17 @@
 #include <GLFW/glfw3.h>
 
 #include <vector>
+#include <optional>
+
+struct QueueFamilyIndices
+{
+	std::optional<uint32_t> m_graphicsFamily;
+
+	bool IsComplete() const
+	{
+		return m_graphicsFamily.has_value();
+	}
+};
 
 class Device
 {
@@ -15,6 +26,7 @@ public:
 private:
 	GLFWwindow* window;
 	VkInstance m_instance;
+	VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
 
 	VkDebugUtilsMessengerEXT m_debugMessenger;
 
@@ -24,6 +36,12 @@ private:
 	void Cleanup();
 
 	void CreateInstance();
+
+	void PickPhysicalDevice();
+	int RatePhysicalDevice(const VkPhysicalDevice& device) const; 
+	bool IsDeviceSuitable(const VkPhysicalDevice& device) const;
+
+	QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device) const;
 
 	std::vector<const char*> GetRequiredExtensions();
 
@@ -36,11 +54,8 @@ private:
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData);
-
 	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-
 	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
-
 	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 };

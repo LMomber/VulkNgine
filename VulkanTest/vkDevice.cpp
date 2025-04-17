@@ -3,6 +3,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <iostream>
+#include <map>
 
 const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
@@ -20,8 +21,10 @@ const uint32_t HEIGHT = 600;
 void Device::Initialize()
 {
 	InitWindow();
+
 	CreateInstance();
 	InitDebugMessenger();
+	PickPhysicalDevice();
 }
 
 void Device::InitWindow()
@@ -102,6 +105,87 @@ void Device::CreateInstance()
 	{
 		throw std::runtime_error("failed to create instance");
 	}
+}
+
+void Device::PickPhysicalDevice()
+{
+	uint32_t deviceCount = 0;
+	vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
+
+	if (deviceCount == 0) {
+		throw std::runtime_error("failed to find GPUs with Vulkan support!");
+	}
+
+	std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
+	vkEnumeratePhysicalDevices(m_instance, &deviceCount, physicalDevices.data());
+
+	std::multimap<int, VkPhysicalDevice> devices;
+	for (const auto& device : physicalDevices)
+	{
+		int score = RatePhysicalDevice(device);
+		devices.insert(std::pair<int, VkPhysicalDevice>(score, device));
+	}
+
+	if (devices.rbegin()->first > 0)
+	{
+		m_physicalDevice = devices.begin()->second;
+	}
+	else
+	{
+		throw std::runtime_error("No devices are suitable for this application");
+	}
+}
+
+int Device::RatePhysicalDevice(const VkPhysicalDevice& device) const
+{
+	if (!IsDeviceSuitable(device)) return 0;
+
+	VkPhysicalDeviceProperties deviceProperties{};
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+	//VkPhysicalDeviceFeatures deviceFeatures{};
+	//vkGetPhysicalDeviceFeatures(m_physicalDevice, &deviceFeatures);
+
+	unsigned int score = 0;
+	if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+	{
+		score += 1000;
+	}
+
+	score += deviceProperties.limits.maxImageDimension2D;
+
+	return score;
+}
+
+bool Device::IsDeviceSuitable(const VkPhysicalDevice& device) const
+{
+	QueueFamilyIndices indices = FindQueueFamilies(device);
+
+	return indices.IsComplete();
+}
+
+QueueFamilyIndices Device::FindQueueFamilies(const VkPhysicalDevice& device) const
+{
+	QueueFamilyIndices indices;
+
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyProperties.data());
+
+	int i = 0;
+	for (const auto& property : queueFamilyProperties)
+	{
+		if (property.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		{
+			indices.m_graphicsFamily = i;
+			break;
+		}
+
+		i++;
+	}
+
+	return indices;
 }
 
 std::vector<const char*> Device::GetRequiredExtensions()

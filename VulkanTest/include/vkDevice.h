@@ -58,6 +58,9 @@ private:
 	void CreateSurface();
 	void CreateSwapChain();
 	void CreateImageViews();
+	void CreateGraphicsPipeline();
+
+	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 	void PickPhysicalDevice();
 	int RatePhysicalDevice(const VkPhysicalDevice& device) const; 

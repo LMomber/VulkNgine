@@ -38,6 +38,7 @@ private:
 	VkDevice m_device;
 	VkSwapchainKHR m_swapChain;
 	std::vector<VkImage> m_images;
+	std::vector<VkImageView> m_imageViews;
 	VkFormat m_imageFormat;
 	VkExtent2D m_extent;
 
@@ -56,6 +57,7 @@ private:
 	void CreateLogicalDevice();
 	void CreateSurface();
 	void CreateSwapChain();
+	void CreateImageViews();
 
 	void PickPhysicalDevice();
 	int RatePhysicalDevice(const VkPhysicalDevice& device) const; 

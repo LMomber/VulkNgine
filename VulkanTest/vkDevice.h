@@ -9,10 +9,11 @@
 struct QueueFamilyIndices
 {
 	std::optional<uint32_t> m_graphicsFamily;
+	std::optional<uint32_t> m_presentFamily;
 
 	bool IsComplete() const
 	{
-		return m_graphicsFamily.has_value();
+		return m_graphicsFamily.has_value() && m_presentFamily.has_value();
 	}
 };
 
@@ -21,14 +22,17 @@ class Device
 public:
 	void Initialize();
 
-	GLFWwindow* GetWindow() { return window; }
+	GLFWwindow* GetWindow() { return m_pWindow; }
 
 private:
-	GLFWwindow* window;
+	GLFWwindow* m_pWindow;
 	VkInstance m_instance;
 	VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
 	VkDevice m_device;
 
+	VkQueue m_graphicsQueue;
+
+	VkSurfaceKHR m_surface;
 	VkDebugUtilsMessengerEXT m_debugMessenger;
 
 	void InitWindow();
@@ -37,6 +41,8 @@ private:
 	void Cleanup();
 
 	void CreateInstance();
+	void CreateLogicalDevice();
+	void CreateSurface();
 
 	void PickPhysicalDevice();
 	int RatePhysicalDevice(const VkPhysicalDevice& device) const; 
@@ -44,7 +50,6 @@ private:
 
 	QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device) const;
 
-	void CreateLogicalDevice();
 
 	std::vector<const char*> GetRequiredExtensions();
 

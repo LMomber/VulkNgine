@@ -24,7 +24,9 @@ void Device::Initialize()
 
 	CreateInstance();
 	InitDebugMessenger();
+	CreateSurface();
 	PickPhysicalDevice();
+	CreateLogicalDevice();
 }
 
 void Device::InitWindow()
@@ -34,7 +36,7 @@ void Device::InitWindow()
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+	m_pWindow = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 }
 
 void Device::InitDebugMessenger()
@@ -57,9 +59,10 @@ void Device::Cleanup()
 		DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
 	}
 
+	vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 	vkDestroyInstance(m_instance, nullptr);
 
-	glfwDestroyWindow(window);
+	glfwDestroyWindow(m_pWindow);
 
 	glfwTerminate();
 }
@@ -178,9 +181,21 @@ QueueFamilyIndices Device::FindQueueFamilies(const VkPhysicalDevice& device) con
 	int i = 0;
 	for (const auto& property : queueFamilyProperties)
 	{
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport);
+
+		if (presentSupport)
+		{
+			indices.m_presentFamily = i;
+		}
+
 		if (property.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 		{
 			indices.m_graphicsFamily = i;
+		}
+
+		if (indices.IsComplete())
+		{
 			break;
 		}
 
@@ -194,12 +209,12 @@ void Device::CreateLogicalDevice()
 {
 	QueueFamilyIndices indices = FindQueueFamilies(m_physicalDevice);
 
+	float queuePriority = 1.f;
+
 	VkDeviceQueueCreateInfo queueCreateInfo{};
 	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indices.m_graphicsFamily.has_value();
+	queueCreateInfo.queueFamilyIndex = indices.m_graphicsFamily.value();
 	queueCreateInfo.queueCount = 1;
-
-	float queuePriority = 1.f;
 	queueCreateInfo.pQueuePriorities = &queuePriority;
 
 	VkPhysicalDeviceFeatures deviceFeatures{};
@@ -224,6 +239,16 @@ void Device::CreateLogicalDevice()
 	if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create logical device");
+	}
+
+	vkGetDeviceQueue(m_device, indices.m_graphicsFamily.value(), 0, &m_graphicsQueue);
+}
+
+void Device::CreateSurface()
+{
+	if (glfwCreateWindowSurface(m_instance, m_pWindow, nullptr, &m_surface) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create window surface");
 	}
 }
 

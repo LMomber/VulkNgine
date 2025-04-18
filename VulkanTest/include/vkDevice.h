@@ -43,6 +43,7 @@ private:
 	VkExtent2D m_extent;
 	VkRenderPass m_renderPass;
 	VkPipelineLayout m_pipelineLayout;
+	VkPipeline m_graphicsPipeline;
 
 	VkQueue m_graphicsQueue;
 	VkQueue m_presentQueue;

@@ -28,6 +28,7 @@ class Device
 {
 public:
 	void Initialize();
+	void DrawFrame();
 	void Cleanup();
 
 	GLFWwindow* GetWindow() { return m_pWindow; }
@@ -55,6 +56,10 @@ private:
 	VkSurfaceKHR m_surface;
 	VkDebugUtilsMessengerEXT m_debugMessenger;
 
+	VkSemaphore m_imageAvailableSemaphore;
+	VkSemaphore m_renderFinishedSemaphore;
+	VkFence m_inFlightFence;
+
 	void InitWindow();
 	void InitDebugMessenger();
 
@@ -68,6 +73,7 @@ private:
 	void CreateFrameBuffers();
 	void CreateCommandPool();
 	void CreateCommandBuffer();
+	void CreateSyncObjects();
 
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 

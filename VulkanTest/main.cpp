@@ -12,6 +12,7 @@ int main() {
 		while (!glfwWindowShouldClose(device.GetWindow()))
 		{
 			glfwPollEvents();
+			device.DrawFrame();
 		}
 
 		device.Cleanup();

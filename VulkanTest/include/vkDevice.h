@@ -28,6 +28,7 @@ class Device
 {
 public:
 	void Initialize();
+	void Cleanup();
 
 	GLFWwindow* GetWindow() { return m_pWindow; }
 
@@ -39,6 +40,7 @@ private:
 	VkSwapchainKHR m_swapChain;
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_imageViews;
+	std::vector<VkFramebuffer> m_framebuffers;
 	VkFormat m_imageFormat;
 	VkExtent2D m_extent;
 	VkRenderPass m_renderPass;
@@ -54,8 +56,6 @@ private:
 	void InitWindow();
 	void InitDebugMessenger();
 
-	void Cleanup();
-
 	void CreateInstance();
 	void CreateLogicalDevice();
 	void CreateSurface();
@@ -63,6 +63,7 @@ private:
 	void CreateImageViews();
 	void CreateGraphicsPipeline();
 	void CreateRenderPass();
+	void CreateFrameBuffers();
 
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 

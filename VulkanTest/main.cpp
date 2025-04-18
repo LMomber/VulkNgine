@@ -13,6 +13,8 @@ int main() {
 		{
 			glfwPollEvents();
 		}
+
+		device.Cleanup();
 	}
 	catch (const std::exception& e)
 	{

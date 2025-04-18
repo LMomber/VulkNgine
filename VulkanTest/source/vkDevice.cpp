@@ -56,6 +56,7 @@ void Device::Initialize()
 	CreateImageViews();
 	CreateRenderPass();
 	CreateGraphicsPipeline();
+	CreateFrameBuffers();
 }
 
 void Device::InitWindow()
@@ -82,6 +83,11 @@ void Device::InitDebugMessenger()
 
 void Device::Cleanup()
 {
+	for (const auto& frameBuffer : m_framebuffers)
+	{
+		vkDestroyFramebuffer(m_device, frameBuffer, nullptr);
+	}
+
 	vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
 	vkDestroyRenderPass(m_device, m_renderPass, nullptr);
@@ -637,6 +643,30 @@ void Device::CreateRenderPass()
 
 	if (vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create render pass");
+	}
+}
+
+void Device::CreateFrameBuffers()
+{
+	m_framebuffers.resize(m_imageViews.size());
+
+	for (size_t i = 0; i < m_imageViews.size(); i++)
+	{
+		VkImageView attachments[]{ m_imageViews[i]};
+
+		VkFramebufferCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		createInfo.renderPass = m_renderPass;
+		createInfo.attachmentCount = 1;
+		createInfo.pAttachments = attachments;
+		createInfo.width = m_extent.width;
+		createInfo.height = m_extent.height;
+		createInfo.layers = 1;
+
+		if (vkCreateFramebuffer(m_device, &createInfo, nullptr, &m_framebuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create framebuffer");
+		}
 	}
 }
 

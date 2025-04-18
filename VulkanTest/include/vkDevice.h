@@ -41,6 +41,7 @@ private:
 	std::vector<VkImageView> m_imageViews;
 	VkFormat m_imageFormat;
 	VkExtent2D m_extent;
+	VkPipelineLayout m_pipelineLayout;
 
 	VkQueue m_graphicsQueue;
 	VkQueue m_presentQueue;

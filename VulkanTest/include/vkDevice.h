@@ -46,6 +46,8 @@ private:
 	VkRenderPass m_renderPass;
 	VkPipelineLayout m_pipelineLayout;
 	VkPipeline m_graphicsPipeline;
+	VkCommandPool m_commandPool;
+	VkCommandBuffer m_commandBuffer;
 
 	VkQueue m_graphicsQueue;
 	VkQueue m_presentQueue;
@@ -64,8 +66,12 @@ private:
 	void CreateGraphicsPipeline();
 	void CreateRenderPass();
 	void CreateFrameBuffers();
+	void CreateCommandPool();
+	void CreateCommandBuffer();
 
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
+	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 	void PickPhysicalDevice();
 	int RatePhysicalDevice(const VkPhysicalDevice& device) const; 

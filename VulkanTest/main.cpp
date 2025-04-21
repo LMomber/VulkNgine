@@ -1,27 +1,29 @@
+#include "engine.h"
+
 #include "vkDevice.h"
 
 #include <iostream>
 #include <cstdlib>
 
 int main() {
-	Device device;
+	Core::Engine& engine = Core::engine;
+	engine.Initialize();
 
-	device.Initialize();
 	try
 	{
-		while (!glfwWindowShouldClose(device.GetWindow()))
+		while (!glfwWindowShouldClose(engine.GetDevice().GetWindow()))
 		{
 			glfwPollEvents();
-			device.DrawFrame();
+			engine.Update();
 		}
-
-		device.Cleanup();
 	}
 	catch (const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	engine.ShutDown();
 
 	return EXIT_SUCCESS;
 }

@@ -135,11 +135,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\vkSurface.cpp" />
+    <ClCompile Include="source\engine.cpp" />
+    <ClCompile Include="source\vkWindow.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="source\vkDevice.cpp" />
+    <ClCompile Include="source\vkSwapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\engine.h" />
+    <ClInclude Include="include\vkCommon.h" />
     <ClInclude Include="include\vkDevice.h" />
+    <ClInclude Include="include\vkSurface.h" />
+    <ClInclude Include="include\vkSwapchain.h" />
+    <ClInclude Include="include\vkWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />

@@ -1,73 +1,68 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "vkCommon.h"
+#include "vkWindow.h"
+#include "vkSurface.h"
+#include "vkSwapchain.h"
 
 #include <vector>
-#include <optional>
-
-struct QueueFamilyIndices
-{
-	std::optional<uint32_t> m_graphicsFamily;
-	std::optional<uint32_t> m_presentFamily;
-
-	bool IsComplete() const
-	{
-		return m_graphicsFamily.has_value() && m_presentFamily.has_value();
-	}
-};
-
-struct SwapChainSupportDetails
-{
-	VkSurfaceCapabilitiesKHR m_capabilities;
-	std::vector<VkSurfaceFormatKHR> m_formats;
-	std::vector<VkPresentModeKHR> m_presentModes;
-};
+#include <memory>
 
 class Device
 {
 public:
 	void Initialize();
-	void DrawFrame();
-	void Cleanup();
+	void ShutDown();
 
-	GLFWwindow* GetWindow() { return m_pWindow; }
+	void DrawFrame();
+	
+	GLFWwindow* GetWindow() const { return m_pWindow->GetWindow(); }
+
+	// Vulkan specific
+	QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device) const;
+	SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device) const;
+
+	VkPhysicalDevice GetPhysicalDevice() const { return m_physicalDevice; }
+	VkDevice GetVkDevice() const { return m_device; }
+	VkInstance GetInstance() const { return m_instance; }
+	std::shared_ptr<Window> GetVkWindow() const { return m_pWindow; }
+	VkSurfaceKHR GetSurface() const { return m_pSurface->GetSurface(); }
 
 private:
-	GLFWwindow* m_pWindow;
-	VkInstance m_instance;
+	/*std::unique_ptr<GLFWwindow> m_pWindow;*/
+	std::unique_ptr<Swapchain> m_pSwapchain = nullptr;
+	std::shared_ptr<Window> m_pWindow = nullptr;
+
+	std::unique_ptr<Surface> m_pSurface = nullptr;
+
+	VkInstance m_instance{};
 	VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-	VkDevice m_device;
-	VkSwapchainKHR m_swapChain;
-	std::vector<VkImage> m_images;
-	std::vector<VkImageView> m_imageViews;
-	std::vector<VkFramebuffer> m_framebuffers;
-	VkFormat m_imageFormat;
-	VkExtent2D m_extent;
-	VkRenderPass m_renderPass;
-	VkPipelineLayout m_pipelineLayout;
-	VkPipeline m_graphicsPipeline;
-	VkCommandPool m_commandPool;
-	VkCommandBuffer m_commandBuffer;
+	VkDevice m_device{};
 
-	VkQueue m_graphicsQueue;
-	VkQueue m_presentQueue;
+	std::vector<VkFramebuffer> m_framebuffers{};
 
-	VkSurfaceKHR m_surface;
-	VkDebugUtilsMessengerEXT m_debugMessenger;
+	VkRenderPass m_renderPass{};
+	VkPipelineLayout m_pipelineLayout{};
+	VkPipeline m_graphicsPipeline{};
+	VkCommandPool m_commandPool{};
+	VkCommandBuffer m_commandBuffer{};
 
-	VkSemaphore m_imageAvailableSemaphore;
-	VkSemaphore m_renderFinishedSemaphore;
-	VkFence m_inFlightFence;
+	VkQueue m_graphicsQueue{};
+	VkQueue m_presentQueue{};
 
-	void InitWindow();
+	/*VkSurfaceKHR m_surface;*/
+	VkDebugUtilsMessengerEXT m_debugMessenger{};
+
+	VkSemaphore m_imageAvailableSemaphore{};
+	VkSemaphore m_renderFinishedSemaphore{};
+	VkFence m_inFlightFence{};
+
+	/*void InitWindow();*/
 	void InitDebugMessenger();
 
 	void CreateInstance();
 	void CreateLogicalDevice();
-	void CreateSurface();
-	void CreateSwapChain();
-	void CreateImageViews();
+	/*void CreateSurface();*/
 	void CreateGraphicsPipeline();
 	void CreateRenderPass();
 	void CreateFrameBuffers();
@@ -80,15 +75,8 @@ private:
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 	void PickPhysicalDevice();
-	int RatePhysicalDevice(const VkPhysicalDevice& device) const; 
+	int RatePhysicalDevice(const VkPhysicalDevice& device) const;
 	bool IsDeviceSuitable(const VkPhysicalDevice& device) const;
-
-	QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device) const;
-	SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device) const;
-
-	VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> availableFormats) const;
-	VkPresentModeKHR ChoosePresentMode(const std::vector<VkPresentModeKHR> availableModes) const;
-	VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 	std::vector<const char*> GetRequiredExtensions();
 
@@ -105,5 +93,4 @@ private:
 	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
 };

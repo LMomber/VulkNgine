@@ -387,8 +387,8 @@ void Device::CreateLogicalDevice()
 
 void Device::CreateGraphicsPipeline()
 {
-	auto vertShaderCode = ReadFile("../VulkanTest/shaders/vert.spv");
-	auto fragShaderCode = ReadFile("../VulkanTest/shaders/frag.spv");
+	auto vertShaderCode = ReadFile("../Engine/shaders/vert.spv");
+	auto fragShaderCode = ReadFile("../Engine/shaders/frag.spv");
 
 	VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
 	VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);

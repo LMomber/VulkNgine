@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{feb3c38d-6c91-4aee-853d-5fc99d0221ae}</ProjectGuid>
-    <RootNamespace>VulkanTest</RootNamespace>
+    <ProjectGuid>{b1af49b5-64d5-4b42-9904-921c071d1ee9}</ProjectGuid>
+    <RootNamespace>Game</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -40,13 +40,13 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -104,14 +104,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\libraries\glm;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\libraries\glfw-3.4\include;C:\VulkanSDK\1.4.309.0\Include;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\VulkanTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\libraries\glm;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\libraries\glfw-3.4\include;C:\VulkanSDK\1.4.309.0\Include;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\VulkanTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\libs\debug;%(AdditionalLibraryDirectories);C:\VulkanSDK\1.4.309.0\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;VulkanTest.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\libs\debug;C:\VulkanSDK\1.4.309.0\Lib;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -122,36 +122,20 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\libraries\glm;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\libraries\glfw-3.4\include;C:\VulkanSDK\1.4.309.0\Include;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\VulkanTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\libraries\glm;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\libraries\glfw-3.4\include;C:\VulkanSDK\1.4.309.0\Include;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\VulkanTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\libs\release;%(AdditionalLibraryDirectories);C:\VulkanSDK\1.4.309.0\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;VulkanTest.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\libs\release;C:\VulkanSDK\1.4.309.0\Lib;C:\Users\SKIKK\OneDrive - yx82xc\Desktop\Projects\VulkanTest\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="source\vkSurface.cpp" />
-    <ClCompile Include="source\engine.cpp" />
-    <ClCompile Include="source\vkWindow.cpp" />
-    <ClCompile Include="source\vkDevice.cpp" />
-    <ClCompile Include="source\vkSwapchain.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\engine.h" />
-    <ClInclude Include="include\vkCommon.h" />
-    <ClInclude Include="include\vkDevice.h" />
-    <ClInclude Include="include\vkSurface.h" />
-    <ClInclude Include="include\vkSwapchain.h" />
-    <ClInclude Include="include\vkWindow.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

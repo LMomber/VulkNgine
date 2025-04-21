@@ -168,7 +168,7 @@ void Device::InitDebugMessenger()
 
 void Device::CreateInstance()
 {
-	if (enableValidationLayers && !CheckValidationLayerSupport())
+	if (!CheckValidationLayerSupport())
 	{
 		throw std::runtime_error("Validation layers requested, but not available");
 	}
@@ -387,8 +387,8 @@ void Device::CreateLogicalDevice()
 
 void Device::CreateGraphicsPipeline()
 {
-	auto vertShaderCode = ReadFile("shaders/vert.spv");
-	auto fragShaderCode = ReadFile("shaders/frag.spv");
+	auto vertShaderCode = ReadFile("../VulkanTest/shaders/vert.spv");
+	auto fragShaderCode = ReadFile("../VulkanTest/shaders/frag.spv");
 
 	VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
 	VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);

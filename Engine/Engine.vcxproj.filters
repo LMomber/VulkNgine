@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="source\engine.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vkDevice.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vkSurface.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vkSwapchain.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vkWindow.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vkRender.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\engine.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vkCommon.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vkDevice.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vkSurface.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vkSwapchain.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vkWindow.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vkRender.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\shader.vert">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{8a520d3b-dda2-48b3-a8ad-680c8f50411f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{12d73a73-07f4-4ef8-b294-bf039e3dda46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{7975b188-b8b3-4369-b78d-a5575ec0fac4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

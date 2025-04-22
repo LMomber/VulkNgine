@@ -2,8 +2,6 @@
 
 #include "vkCommon.h"
 
-#include <memory>
-
 class Surface
 {
 public:

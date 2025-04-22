@@ -2,9 +2,6 @@
 
 #include "vkCommon.h"
 
-#include <vector>
-#include <memory>
-
 struct SwapChainSupportDetails
 {
 	VkSurfaceCapabilitiesKHR m_capabilities;

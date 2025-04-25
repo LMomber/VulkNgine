@@ -11,18 +11,18 @@ public:
 	void Initialize();
 	void ShutDown();
 	
-	GLFWwindow* GetWindow() const { return m_pWindow->GetWindow(); }
-
 	// Vulkan specific
-	QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device) const;
-	SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device) const;
+	//QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device) const;
+	//SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device) const;
 
-	VkPhysicalDevice GetPhysicalDevice() const { return m_physicalDevice; }
-	VkDevice GetVkDevice() const { return m_device; }
-	VkInstance GetInstance() const { return m_instance; }
-	std::shared_ptr<Window> GetVkWindow() const { return m_pWindow; }
-	VkSurfaceKHR GetSurface() const { return m_pSurface->GetSurface(); }
-	std::shared_ptr<Swapchain> GetSwapchain() const { return m_pSwapchain; }
+	GLFWwindow* GetWindow() const;
+	VkPhysicalDevice GetPhysicalDevice() const;
+	VkDevice GetVkDevice() const;
+	VkInstance GetInstance() const;
+	std::shared_ptr<Window> GetVkWindow() const;
+	VkSurfaceKHR GetSurface() const;
+	std::shared_ptr<Swapchain> GetSwapchain() const;
+	VkExtent2D GetExtent() const;
 	VkQueue GetQueue(QueueType type) const;
 
 private:

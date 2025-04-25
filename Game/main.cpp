@@ -1,6 +1,9 @@
 #include "engine.h"
-
 #include "vkDevice.h"
+
+#include "timer.h"
+#include "transform.h"
+#include "renderComponents.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -9,12 +12,26 @@ int main() {
 	Core::Engine& engine = Core::engine;
 	engine.Initialize();
 
+	Timer timer;
+
+	auto& registry = engine.GetRegistry();
+	auto entity = registry.create();
+	Camera& camera = registry.emplace<Camera>(entity);
+
+	auto extent = engine.GetDevice().GetExtent();
+	float aspectRatio = static_cast<float>(extent.width) / static_cast<float>(extent.height);
+	camera.projection = glm::perspective(90.f, aspectRatio, 0.f, 1000.f);
+
+	Transform& cameraTransform = registry.emplace<Transform>(entity);
+	cameraTransform.SetTranslation(glm::vec3(0, 0, -2));
+
 	try
 	{
-		while (!glfwWindowShouldClose(engine.GetDevice().GetWindow()))
+		while (!glfwWindowShouldClose(engine.GetWindow()))
 		{
 			glfwPollEvents();
-			engine.Update();
+			engine.Update(timer.GetDeltaTime(Unit::MILLI)/1000.f);
+			engine.Render();
 		}
 	}
 	catch (const std::exception& e)

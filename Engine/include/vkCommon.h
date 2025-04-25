@@ -8,6 +8,9 @@
 #include <fstream>
 #include <optional>
 
+#include <cassert>
+#include <stdexcept>
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -28,3 +31,14 @@ struct QueueFamilyIndices
 		return m_graphicsFamily.has_value() && m_presentFamily.has_value();
 	}
 };
+
+struct SwapChainSupportDetails
+{
+	VkSurfaceCapabilitiesKHR m_capabilities;
+	std::vector<VkSurfaceFormatKHR> m_formats;
+	std::vector<VkPresentModeKHR> m_presentModes;
+};
+
+SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device, const VkSurfaceKHR& surface);
+
+QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VkSurfaceKHR& surface);

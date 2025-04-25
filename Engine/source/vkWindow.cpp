@@ -1,7 +1,5 @@
 #include "vkWindow.h"
 
-#include "vkDevice.h"
-
 #include <stdexcept>
 #include <cassert>
 #include <algorithm>

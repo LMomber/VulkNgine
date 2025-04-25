@@ -105,7 +105,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\external\glm;$(ProjectDir)..\external\glfw-3.4\include;$(ProjectDir)..\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\external;$(ProjectDir)..\external\glfw-3.4\include;$(ProjectDir)..\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -123,7 +123,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\external\glm;$(ProjectDir)..\external\glfw-3.4\include;$(ProjectDir)..\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\external;$(ProjectDir)..\external\glfw-3.4\include;$(ProjectDir)..\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -136,6 +136,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\timer.cpp" />
+    <ClCompile Include="source\input.cpp" />
+    <ClCompile Include="source\inputHandler.cpp" />
+    <ClCompile Include="source\transform.cpp" />
+    <ClCompile Include="source\vkCommon.cpp" />
     <ClCompile Include="source\vkRender.cpp" />
     <ClCompile Include="source\vkSurface.cpp" />
     <ClCompile Include="source\engine.cpp" />
@@ -145,6 +150,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\engine.h" />
+    <ClInclude Include="include\input.h" />
+    <ClInclude Include="include\inputHandler.h" />
+    <ClInclude Include="include\renderComponents.h" />
+    <ClInclude Include="include\timer.h" />
+    <ClInclude Include="include\transform.h" />
     <ClInclude Include="include\vkCommon.h" />
     <ClInclude Include="include\vkDevice.h" />
     <ClInclude Include="include\vkRender.h" />

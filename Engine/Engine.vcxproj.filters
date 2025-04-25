@@ -17,6 +17,11 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\vkRender.cpp" />
+    <ClCompile Include="source\inputHandler.cpp" />
+    <ClCompile Include="source\transform.cpp" />
+    <ClCompile Include="source\input.cpp" />
+    <ClCompile Include="source\vkCommon.cpp" />
+    <ClCompile Include="source\timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\engine.h">
@@ -38,6 +43,11 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\vkRender.h" />
+    <ClInclude Include="include\inputHandler.h" />
+    <ClInclude Include="include\transform.h" />
+    <ClInclude Include="include\input.h" />
+    <ClInclude Include="include\renderComponents.h" />
+    <ClInclude Include="include\timer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

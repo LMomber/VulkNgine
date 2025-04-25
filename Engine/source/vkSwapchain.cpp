@@ -1,14 +1,11 @@
 #include "vkSwapchain.h"
 
-#include "vkDevice.h"
+#include "vkWindow.h"
 
-#include "engine.h"
-
-#include <stdexcept>
 #include <algorithm>
-#include <cassert>
 
-Swapchain::Swapchain()
+Swapchain::Swapchain(const VkDevice& device, const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, std::shared_ptr<Window> window) :
+	m_device(device), m_physicalDevice(physicalDevice), m_surface(surface), m_pWindow(window)
 {
 	CreateSwapchain();
 	CreateImageViews();
@@ -18,21 +15,19 @@ Swapchain::~Swapchain()
 {
 	for (const auto& imageView : m_imageViews)
 	{
-		vkDestroyImageView(Core::engine.GetDevice().GetVkDevice(), imageView, nullptr);
+		vkDestroyImageView(m_device, imageView, nullptr);
 	}
 
-	vkDestroySwapchainKHR(Core::engine.GetDevice().GetVkDevice(), m_swapChain, nullptr);
+	vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
 }
 
 void Swapchain::CreateSwapchain()
 {
-	auto& device = Core::engine.GetDevice();
-	auto vkDevice = Core::engine.GetDevice().GetVkDevice();
-	SwapChainSupportDetails swapChainSupport = device.QuerrySwapChainSupport(device.GetPhysicalDevice());
+	SwapChainSupportDetails swapChainSupport = QuerrySwapChainSupport(m_physicalDevice, m_surface);
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(swapChainSupport.m_formats);
 	VkPresentModeKHR presentMode = ChoosePresentMode(swapChainSupport.m_presentModes);
-	VkExtent2D extent = device.GetVkWindow()->ChooseExtent(swapChainSupport.m_capabilities);
+	VkExtent2D extent = m_pWindow->ChooseExtent(swapChainSupport.m_capabilities);
 
 	uint32_t imageCount = swapChainSupport.m_capabilities.minImageCount + 1;
 	uint32_t maxImageCount = swapChainSupport.m_capabilities.maxImageCount;
@@ -45,7 +40,7 @@ void Swapchain::CreateSwapchain()
 
 	VkSwapchainCreateInfoKHR createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = device.GetSurface();
+	createInfo.surface = m_surface;
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -53,7 +48,7 @@ void Swapchain::CreateSwapchain()
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	QueueFamilyIndices indices = device.FindQueueFamilies(device.GetPhysicalDevice());
+	QueueFamilyIndices indices = FindQueueFamilies(m_physicalDevice, m_surface);
 	uint32_t queueFamilyIndices[] = { indices.m_graphicsFamily.value(), indices.m_presentFamily.value() };
 
 	if (indices.m_graphicsFamily != indices.m_presentFamily) {
@@ -73,14 +68,14 @@ void Swapchain::CreateSwapchain()
 	createInfo.clipped = VK_TRUE;
 	createInfo.oldSwapchain = VK_NULL_HANDLE; // Change if I want resizing
 
-	if (vkCreateSwapchainKHR(vkDevice, &createInfo, nullptr, &m_swapChain) != VK_SUCCESS)
+	if (vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapChain) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create swap chain!");
 	}
 
-	vkGetSwapchainImagesKHR(vkDevice, m_swapChain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, nullptr);
 	m_images.resize(imageCount);
-	vkGetSwapchainImagesKHR(vkDevice, m_swapChain, &imageCount, m_images.data());
+	vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, m_images.data());
 
 	m_imageFormat = surfaceFormat.format;
 	m_extent = extent;
@@ -107,7 +102,7 @@ void Swapchain::CreateImageViews()
 		createInfo.subresourceRange.baseArrayLayer = 0;
 		createInfo.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(Core::engine.GetDevice().GetVkDevice(), &createInfo, nullptr, &m_imageViews[i]) != VK_SUCCESS)
+		if (vkCreateImageView(m_device, &createInfo, nullptr, &m_imageViews[i]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create image view");
 		}

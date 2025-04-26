@@ -17,6 +17,7 @@ public:
 private:
 	void CreateGraphicsPipeline();
 	void CreateCommandPool();
+	void CreateVertexBuffer();
 	void CreateCommandBuffers();
 	void CreateSyncObjects();
 
@@ -30,8 +31,11 @@ private:
 	VkPipelineLayout m_pipelineLayout{};
 	VkPipeline m_graphicsPipeline{};
 	VkCommandPool m_commandPool{};
-	std::vector<VkCommandBuffer> m_commandBuffers{};
 
+	VkBuffer m_vertexBuffer;
+	VkDeviceMemory m_vertexBufferMemory;
+
+	std::vector<VkCommandBuffer> m_commandBuffers{};
 	std::vector<VkSemaphore> m_imageAvailableSemaphores{};
 	std::vector<VkSemaphore> m_renderFinishedSemaphores{};
 	std::vector<VkFence> m_inFlightFences{};

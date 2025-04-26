@@ -2,6 +2,9 @@
 
 SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device, const VkSurfaceKHR& surface)
 {
+	assert(device != VK_NULL_HANDLE && "Physical device is either uninitialized or deleted");
+	assert(surface != VK_NULL_HANDLE && "Window surface is either uninitialized or deleted");
+
 	SwapChainSupportDetails details;
 
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.m_capabilities);
@@ -27,6 +30,9 @@ SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device, c
 
 QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VkSurfaceKHR& surface)
 {
+	assert(device != VK_NULL_HANDLE && "Physical device is either uninitialized or deleted");
+	assert(surface != VK_NULL_HANDLE && "Window surface is either uninitialized or deleted");
+
 	QueueFamilyIndices indices;
 
 	uint32_t queueFamilyCount = 0;

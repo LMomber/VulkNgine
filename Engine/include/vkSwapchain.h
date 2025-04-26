@@ -33,6 +33,7 @@ private:
 	VkPresentModeKHR ChoosePresentMode(const std::vector<VkPresentModeKHR> availableModes) const;
 
 	VkSwapchainKHR m_swapChain;
+	VkSwapchainKHR m_oldSwapChain = VK_NULL_HANDLE;
 	VkDevice m_device;
 	VkPhysicalDevice m_physicalDevice;
 	VkSurfaceKHR m_surface;

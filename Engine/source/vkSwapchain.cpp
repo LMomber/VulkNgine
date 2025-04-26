@@ -18,6 +18,7 @@ Swapchain::~Swapchain()
 	CleanUp();
 
 	vkDestroyRenderPass(m_device, m_mainRenderPass, nullptr);
+	vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
 }
 
 void Swapchain::CreateSwapchain()
@@ -65,7 +66,7 @@ void Swapchain::CreateSwapchain()
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	createInfo.presentMode = presentMode;
 	createInfo.clipped = VK_TRUE;
-	createInfo.oldSwapchain = VK_NULL_HANDLE; // Change if I want resizing
+	createInfo.oldSwapchain = m_oldSwapChain; // Change if I want resizing
 
 	if (vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &m_swapChain) != VK_SUCCESS)
 	{
@@ -94,6 +95,8 @@ void Swapchain::RecreateSwapchain()
 	vkDeviceWaitIdle(m_device);
 
 	CleanUp();
+	
+	m_oldSwapChain = m_swapChain;
 
 	CreateSwapchain();
 	CreateImageViews();
@@ -201,7 +204,7 @@ void Swapchain::CleanUp()
 		vkDestroyImageView(m_device, imageView, nullptr);
 	}
 
-	vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
+	vkDestroySwapchainKHR(m_device, m_oldSwapChain, nullptr);
 }
 
 VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> availableFormats) const

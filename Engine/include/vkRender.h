@@ -16,7 +16,7 @@ public:
 
 private:
 	void CreateGraphicsPipeline();
-	void CreateCommandPool();
+	void CreateCommandPools();
 	void CreateVertexBuffer();
 	void CreateCommandBuffers();
 	void CreateSyncObjects();
@@ -31,6 +31,7 @@ private:
 	VkPipelineLayout m_pipelineLayout{};
 	VkPipeline m_graphicsPipeline{};
 	VkCommandPool m_commandPool{};
+	VkCommandPool m_transferCommandPool{};
 
 	VkBuffer m_vertexBuffer;
 	VkDeviceMemory m_vertexBufferMemory;

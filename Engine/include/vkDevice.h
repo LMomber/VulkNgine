@@ -40,6 +40,7 @@ private:
 
 	VkQueue m_graphicsQueue{};
 	VkQueue m_presentQueue{};
+	VkQueue m_transferQueue{};
 
 	/*VkSurfaceKHR m_surface;*/
 	VkDebugUtilsMessengerEXT m_debugMessenger{};

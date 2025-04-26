@@ -312,7 +312,7 @@ void Device::CreateLogicalDevice()
 	QueueFamilyIndices indices = FindQueueFamilies(m_physicalDevice, GetSurface());
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.m_graphicsFamily.value(), indices.m_presentFamily.value() };
+	std::set<uint32_t> uniqueQueueFamilies = { indices.m_graphicsFamily.value(), indices.m_presentFamily.value(), indices.m_transferFamily.value()};
 
 	float queuePriority = 1.f;
 	for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -352,6 +352,7 @@ void Device::CreateLogicalDevice()
 
 	vkGetDeviceQueue(m_device, indices.m_graphicsFamily.value(), 0, &m_graphicsQueue);
 	vkGetDeviceQueue(m_device, indices.m_presentFamily.value(), 0, &m_presentQueue);
+	vkGetDeviceQueue(m_device, indices.m_transferFamily.value(), 0, &m_transferQueue);
 }
 
 std::vector<const char*> Device::GetRequiredExtensions()

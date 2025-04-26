@@ -51,12 +51,22 @@ QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VkSur
 			indices.m_graphicsFamily = i;
 		}
 
+		if ((property.queueFlags & VK_QUEUE_TRANSFER_BIT) && (property.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == 0)
+		{
+			indices.m_transferFamily = i;
+		}
+
 		if (indices.IsComplete())
 		{
 			break;
 		}
 
 		i++;
+	}
+
+	if (indices.m_transferFamily.has_value() == false)
+	{
+		indices.m_transferFamily = indices.m_graphicsFamily;
 	}
 
 	return indices;

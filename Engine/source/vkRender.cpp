@@ -4,6 +4,7 @@
 
 #include <stdexcept>
 #include <array>
+#include <set>
 
 struct Vertex
 {
@@ -27,7 +28,7 @@ struct Vertex
 		attributeDescriptions[0].location = 0;
 		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
 		attributeDescriptions[0].offset = offsetof(Vertex, pos);
-		
+
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -66,7 +67,7 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
 	CreateGraphicsPipeline();
-	CreateCommandPool();
+	CreateCommandPools();
 	CreateVertexBuffer();
 	CreateCommandBuffers();
 	CreateSyncObjects();
@@ -89,6 +90,7 @@ Renderer::~Renderer()
 	}
 
 	vkDestroyCommandPool(vkDevice, m_commandPool, nullptr);
+	vkDestroyCommandPool(vkDevice, m_transferCommandPool, nullptr);
 
 	vkDestroyPipeline(vkDevice, m_graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(vkDevice, m_pipelineLayout, nullptr);
@@ -117,7 +119,7 @@ void Renderer::Render()
 	{
 		throw std::runtime_error("Failed to acquire swapchain image");
 	}
-	
+
 	vkResetFences(vkDevice, 1, &m_inFlightFences[m_currentFrame]);
 
 	vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
@@ -327,7 +329,7 @@ void Renderer::CreateGraphicsPipeline()
 	vkDestroyShaderModule(m_pDevice->GetVkDevice(), fragShaderModule, nullptr);
 }
 
-void Renderer::CreateCommandPool()
+void Renderer::CreateCommandPools()
 {
 	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
 
@@ -340,17 +342,37 @@ void Renderer::CreateCommandPool()
 	{
 		throw std::runtime_error("Failed to create command pool");
 	}
+
+	poolInfo.queueFamilyIndex = queueFamilyIndices.m_transferFamily.value();
+
+	if (vkCreateCommandPool(m_pDevice->GetVkDevice(), &poolInfo, nullptr, &m_transferCommandPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create command pool");
+	}
 }
 
 void Renderer::CreateVertexBuffer()
 {
 	auto vkDevice = m_pDevice->GetVkDevice();
 
+	QueueFamilyIndices indices = FindQueueFamilies(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
+
+	std::set<uint32_t> queueSet = { indices.m_graphicsFamily.value(), indices.m_transferFamily.value() };
+	std::vector<uint32_t> queueFamilyIndices;
+
+	// Iterator-based loop for practice
+	for (auto it = queueSet.begin(); it != queueSet.end(); it++)
+	{
+		queueFamilyIndices.push_back(*it);
+	}
+
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.size = sizeof(vertices[0]) * vertices.size();
 	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	bufferInfo.sharingMode = queueSet.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+	bufferInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
+	bufferInfo.pQueueFamilyIndices = queueFamilyIndices.data();
 
 	if (vkCreateBuffer(vkDevice, &bufferInfo, nullptr, &m_vertexBuffer) != VK_SUCCESS)
 	{

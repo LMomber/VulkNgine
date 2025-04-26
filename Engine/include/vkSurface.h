@@ -12,5 +12,5 @@ public:
 private:
 	VkSurfaceKHR m_surface;
 	VkInstance m_instance;
-	GLFWwindow* m_pVkWindow;
+	GLFWwindow* m_pGlfwWindow;
 };

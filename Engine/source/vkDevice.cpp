@@ -177,115 +177,51 @@ bool Device::IsDeviceSuitable(const VkPhysicalDevice& device) const
 	return indices.IsComplete() && extensionsSupported && swapChainAdequate;
 }
 
-//QueueFamilyIndices Device::FindQueueFamilies(const VkPhysicalDevice& device) const
-//{
-//	QueueFamilyIndices indices;
-//
-//	uint32_t queueFamilyCount = 0;
-//	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-//
-//	std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
-//	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyProperties.data());
-//
-//	int i = 0;
-//	for (const auto& property : queueFamilyProperties)
-//	{
-//		VkBool32 presentSupport = false;
-//		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, GetSurface(), &presentSupport);
-//
-//		if (presentSupport)
-//		{
-//			indices.m_presentFamily = i;
-//		}
-//
-//		if (property.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-//		{
-//			indices.m_graphicsFamily = i;
-//		}
-//
-//		if (indices.IsComplete())
-//		{
-//			break;
-//		}
-//
-//		i++;
-//	}
-//
-//	return indices;
-//}
-
-//SwapChainSupportDetails Device::QuerrySwapChainSupport(const VkPhysicalDevice& device) const
-//{
-//	SwapChainSupportDetails details;
-//
-//	const auto surface = GetSurface();
-//
-//	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.m_capabilities);
-//
-//	uint32_t formatCount = 0;
-//	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-//	if (formatCount != 0)
-//	{
-//		details.m_formats.resize(formatCount);
-//		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.m_formats.data());
-//	}
-//
-//	uint32_t presentModeCount = 0;
-//	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-//	if (presentModeCount != 0)
-//	{
-//		details.m_presentModes.resize(presentModeCount);
-//		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.m_presentModes.data());
-//	}
-//
-//	return details;
-//}
-
 GLFWwindow* Device::GetWindow() const
 {
-	assert(m_pVkWindow && "GLFW window is either uninitialized or deleted");
+	ASSERT_GLFW_WINDOW_PTR(m_pVkWindow->GetWindow());
 	return m_pVkWindow->GetWindow();
 }
 
 VkPhysicalDevice Device::GetPhysicalDevice() const
 {
-	assert(m_physicalDevice != VK_NULL_HANDLE && "Physical device is either uninitialized or deleted");
+	ASSERT_VK_PHYSICAL_DEVICE(m_physicalDevice);
 	return m_physicalDevice;
 }
 
 VkDevice Device::GetVkDevice() const
 {
-	assert(m_device != VK_NULL_HANDLE && "Device is either uninitialized or deleted");
+	ASSERT_VK_LOGICAL_DEVICE(m_device);
 	return m_device;
 }
 
 VkInstance Device::GetInstance() const
 {
-	assert(m_instance != VK_NULL_HANDLE && "Instance is either uninitialized or deleted");
+	ASSERT_VK_INSTANCE(m_instance);
 	return m_instance;
 }
 
 std::shared_ptr<Window> Device::GetVkWindow() const
 {
-	assert(m_pVkWindow && "Window is either uninitialized or deleted");
+	ASSERT_VK_WINDOW_PTR(m_pVkWindow);
 	return m_pVkWindow;
 }
 
 VkSurfaceKHR Device::GetSurface() const
 {
-	assert(m_pSurface && "Surface is either uninitialized or deleted");
+	ASSERT_VK_SURFACE_PTR(m_pSurface);
 	return m_pSurface->GetSurface();
 }
 
 std::shared_ptr<Swapchain> Device::GetSwapchain() const
 {
-	assert(m_pSwapchain && "Swapchain is either uninitialized or deleted");
+	ASSERT_VK_SWAPCHAIN_PTR(m_pSwapchain);
 	return m_pSwapchain;
 }
 
 VkExtent2D Device::GetExtent() const
 {
-	assert(m_pSwapchain && "Swapchain is either uninitialized or deleted");
+	ASSERT_VK_SWAPCHAIN_PTR(m_pSwapchain);
 	return m_pSwapchain->GetExtent();
 }
 
@@ -298,6 +234,9 @@ VkQueue Device::GetQueue(QueueType type) const
 		break;
 	case PRESENT:
 		return m_presentQueue;
+		break;
+	case TRANSFER:
+		return m_transferQueue;
 		break;
 	case COMPUTE:
 		throw std::runtime_error("No functionality for queue type 'COMPUTE' has been implemented");

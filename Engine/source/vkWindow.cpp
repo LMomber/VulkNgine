@@ -10,7 +10,6 @@ static void FramebufferResizeCallback(GLFWwindow* window, int, int)
 	vkWindow->SetFrameBufferResized(true);
 }
 
-
 Window::Window()
 {
 	glfwInit();

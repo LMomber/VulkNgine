@@ -21,6 +21,11 @@ private:
 	void CreateCommandBuffers();
 	void CreateSyncObjects();
 
+	void ChooseSharingMode();
+
+	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+	void CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
+
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -42,4 +47,7 @@ private:
 	std::vector<VkFence> m_inFlightFences{};
 
 	uint32_t m_currentFrame = 0;
+
+	std::vector<uint32_t> m_queueSetIndices;
+	VkSharingMode m_sharingMode;
 };

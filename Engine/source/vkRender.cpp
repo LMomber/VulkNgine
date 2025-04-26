@@ -68,6 +68,7 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 {
 	CreateGraphicsPipeline();
 	CreateCommandPools();
+	ChooseSharingMode();
 	CreateVertexBuffer();
 	CreateCommandBuffers();
 	CreateSyncObjects();
@@ -342,7 +343,8 @@ void Renderer::CreateCommandPools()
 	{
 		throw std::runtime_error("Failed to create command pool");
 	}
-
+#
+	poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.m_transferFamily.value();
 
 	if (vkCreateCommandPool(m_pDevice->GetVkDevice(), &poolInfo, nullptr, &m_transferCommandPool) != VK_SUCCESS)
@@ -354,50 +356,27 @@ void Renderer::CreateCommandPools()
 void Renderer::CreateVertexBuffer()
 {
 	auto vkDevice = m_pDevice->GetVkDevice();
-
-	QueueFamilyIndices indices = FindQueueFamilies(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
-
-	std::set<uint32_t> queueSet = { indices.m_graphicsFamily.value(), indices.m_transferFamily.value() };
-	std::vector<uint32_t> queueFamilyIndices;
-
-	// Iterator-based loop for practice
-	for (auto it = queueSet.begin(); it != queueSet.end(); it++)
-	{
-		queueFamilyIndices.push_back(*it);
-	}
-
-	VkBufferCreateInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	bufferInfo.sharingMode = queueSet.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-	bufferInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
-	bufferInfo.pQueueFamilyIndices = queueFamilyIndices.data();
-
-	if (vkCreateBuffer(vkDevice, &bufferInfo, nullptr, &m_vertexBuffer) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create vertex buffer");
-	}
-
-	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(vkDevice, m_vertexBuffer, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = m_pDevice->FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	if (vkAllocateMemory(vkDevice, &allocInfo, nullptr, &m_vertexBufferMemory) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to allocate vertex buffer memory");
-	}
-
-	vkBindBufferMemory(vkDevice, m_vertexBuffer, m_vertexBufferMemory, 0);
-
+	
+	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	VkBufferUsageFlags stagingUsageFlag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	VkMemoryPropertyFlags stagingMemFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	CreateBuffer(bufferSize, stagingUsageFlag, stagingMemFlags, stagingBuffer, stagingBufferMemory);
+	
 	void* data;
-	vkMapMemory(vkDevice, m_vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-	memcpy(data, vertices.data(), static_cast<size_t>(bufferInfo.size));
-	vkUnmapMemory(vkDevice, m_vertexBufferMemory);
+	vkMapMemory(vkDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, vertices.data(), static_cast<uint32_t>(bufferSize));
+	vkUnmapMemory(vkDevice, stagingBufferMemory);
+
+	VkBufferUsageFlags deviceLocalUsageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	VkMemoryPropertyFlags deviceLocalMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	CreateBuffer(bufferSize, deviceLocalUsageFlag, deviceLocalMemFlags, m_vertexBuffer, m_vertexBufferMemory);
+
+	CopyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
+
+	vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
+	vkFreeMemory(vkDevice, stagingBufferMemory, nullptr);
 }
 
 void Renderer::CreateCommandBuffers()
@@ -438,6 +417,93 @@ void Renderer::CreateSyncObjects()
 			throw std::runtime_error("Failed to create semaphore/fence");
 		}
 	}
+}
+
+void Renderer::ChooseSharingMode()
+{
+	QueueFamilyIndices indices = FindQueueFamilies(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
+
+	std::set<uint32_t> queueSet = { indices.m_graphicsFamily.value(), indices.m_transferFamily.value() };
+	std::vector<uint32_t> queueFamilyIndices;
+
+	// Iterator-based loop for practice
+	for (auto it = queueSet.begin(); it != queueSet.end(); it++)
+	{
+		queueFamilyIndices.push_back(*it);
+	}
+
+	m_queueSetIndices = queueFamilyIndices;
+	m_sharingMode =  queueSet.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+}
+
+void Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+	assert(size > 0 && "Invalid buffer size");
+
+	auto vkDevice = m_pDevice->GetVkDevice();
+
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = m_sharingMode;
+	bufferInfo.queueFamilyIndexCount = static_cast<uint32_t>(m_queueSetIndices.size());
+	bufferInfo.pQueueFamilyIndices = m_queueSetIndices.data();
+
+	if (vkCreateBuffer(vkDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create buffer!");
+	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(vkDevice, buffer, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = m_pDevice->FindMemoryType(memRequirements.memoryTypeBits, properties);
+
+	if (vkAllocateMemory(vkDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate buffer memory!");
+	}
+
+	vkBindBufferMemory(vkDevice, buffer, bufferMemory, 0);
+}
+
+void Renderer::CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
+{
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = m_transferCommandPool;
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(m_pDevice->GetVkDevice(), &allocInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	VkBufferCopy copyRegion{};
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+	vkCmdCopyBuffer(commandBuffer, src, dst, 1, &copyRegion);
+
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	const auto transferQueue = m_pDevice->GetQueue(QueueType::TRANSFER);
+	vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(transferQueue);
+
+	vkFreeCommandBuffers(m_pDevice->GetVkDevice(), m_transferCommandPool, 1, &commandBuffer);
 }
 
 VkShaderModule Renderer::CreateShaderModule(const std::vector<char>& code)

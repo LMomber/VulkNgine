@@ -16,8 +16,6 @@ public:
 
 private:
 	void CreateGraphicsPipeline();
-	void CreateRenderPass();
-	void CreateFrameBuffers();
 	void CreateCommandPool();
 	void CreateCommandBuffers();
 	void CreateSyncObjects();
@@ -27,9 +25,8 @@ private:
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 	std::shared_ptr<Device> m_pDevice;
-	std::vector<VkFramebuffer> m_framebuffers{};
 	
-	VkRenderPass m_renderPass{};
+	/*VkRenderPass m_mainRenderPass{};*/
 	VkPipelineLayout m_pipelineLayout{};
 	VkPipeline m_graphicsPipeline{};
 	VkCommandPool m_commandPool{};

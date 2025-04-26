@@ -1,9 +1,9 @@
 #include "vkSurface.h"
 
 Surface::Surface(const VkInstance& instance, GLFWwindow* window) :
-	m_instance(instance), m_pWindow(window)
+	m_instance(instance), m_pVkWindow(window)
 {
-	if (glfwCreateWindowSurface(m_instance, m_pWindow, nullptr, &m_surface) != VK_SUCCESS)
+	if (glfwCreateWindowSurface(m_instance, m_pVkWindow, nullptr, &m_surface) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create window surface");
 	}
@@ -16,6 +16,6 @@ Surface::~Surface()
 
 VkSurfaceKHR Surface::GetSurface() const
 {
-	assert(m_pWindow && "GLFW window is not initialized");
+	assert(m_pVkWindow && "GLFW window is not initialized");
 	return m_surface;
 }

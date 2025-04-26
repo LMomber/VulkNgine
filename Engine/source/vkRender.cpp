@@ -23,9 +23,7 @@ static std::vector<char> ReadFile(const std::string& filename) {
 Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
-	CreateRenderPass();
 	CreateGraphicsPipeline();
-	CreateFrameBuffers();
 	CreateCommandPool();
 	CreateCommandBuffers();
 	CreateSyncObjects();
@@ -46,14 +44,8 @@ Renderer::~Renderer()
 
 	vkDestroyCommandPool(vkDevice, m_commandPool, nullptr);
 
-	for (const auto& frameBuffer : m_framebuffers)
-	{
-		vkDestroyFramebuffer(vkDevice, frameBuffer, nullptr);
-	}
-
 	vkDestroyPipeline(vkDevice, m_graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(vkDevice, m_pipelineLayout, nullptr);
-	vkDestroyRenderPass(vkDevice, m_renderPass, nullptr);
 }
 
 void Renderer::Update()
@@ -66,10 +58,21 @@ void Renderer::Render()
 	const auto swapchain = m_pDevice->GetSwapchain()->GetVkSwapChain();
 
 	vkWaitForFences(vkDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(vkDevice, 1, &m_inFlightFences[m_currentFrame]);
 
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(vkDevice, swapchain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(vkDevice, swapchain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		m_pDevice->GetSwapchain()->RecreateSwapchain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		throw std::runtime_error("Failed to acquire swapchain image");
+	}
+	
+	vkResetFences(vkDevice, 1, &m_inFlightFences[m_currentFrame]);
 
 	vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
 
@@ -114,7 +117,17 @@ void Renderer::Render()
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr; // Optional
 
-	vkQueuePresentKHR(m_pDevice->GetQueue(QueueType::PRESENT), &presentInfo);
+	result = vkQueuePresentKHR(m_pDevice->GetQueue(QueueType::PRESENT), &presentInfo);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		m_pDevice->GetSwapchain()->RecreateSwapchain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		throw std::runtime_error("Failed to acquire swapchain image");
+	}
 
 	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -251,7 +264,7 @@ void Renderer::CreateGraphicsPipeline()
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = m_pipelineLayout;
-	pipelineInfo.renderPass = m_renderPass;
+	pipelineInfo.renderPass = *m_pDevice->GetSwapchain()->GetMainRenderPass();
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional
@@ -263,67 +276,6 @@ void Renderer::CreateGraphicsPipeline()
 
 	vkDestroyShaderModule(m_pDevice->GetVkDevice(), vertShaderModule, nullptr);
 	vkDestroyShaderModule(m_pDevice->GetVkDevice(), fragShaderModule, nullptr);
-}
-
-void Renderer::CreateRenderPass()
-{
-	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format = m_pDevice->GetSwapchain()->GetFormat();
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-	VkAttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment = 0;
-	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDescription subpass{};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef;
-
-	VkRenderPassCreateInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-
-	if (vkCreateRenderPass(m_pDevice->GetVkDevice(), &renderPassInfo, nullptr, &m_renderPass) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create render pass");
-	}
-}
-
-void Renderer::CreateFrameBuffers()
-{
-	const auto& imageViews = m_pDevice->GetSwapchain()->GetImageViews();
-	m_framebuffers.resize(imageViews.size());
-
-	for (size_t i = 0; i < imageViews.size(); i++)
-	{
-		VkImageView attachments[]{ imageViews[i] };
-
-		const auto& extent = m_pDevice->GetSwapchain()->GetExtent();
-
-		VkFramebufferCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		createInfo.renderPass = m_renderPass;
-		createInfo.attachmentCount = 1;
-		createInfo.pAttachments = attachments;
-		createInfo.width = extent.width;
-		createInfo.height = extent.height;
-		createInfo.layers = 1;
-
-		if (vkCreateFramebuffer(m_pDevice->GetVkDevice(), &createInfo, nullptr, &m_framebuffers[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create framebuffer");
-		}
-	}
 }
 
 void Renderer::CreateCommandPool()
@@ -409,12 +361,14 @@ void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 		throw std::runtime_error("Failed to begin recording command buffer");
 	}
 
-	const auto& extent = m_pDevice->GetSwapchain()->GetExtent();
+	const auto swapchain = m_pDevice->GetSwapchain();
+	const auto& extent = swapchain->GetExtent();
+	const auto& frameBuffers = swapchain->GetFrameBuffers();
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = m_renderPass;
-	renderPassInfo.framebuffer = m_framebuffers[imageIndex];
+	renderPassInfo.renderPass = *swapchain->GetMainRenderPass();
+	renderPassInfo.framebuffer = frameBuffers[imageIndex];
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = extent;
 

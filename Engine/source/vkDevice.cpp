@@ -25,17 +25,17 @@ const bool enableValidationLayers = true;
 
 void Device::Initialize()
 {
-	m_pWindow = std::make_shared<Window>();
+	m_pVkWindow = std::make_shared<Window>();
 
 	CreateInstance();
 	InitDebugMessenger();
 
-	m_pSurface = std::make_unique<Surface>(m_instance, m_pWindow->GetWindow());
+	m_pSurface = std::make_unique<Surface>(m_instance, m_pVkWindow->GetWindow());
 
 	PickPhysicalDevice();
 	CreateLogicalDevice();
 
-	m_pSwapchain = std::make_shared<Swapchain>(m_device, m_physicalDevice, m_pSurface->GetSurface(), m_pWindow);
+	m_pSwapchain = std::make_shared<Swapchain>(m_device, m_physicalDevice, m_pSurface->GetSurface(), m_pVkWindow);
 }
 
 void Device::ShutDown()
@@ -52,7 +52,7 @@ void Device::ShutDown()
 
 	vkDestroyInstance(m_instance, nullptr);
 
-	m_pWindow.reset();
+	m_pVkWindow.reset();
 
 	glfwTerminate();
 }
@@ -243,8 +243,8 @@ bool Device::IsDeviceSuitable(const VkPhysicalDevice& device) const
 
 GLFWwindow* Device::GetWindow() const
 {
-	assert(m_pWindow && "GLFW window is either uninitialized or deleted");
-	return m_pWindow->GetWindow();
+	assert(m_pVkWindow && "GLFW window is either uninitialized or deleted");
+	return m_pVkWindow->GetWindow();
 }
 
 VkPhysicalDevice Device::GetPhysicalDevice() const
@@ -267,8 +267,8 @@ VkInstance Device::GetInstance() const
 
 std::shared_ptr<Window> Device::GetVkWindow() const
 {
-	assert(m_pWindow && "Window is either uninitialized or deleted");
-	return m_pWindow;
+	assert(m_pVkWindow && "Window is either uninitialized or deleted");
+	return m_pVkWindow;
 }
 
 VkSurfaceKHR Device::GetSurface() const

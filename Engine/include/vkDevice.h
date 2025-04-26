@@ -28,7 +28,7 @@ public:
 private:
 	/*std::unique_ptr<GLFWwindow> m_pWindow;*/
 	std::shared_ptr<Swapchain> m_pSwapchain = nullptr;
-	std::shared_ptr<Window> m_pWindow = nullptr;
+	std::shared_ptr<Window> m_pVkWindow = nullptr;
 
 	std::unique_ptr<Surface> m_pSurface = nullptr;
 

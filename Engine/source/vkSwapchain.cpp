@@ -5,20 +5,19 @@
 #include <algorithm>
 
 Swapchain::Swapchain(const VkDevice& device, const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, std::shared_ptr<Window> window) :
-	m_device(device), m_physicalDevice(physicalDevice), m_surface(surface), m_pWindow(window)
+	m_device(device), m_physicalDevice(physicalDevice), m_surface(surface), m_pVkWindow(window)
 {
 	CreateSwapchain();
 	CreateImageViews();
+	CreateRenderPass();
+	CreateFrameBuffers();
 }
 
 Swapchain::~Swapchain()
 {
-	for (const auto& imageView : m_imageViews)
-	{
-		vkDestroyImageView(m_device, imageView, nullptr);
-	}
+	CleanUp();
 
-	vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
+	vkDestroyRenderPass(m_device, m_mainRenderPass, nullptr);
 }
 
 void Swapchain::CreateSwapchain()
@@ -27,7 +26,7 @@ void Swapchain::CreateSwapchain()
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(swapChainSupport.m_formats);
 	VkPresentModeKHR presentMode = ChoosePresentMode(swapChainSupport.m_presentModes);
-	VkExtent2D extent = m_pWindow->ChooseExtent(swapChainSupport.m_capabilities);
+	VkExtent2D extent = m_pVkWindow->ChooseExtent(swapChainSupport.m_capabilities);
 
 	uint32_t imageCount = swapChainSupport.m_capabilities.minImageCount + 1;
 	uint32_t maxImageCount = swapChainSupport.m_capabilities.maxImageCount;
@@ -81,6 +80,26 @@ void Swapchain::CreateSwapchain()
 	m_extent = extent;
 }
 
+void Swapchain::RecreateSwapchain()
+{
+	int width, height = 0;
+	auto window = m_pVkWindow->GetWindow();
+	glfwGetFramebufferSize(window, &width, &height);
+	while (width == 0 || height == 0)
+	{
+		glfwGetFramebufferSize(window, &width, &height);
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(m_device);
+
+	CleanUp();
+
+	CreateSwapchain();
+	CreateImageViews();
+	CreateFrameBuffers();
+}
+
 void Swapchain::CreateImageViews()
 {
 	m_imageViews.resize(m_images.size());
@@ -107,6 +126,82 @@ void Swapchain::CreateImageViews()
 			throw std::runtime_error("Failed to create image view");
 		}
 	}
+}
+
+void Swapchain::CreateFrameBuffers()
+{
+	const auto& imageViews = GetImageViews();
+	m_framebuffers.resize(imageViews.size());
+
+	for (size_t i = 0; i < imageViews.size(); i++)
+	{
+		VkImageView attachments[]{ imageViews[i] };
+
+		const auto& extent = GetExtent();
+
+		VkFramebufferCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		createInfo.renderPass = m_mainRenderPass;
+		createInfo.attachmentCount = 1;
+		createInfo.pAttachments = attachments;
+		createInfo.width = extent.width;
+		createInfo.height = extent.height;
+		createInfo.layers = 1;
+
+		if (vkCreateFramebuffer(m_device, &createInfo, nullptr, &m_framebuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create framebuffer");
+		}
+	}
+}
+
+void Swapchain::CreateRenderPass()
+{
+	VkAttachmentDescription colorAttachment{};
+	colorAttachment.format = m_imageFormat;
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachmentRef;
+
+	VkRenderPassCreateInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+
+	if (vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_mainRenderPass) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create render pass");
+	}
+}
+
+void Swapchain::CleanUp()
+{
+	for (const auto& frameBuffer : m_framebuffers)
+	{
+		vkDestroyFramebuffer(m_device, frameBuffer, nullptr);
+	}
+
+	for (const auto& imageView : m_imageViews)
+	{
+		vkDestroyImageView(m_device, imageView, nullptr);
+	}
+
+	vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
 }
 
 VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> availableFormats) const

@@ -18,6 +18,7 @@ private:
 	void CreateGraphicsPipeline();
 	void CreateCommandPools();
 	void CreateVertexBuffer();
+	void CreateIndexBuffer();
 	void CreateCommandBuffers();
 	void CreateSyncObjects();
 
@@ -40,6 +41,8 @@ private:
 
 	VkBuffer m_vertexBuffer;
 	VkDeviceMemory m_vertexBufferMemory;
+	VkBuffer m_indexBuffer;
+	VkDeviceMemory m_indexBufferMemory;
 
 	std::vector<VkCommandBuffer> m_commandBuffers{};
 	std::vector<VkSemaphore> m_imageAvailableSemaphores{};

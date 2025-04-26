@@ -40,9 +40,15 @@ struct Vertex
 
 const std::vector<Vertex> vertices =
 {
-	{{0.0f, -0.5f}, {0.5f, 0.5f, 0.0f}},
-	{{0.5f, 0.5f}, {0.0f, 1.0f, 0.5f}},
-	{{-0.5f, 0.5f}, {0.5f, 0.0f, 1.0f}}
+	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+	{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+	{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+	{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = 
+{
+	0, 1, 2, 2, 3, 0
 };
 
 static std::vector<char> ReadFile(const std::string& filename) {
@@ -70,6 +76,7 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	CreateCommandPools();
 	ChooseSharingMode();
 	CreateVertexBuffer();
+	CreateIndexBuffer();
 	CreateCommandBuffers();
 	CreateSyncObjects();
 }
@@ -79,6 +86,9 @@ Renderer::~Renderer()
 	const auto vkDevice = m_pDevice->GetVkDevice();
 
 	vkDeviceWaitIdle(vkDevice);
+
+	vkDestroyBuffer(vkDevice, m_indexBuffer, nullptr);
+	vkFreeMemory(vkDevice, m_indexBufferMemory, nullptr);
 
 	vkDestroyBuffer(vkDevice, m_vertexBuffer, nullptr);
 	vkFreeMemory(vkDevice, m_vertexBufferMemory, nullptr);
@@ -355,13 +365,13 @@ void Renderer::CreateCommandPools()
 
 void Renderer::CreateVertexBuffer()
 {
-	auto vkDevice = m_pDevice->GetVkDevice();
+	const auto vkDevice = m_pDevice->GetVkDevice();
 	
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-	VkBufferUsageFlags stagingUsageFlag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	VkMemoryPropertyFlags stagingMemFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
+	const VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	const VkBufferUsageFlags stagingUsageFlag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	const VkMemoryPropertyFlags stagingMemFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	CreateBuffer(bufferSize, stagingUsageFlag, stagingMemFlags, stagingBuffer, stagingBufferMemory);
 	
 	void* data;
@@ -369,14 +379,41 @@ void Renderer::CreateVertexBuffer()
 	memcpy(data, vertices.data(), static_cast<uint32_t>(bufferSize));
 	vkUnmapMemory(vkDevice, stagingBufferMemory);
 
-	VkBufferUsageFlags deviceLocalUsageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	VkMemoryPropertyFlags deviceLocalMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	const VkBufferUsageFlags deviceLocalUsageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	const VkMemoryPropertyFlags deviceLocalMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	CreateBuffer(bufferSize, deviceLocalUsageFlag, deviceLocalMemFlags, m_vertexBuffer, m_vertexBufferMemory);
 
 	CopyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
 
 	vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
 	vkFreeMemory(vkDevice, stagingBufferMemory, nullptr);
+}
+
+void Renderer::CreateIndexBuffer()
+{
+	const auto vkDevice = m_pDevice->GetVkDevice();
+
+	const VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingMemory;
+	const VkBufferUsageFlags stagingUsageFlag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	const VkMemoryPropertyFlags stagingMemFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	CreateBuffer(bufferSize, stagingUsageFlag, stagingMemFlags, stagingBuffer, stagingMemory);
+
+	void* data;
+	vkMapMemory(vkDevice, stagingMemory, 0, bufferSize, 0, &data);
+	memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
+	vkUnmapMemory(vkDevice, stagingMemory);
+
+	const VkBufferUsageFlags deviceLocalUsageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	const VkMemoryPropertyFlags deviceLocalMemFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	CreateBuffer(bufferSize, deviceLocalUsageFlag, deviceLocalMemFlags, m_indexBuffer, m_indexBufferMemory);
+
+	CopyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
+
+	vkDestroyBuffer(vkDevice, stagingBuffer, nullptr);
+	vkFreeMemory(vkDevice, stagingMemory, nullptr);
 }
 
 void Renderer::CreateCommandBuffers()
@@ -572,7 +609,9 @@ void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-	vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+	vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
 

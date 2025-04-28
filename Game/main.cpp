@@ -5,10 +5,30 @@
 #include "transform.h"
 #include "renderComponents.h"
 
+#include <Windows.h>
+
+#include <filesystem>
 #include <iostream>
 #include <cstdlib>
 
+// TODO: Add cross-platform support
+static void SetWorkingDirectory()
+{
+	char buffer[MAX_PATH] = { 0 };
+	GetModuleFileNameA(nullptr, buffer, MAX_PATH);
+
+	// Vulkan\Game\$(platform)\$(config)\game.exe
+	std::filesystem::path executablePath(buffer);
+
+	// Vulkan\Game
+	auto gameFolderPath = executablePath.parent_path().parent_path().parent_path();
+
+	SetCurrentDirectoryA(gameFolderPath.string().c_str());
+}
+
 int main() {
+	SetWorkingDirectory();
+
 	Core::Engine& engine = Core::engine;
 	engine.Initialize();
 

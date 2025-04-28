@@ -5,6 +5,7 @@
 #include "transform.h"
 #include "renderComponents.h"
 
+#undef APIENTRY
 #include <Windows.h>
 
 #include <filesystem>
@@ -30,7 +31,10 @@ int main() {
 	SetWorkingDirectory();
 
 	Core::Engine& engine = Core::engine;
-	engine.Initialize();
+	INIT_WRAPPER("engine",
+		{
+			engine.Initialize();
+		});
 
 	Timer timer;
 

@@ -9,16 +9,19 @@ Core::Engine Core::engine;
 
 void Core::Engine::Initialize()
 {
-	// No dependencies
-	m_pInputHandler = std::make_shared<InputHandler>();
-
-	m_pDevice = std::make_shared<Device>();
-	m_pDevice->Initialize();
-
-	m_pRenderer = std::make_shared<Renderer>(m_pDevice);
-
-	std::shared_ptr<Core::Input> inputPtr(new Core::Input, Core::InputDelFunc);
-	m_pInput = inputPtr;
+	// Macro practice
+	INIT_WRAPPER("input handler", m_pInputHandler = std::make_shared<InputHandler>());
+	INIT_WRAPPER("device class",
+		{
+			m_pDevice = std::make_shared<Device>();
+			m_pDevice->Initialize();
+		};);
+	INIT_WRAPPER("renderer", m_pRenderer = std::make_shared<Renderer>(m_pDevice));
+	INIT_WRAPPER("input class", 
+		{
+				std::shared_ptr<Core::Input> inputPtr(new Core::Input, Core::InputDelFunc);
+				m_pInput = inputPtr;
+		});
 }
 
 void Core::Engine::Update(float deltaTime)

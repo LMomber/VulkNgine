@@ -26,15 +26,11 @@ const bool enableValidationLayers = true;
 void Device::Initialize()
 {
 	m_pVkWindow = std::make_shared<Window>();
-
 	CreateInstance();
 	InitDebugMessenger();
-
 	m_pSurface = std::make_unique<Surface>(m_instance, m_pVkWindow->GetWindow());
-
 	PickPhysicalDevice();
 	CreateLogicalDevice();
-
 	m_pSwapchain = std::make_shared<Swapchain>(m_device, m_physicalDevice, m_pSurface->GetSurface(), m_pVkWindow);
 }
 
@@ -64,8 +60,9 @@ void Device::InitDebugMessenger()
 	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
 	PopulateDebugMessengerCreateInfo(createInfo);
 
-	if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
-		throw std::runtime_error("failed to set up debug messenger!");
+	if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("Failed to set up debug messenger!");
 	}
 }
 
@@ -92,7 +89,8 @@ void Device::CreateInstance()
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	createInfo.ppEnabledExtensionNames = extensions.data();
 
-	createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+	// Rids warning on MacOS, but removes compatibility with RenderDoc
+	//createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	if (enableValidationLayers) {
@@ -314,7 +312,8 @@ std::vector<const char*> Device::GetRequiredExtensions()
 		requiredGlfwExtensions.emplace_back(extensions[i]);
 	}
 
-	requiredGlfwExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+	// Rids warning on MacOS, but removes compatibility with RenderDoc
+	//requiredGlfwExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 
 	ValidateExtensionAvailability(requiredGlfwExtensions);
 

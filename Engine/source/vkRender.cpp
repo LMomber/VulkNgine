@@ -687,28 +687,6 @@ void Renderer::UpdateMVP(const int currentImage)
 {
 	assert(currentImage < MAX_FRAMES_IN_FLIGHT && "Current frame value is higher than the amount of frames in flight");
 
-	/*MVP mvp{};
-
-	const auto cameraEntity = Core::engine.GetRegistry().view<Transform>().front();
-	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
-	const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
-
-	mvp.model = cameraTransform.World();
-
-	const glm::vec3 trans = cameraTransform.GetTranslation();
-	const glm::quat rot = cameraTransform.GetRotation();
-
-	const glm::vec3 localForward = glm::vec3(0.f, 0.f, 1.f);
-	const glm::vec3 forward = glm::normalize(glm::rotate(rot, localForward));
-
-	const glm::vec3 focusPoint = trans + forward;
-	const glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
-
-	mvp.view = glm::lookAtRH(trans, focusPoint, worldUp);
-	mvp.projection = camera.projection;
-
-	memcpy(m_mappedUniformBuffers[currentImage], &mvp, sizeof(MVP));*/
-
 	const auto cameraEntity = Core::engine.GetRegistry().view<Transform>().front();
 	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
 	const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
@@ -718,8 +696,11 @@ void Renderer::UpdateMVP(const int currentImage)
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
+	Transform cubeTransform{};
+	cubeTransform.SetTranslation(glm::vec3(1.f, 2.f, 5.f));
+
 	MVP ubo{};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model = glm::rotate(cubeTransform.World(), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	const glm::vec3 trans = cameraTransform.GetTranslation();
 	const glm::quat rot = cameraTransform.GetRotation();
 
@@ -731,7 +712,6 @@ void Renderer::UpdateMVP(const int currentImage)
 
 	ubo.view = glm::lookAtRH(trans, focusPoint, worldUp);
 	ubo.projection = camera.projection;
-	//ubo.projection[1][1] *= -1;
 
 	memcpy(m_mappedUniformBuffers[currentImage], &ubo, sizeof(ubo));
 }

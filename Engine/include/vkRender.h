@@ -18,6 +18,7 @@ private:
 	void CreateDescriptorSetLayout();
 	void CreateGraphicsPipeline();
 	void CreateCommandPools();
+	void CreateTextureImage();
 	void CreateVertexBuffer();
 	void CreateIndexBuffer();
 	void CreateUniformBuffers();
@@ -28,6 +29,7 @@ private:
 
 	void ChooseSharingMode();
 
+	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 	void CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
 
@@ -53,6 +55,9 @@ private:
 	std::vector<VkBuffer> m_uniformBuffers;
 	std::vector<VkDeviceMemory> m_uniformBuffersMemory;
 	std::vector<void*> m_mappedUniformBuffers;
+
+	VkImage m_textureImage;
+	VkDeviceMemory m_textureImageMemory;
 
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;

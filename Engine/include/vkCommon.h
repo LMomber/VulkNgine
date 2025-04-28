@@ -8,6 +8,7 @@
 #include <fstream>
 #include <optional>
 #include <set>
+#include <iostream>
 
 #include <cassert>
 #include <stdexcept>
@@ -20,6 +21,23 @@
 #define ASSERT_VK_SURFACE_PTR(surface) assert(surface && "Vulkan window surface is either uninitialized or deleted")
 #define ASSERT_VK_WINDOW_PTR(window) assert(window && "Vulkan window is either uninitialized or deleted")
 #define ASSERT_GLFW_WINDOW_PTR(window) assert(window && "GLFW window is either uninitialized or deleted")
+
+// Some macro practice
+// Simple log to check if a system is initialized successfully
+#ifdef _DEBUG
+	#define INIT_WRAPPER(name, function)		\
+		do {										\
+		std::cout << "Initializing " << name << "..." << "\n"; \
+		function;									\
+		std::cout << "Initialized "<< name << " successfully!" << "\n";				\
+		} while(0)
+#else
+	#define INIT_WRAPPER(name, function)		\
+		do {										\
+		function;									\
+		} while(0)
+#endif
+	
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;

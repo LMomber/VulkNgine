@@ -1,14 +1,20 @@
 #include "vkRender.h"
 
+#include "engine.h"
+#include "transform.h"
+#include "renderComponents.h"
+
 #include "glm/glm.hpp"
 
 #include <stdexcept>
 #include <array>
 #include <set>
 
+#include <chrono>
+
 struct Vertex
 {
-	glm::vec2 pos;
+	glm::vec3 pos;
 	glm::vec3 color;
 
 	static VkVertexInputBindingDescription GetBindingDescription()
@@ -26,7 +32,7 @@ struct Vertex
 		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
 		attributeDescriptions[1].binding = 0;
@@ -38,17 +44,42 @@ struct Vertex
 	}
 };
 
-const std::vector<Vertex> vertices =
+struct MVP
 {
-	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-	{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-	{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-	{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 projection;
 };
 
-const std::vector<uint16_t> indices = 
+const std::vector<Vertex> vertices =
 {
-	0, 1, 2, 2, 3, 0
+	// Front face
+	{{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}}, // 0
+	{{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}}, // 1
+	{{ 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}, // 2
+	{{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}}, // 3
+
+	// Back face
+	{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}}, // 4
+	{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 1.0f}}, // 5
+	{{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}}, // 6
+	{{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 0.0f}}, // 7
+};
+
+const std::vector<uint16_t> indices =
+{
+	// Front face
+	0, 1, 2, 2, 3, 0,
+	// Right face
+	1, 5, 6, 6, 2, 1,
+	// Back face
+	5, 4, 7, 7, 6, 5,
+	// Left face
+	4, 0, 3, 3, 7, 4,
+	// Top face
+	3, 2, 6, 6, 7, 3,
+	// Bottom face
+	4, 5, 1, 1, 0, 4
 };
 
 static std::vector<char> ReadFile(const std::string& filename) {
@@ -72,11 +103,15 @@ static std::vector<char> ReadFile(const std::string& filename) {
 Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
+	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
 	CreateCommandPools();
 	ChooseSharingMode();
 	CreateVertexBuffer();
 	CreateIndexBuffer();
+	CreateUniformBuffers();
+	CreateDescriptorPool();
+	CreateDescriptorSets();
 	CreateCommandBuffers();
 	CreateSyncObjects();
 }
@@ -86,6 +121,16 @@ Renderer::~Renderer()
 	const auto vkDevice = m_pDevice->GetVkDevice();
 
 	vkDeviceWaitIdle(vkDevice);
+
+	vkFreeDescriptorSets(vkDevice, m_descriptorPool, static_cast<uint32_t>(m_descriptorSets.size()), m_descriptorSets.data());
+	vkDestroyDescriptorPool(vkDevice, m_descriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(vkDevice, m_descriptorSetLayout, nullptr);
+
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		vkDestroyBuffer(vkDevice, m_uniformBuffers[i], nullptr);
+		vkFreeMemory(vkDevice, m_uniformBuffersMemory[i], nullptr);
+	}
 
 	vkDestroyBuffer(vkDevice, m_indexBuffer, nullptr);
 	vkFreeMemory(vkDevice, m_indexBufferMemory, nullptr);
@@ -109,6 +154,7 @@ Renderer::~Renderer()
 
 void Renderer::Update()
 {
+	UpdateMVP(m_currentFrame);
 }
 
 void Renderer::Render()
@@ -191,6 +237,26 @@ void Renderer::Render()
 	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+void Renderer::CreateDescriptorSetLayout()
+{
+	VkDescriptorSetLayoutBinding layoutBinding{};
+	layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	layoutBinding.binding = 0;
+	layoutBinding.descriptorCount = 1;
+	layoutBinding.pImmutableSamplers = nullptr;
+	layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	VkDescriptorSetLayoutCreateInfo descSetCreateInfo{};
+	descSetCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descSetCreateInfo.bindingCount = 1;
+	descSetCreateInfo.pBindings = &layoutBinding;
+	
+	if (vkCreateDescriptorSetLayout(m_pDevice->GetVkDevice(), &descSetCreateInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor set layout");
+	}
+}
+
 void Renderer::CreateGraphicsPipeline()
 {
 	const auto vertShaderCode = ReadFile("../Engine/shaders/vert.spv");
@@ -265,7 +331,7 @@ void Renderer::CreateGraphicsPipeline()
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 	rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -303,8 +369,8 @@ void Renderer::CreateGraphicsPipeline()
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0; // Optional
-	pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -416,6 +482,23 @@ void Renderer::CreateIndexBuffer()
 	vkFreeMemory(vkDevice, stagingMemory, nullptr);
 }
 
+void Renderer::CreateUniformBuffers()
+{
+	auto bufferSize = sizeof(MVP);
+
+	m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+	m_mappedUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
+	VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
+
+		vkMapMemory(m_pDevice->GetVkDevice(), m_uniformBuffersMemory[i], 0, bufferSize, 0, &m_mappedUniformBuffers[i]);
+	}
+}
+
 void Renderer::CreateCommandBuffers()
 {
 	m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -456,21 +539,78 @@ void Renderer::CreateSyncObjects()
 	}
 }
 
+void Renderer::CreateDescriptorPool()
+{	
+	VkDescriptorPoolSize poolSize{};
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+	VkDescriptorPoolCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	createInfo.poolSizeCount = 1;
+	createInfo.pPoolSizes = &poolSize;
+	createInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+	if (vkCreateDescriptorPool(m_pDevice->GetVkDevice(), &createInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor pool");
+	}
+}
+
+void Renderer::CreateDescriptorSets()
+{
+	std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = m_descriptorPool;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	allocInfo.pSetLayouts = layouts.data();
+
+	m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+	if (vkAllocateDescriptorSets(m_pDevice->GetVkDevice(), &allocInfo, m_descriptorSets.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate descriptor sets");
+	}
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = m_uniformBuffers[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(MVP);
+
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = m_descriptorSets[i];
+		descriptorWrite.dstBinding = 0;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+		descriptorWrite.pImageInfo = nullptr;
+		descriptorWrite.pTexelBufferView = nullptr;
+
+		vkUpdateDescriptorSets(m_pDevice->GetVkDevice(), 1, &descriptorWrite, 0, nullptr);
+	}
+}
+
 void Renderer::ChooseSharingMode()
 {
-	QueueFamilyIndices indices = FindQueueFamilies(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
+	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
 
-	std::set<uint32_t> queueSet = { indices.m_graphicsFamily.value(), indices.m_transferFamily.value() };
-	std::vector<uint32_t> queueFamilyIndices;
+	std::set<uint32_t> queueSet = { queueFamilyIndices.m_graphicsFamily.value(), queueFamilyIndices.m_transferFamily.value() };
+	std::vector<uint32_t> uniqueQueueFamilyIndices;
 
 	// Iterator-based loop for practice
 	for (auto it = queueSet.begin(); it != queueSet.end(); it++)
 	{
-		queueFamilyIndices.push_back(*it);
+		uniqueQueueFamilyIndices.push_back(*it);
 	}
 
-	m_queueSetIndices = queueFamilyIndices;
-	m_sharingMode =  queueSet.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+	m_queueSetIndices = uniqueQueueFamilyIndices;
+
+	m_sharingMode = m_queueSetIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 }
 
 void Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
@@ -543,6 +683,59 @@ void Renderer::CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 	vkFreeCommandBuffers(m_pDevice->GetVkDevice(), m_transferCommandPool, 1, &commandBuffer);
 }
 
+void Renderer::UpdateMVP(const int currentImage)
+{
+	assert(currentImage < MAX_FRAMES_IN_FLIGHT && "Current frame value is higher than the amount of frames in flight");
+
+	/*MVP mvp{};
+
+	const auto cameraEntity = Core::engine.GetRegistry().view<Transform>().front();
+	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
+	const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
+
+	mvp.model = cameraTransform.World();
+
+	const glm::vec3 trans = cameraTransform.GetTranslation();
+	const glm::quat rot = cameraTransform.GetRotation();
+
+	const glm::vec3 localForward = glm::vec3(0.f, 0.f, 1.f);
+	const glm::vec3 forward = glm::normalize(glm::rotate(rot, localForward));
+
+	const glm::vec3 focusPoint = trans + forward;
+	const glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
+
+	mvp.view = glm::lookAtRH(trans, focusPoint, worldUp);
+	mvp.projection = camera.projection;
+
+	memcpy(m_mappedUniformBuffers[currentImage], &mvp, sizeof(MVP));*/
+
+	const auto cameraEntity = Core::engine.GetRegistry().view<Transform>().front();
+	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
+	const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
+
+	static auto startTime = std::chrono::high_resolution_clock::now();
+
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+	MVP ubo{};
+	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	const glm::vec3 trans = cameraTransform.GetTranslation();
+	const glm::quat rot = cameraTransform.GetRotation();
+
+	const glm::vec3 localForward = glm::vec3(0.f, 0.f, 1.f);
+	const glm::vec3 forward = glm::normalize(glm::rotate(rot, localForward));
+
+	const glm::vec3 focusPoint = trans + forward;
+	const glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
+
+	ubo.view = glm::lookAtRH(trans, focusPoint, worldUp);
+	ubo.projection = camera.projection;
+	//ubo.projection[1][1] *= -1;
+
+	memcpy(m_mappedUniformBuffers[currentImage], &ubo, sizeof(ubo));
+}
+
 VkShaderModule Renderer::CreateShaderModule(const std::vector<char>& code)
 {
 	VkShaderModuleCreateInfo createInfo{};
@@ -611,6 +804,7 @@ void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
 	vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
 	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);

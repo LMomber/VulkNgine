@@ -33,7 +33,7 @@ void InputHandler::Update(float deltaTime)
             const glm::vec3 forward = cameraRotation * localForward;
 
             const glm::vec3 right = normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
-            glm::vec3 change = right * speed;
+            glm::vec3 change = -right * speed;
             cameraPosition += change;
 
             cameraTransform.SetTranslation(cameraPosition);
@@ -47,7 +47,7 @@ void InputHandler::Update(float deltaTime)
             const glm::vec3 forward = cameraRotation * localForward;
 
             const glm::vec3 right = normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
-            glm::vec3 change = -right * speed;
+            glm::vec3 change = right * speed;
             cameraPosition += change;
 
             cameraTransform.SetTranslation(cameraPosition);
@@ -101,7 +101,7 @@ void InputHandler::Update(float deltaTime)
         if (input.GetKeyboardKey(Input::KeyboardKey::ArrowLeft))
         {
             glm::quat rotation = cameraTransform.GetRotation();
-            glm::quat change = glm::angleAxis(glm::radians(-rotationSpeed), glm::vec3(0, 1, 0));
+            glm::quat change = glm::angleAxis(glm::radians(rotationSpeed), glm::vec3(0, 1, 0));
             rotation = change * rotation;
 
             cameraTransform.SetRotation(rotation);
@@ -109,7 +109,7 @@ void InputHandler::Update(float deltaTime)
         if (input.GetKeyboardKey(Input::KeyboardKey::ArrowRight))
         {
             glm::quat rotation = cameraTransform.GetRotation();
-            glm::quat change = glm::angleAxis(glm::radians(rotationSpeed), glm::vec3(0, 1, 0));
+            glm::quat change = glm::angleAxis(glm::radians(-rotationSpeed), glm::vec3(0, 1, 0));
             rotation = change * rotation;
 
             cameraTransform.SetRotation(rotation);

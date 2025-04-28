@@ -20,10 +20,11 @@ int main() {
 
 	auto extent = engine.GetDevice().GetExtent();
 	float aspectRatio = static_cast<float>(extent.width) / static_cast<float>(extent.height);
-	camera.projection = glm::perspective(90.f, aspectRatio, 0.f, 1000.f);
+	camera.projection = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f);
+	camera.projection[1][1] *= -1;
 
 	Transform& cameraTransform = registry.emplace<Transform>(entity);
-	cameraTransform.SetTranslation(glm::vec3(0, 0, -2));
+	cameraTransform.SetTranslation(glm::vec3(1, 2, 2));
 
 	try
 	{

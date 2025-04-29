@@ -32,12 +32,17 @@ private:
 	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 	void CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
+	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
 	void UpdateMVP(const int currentFrame);
 
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	VkCommandBuffer BeginSingleTimeCommands();
+	void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 	std::shared_ptr<Device> m_pDevice;
 	

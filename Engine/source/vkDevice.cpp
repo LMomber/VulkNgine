@@ -172,7 +172,10 @@ bool Device::IsDeviceSuitable(const VkPhysicalDevice& device) const
 		swapChainAdequate = !swapChainSupport.m_formats.empty() && !swapChainSupport.m_presentModes.empty();
 	}
 
-	return indices.IsComplete() && extensionsSupported && swapChainAdequate;
+	VkPhysicalDeviceFeatures features;
+	vkGetPhysicalDeviceFeatures(device, &features);
+
+	return indices.IsComplete() && extensionsSupported && swapChainAdequate && features.samplerAnisotropy;
 }
 
 GLFWwindow* Device::GetWindow() const
@@ -263,6 +266,7 @@ void Device::CreateLogicalDevice()
 	}
 
 	VkPhysicalDeviceFeatures deviceFeatures{};
+	deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

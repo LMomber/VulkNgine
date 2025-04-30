@@ -81,4 +81,6 @@ private:
 
 	std::vector<uint32_t> m_queueSetIndices;
 	VkSharingMode m_sharingMode;
+
+	const int m_amountOfCubes = 2;
 };

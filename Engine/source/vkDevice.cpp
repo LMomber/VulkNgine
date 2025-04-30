@@ -429,6 +429,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Device::DebugCallback(VkDebugUtilsMessageSeverity
 	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 		std::cout << "ERROR: ";
 		break;
+	default:
+		return VK_FALSE;
+		break;
 	}
 
 	std::cout << pCallbackData->pMessage << std::endl;

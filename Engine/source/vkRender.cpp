@@ -145,7 +145,7 @@ Renderer::~Renderer()
 	vkDestroyDescriptorPool(vkDevice, m_descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(vkDevice, m_descriptorSetLayout, nullptr);
 
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT * m_amountOfCubes; i++)
 	{
 		vkDestroyBuffer(vkDevice, m_uniformBuffers[i], nullptr);
 		vkFreeMemory(vkDevice, m_uniformBuffersMemory[i], nullptr);
@@ -277,7 +277,7 @@ void Renderer::CreateDescriptorSetLayout()
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 	layoutInfo.pBindings = bindings.data();
-	
+
 	if (vkCreateDescriptorSetLayout(m_pDevice->GetVkDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create descriptor set layout");
@@ -527,14 +527,14 @@ void Renderer::CreateTextureSampler()
 void Renderer::CreateVertexBuffer()
 {
 	const auto vkDevice = m_pDevice->GetVkDevice();
-	
+
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 	const VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 	const VkBufferUsageFlags stagingUsageFlag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	const VkMemoryPropertyFlags stagingMemFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	CreateBuffer(bufferSize, stagingUsageFlag, stagingMemFlags, stagingBuffer, stagingBufferMemory);
-	
+
 	void* data;
 	vkMapMemory(vkDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
 	memcpy(data, vertices.data(), static_cast<uint32_t>(bufferSize));
@@ -579,14 +579,14 @@ void Renderer::CreateIndexBuffer()
 
 void Renderer::CreateUniformBuffers()
 {
-	auto bufferSize = sizeof(MVP);
+	const auto bufferSize = sizeof(MVP);
 
-	m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-	m_mappedUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT * m_amountOfCubes);
+	m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT * m_amountOfCubes);
+	m_mappedUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT * m_amountOfCubes);
 
 	VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT * m_amountOfCubes; i++)
 	{
 		CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
 
@@ -635,18 +635,18 @@ void Renderer::CreateSyncObjects()
 }
 
 void Renderer::CreateDescriptorPool()
-{	
+{
 	std::array<VkDescriptorPoolSize, 2> poolSizes{};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * m_amountOfCubes);
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * m_amountOfCubes);
 
 	VkDescriptorPoolCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	createInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	createInfo.pPoolSizes = poolSizes.data();
-	createInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	createInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * m_amountOfCubes);
 	createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	if (vkCreateDescriptorPool(m_pDevice->GetVkDevice(), &createInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
@@ -657,20 +657,20 @@ void Renderer::CreateDescriptorPool()
 
 void Renderer::CreateDescriptorSets()
 {
-	std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
+	std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT * m_amountOfCubes, m_descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = m_descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * m_amountOfCubes);
 	allocInfo.pSetLayouts = layouts.data();
 
-	m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+	m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT * m_amountOfCubes);
 	if (vkAllocateDescriptorSets(m_pDevice->GetVkDevice(), &allocInfo, m_descriptorSets.data()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to allocate descriptor sets");
 	}
 
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT * m_amountOfCubes; i++)
 	{
 		VkDescriptorBufferInfo bufferInfo{};
 		bufferInfo.buffer = m_uniformBuffers[i];
@@ -680,7 +680,7 @@ void Renderer::CreateDescriptorSets()
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.imageView = m_textureImageView;
-		imageInfo.sampler = m_textureSampler;	
+		imageInfo.sampler = m_textureSampler;
 
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -863,10 +863,12 @@ void Renderer::UpdateMVP(const int currentImage)
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	Transform cubeTransform{};
+	Transform cubeTransform2{};
 	cubeTransform.SetTranslation(glm::vec3(1.f, 2.f, 5.f));
+	cubeTransform2.SetTranslation(glm::vec3(1.5f, 2.f, 7.f));
 
-	MVP ubo{};
-	ubo.model = glm::rotate(cubeTransform.World(), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	std::array<Transform, 2> cubeTransforms{ cubeTransform, cubeTransform2 };
+
 	const glm::vec3 trans = cameraTransform.GetTranslation();
 	const glm::quat rot = cameraTransform.GetRotation();
 
@@ -876,10 +878,15 @@ void Renderer::UpdateMVP(const int currentImage)
 	const glm::vec3 focusPoint = trans + forward;
 	const glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
 
-	ubo.view = glm::lookAtRH(trans, focusPoint, worldUp);
-	ubo.projection = camera.projection;
+	for (int i = 0; i < m_amountOfCubes; i++)
+	{
+		MVP ubo{};
+		ubo.model = glm::rotate(cubeTransforms[i].World(), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAtRH(trans, focusPoint, worldUp);
+		ubo.projection = camera.projection;
 
-	memcpy(m_mappedUniformBuffers[currentImage], &ubo, sizeof(ubo));
+		memcpy(m_mappedUniformBuffers[i + (2 * currentImage)], &ubo, sizeof(ubo));
+	}
 }
 
 VkShaderModule Renderer::CreateShaderModule(const std::vector<char>& code)
@@ -950,8 +957,13 @@ void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
 	vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[m_currentFrame], 0, nullptr);
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	for (int i = 0; i < m_amountOfCubes; i++)
+	{
+		const int descriptorSetIndex = m_currentFrame * m_amountOfCubes + i;
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[descriptorSetIndex], 0, nullptr);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	}
 
 	vkCmdEndRenderPass(commandBuffer);
 
@@ -1039,11 +1051,11 @@ void Renderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayo
 		throw std::runtime_error("Unsupported layout transition");
 	}
 
-	vkCmdPipelineBarrier(commandBuffer, 
-		sourceStage, destStage, 
-		0, 
-		0, nullptr, 
-		0, nullptr, 
+	vkCmdPipelineBarrier(commandBuffer,
+		sourceStage, destStage,
+		0,
+		0, nullptr,
+		0, nullptr,
 		1, &barrier);
 
 	EndSingleTimeCommands(commandBuffer);

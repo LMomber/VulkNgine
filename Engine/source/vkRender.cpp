@@ -20,10 +20,6 @@
 #include <set>
 #include <unordered_map>
 
-// Delete later
-#include <chrono>
-//
-
 struct Vertex
 {
 	glm::vec3 pos;
@@ -911,11 +907,6 @@ void Renderer::UpdateMVP(const int currentImage)
 	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
 	const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
 
-	static auto startTime = std::chrono::high_resolution_clock::now();
-
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
 	Transform cubeTransform{};
 	Transform cubeTransform2{};
 	cubeTransform.SetTranslation(glm::vec3(1.f, 2.f, 5.f));
@@ -935,7 +926,6 @@ void Renderer::UpdateMVP(const int currentImage)
 	for (int i = 0; i < m_amountOfCubes; i++)
 	{
 		MVP ubo{};
-		//ubo.model = cubeTransforms[i].World();
 		auto world = glm::rotate(cubeTransforms[i].World(), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		ubo.model = glm::rotate(world, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
 		ubo.view = glm::lookAtRH(trans, focusPoint, worldUp);

@@ -133,7 +133,7 @@ void Device::PickPhysicalDevice()
 
 	if (devices.rbegin()->first > 0)
 	{
-		m_physicalDevice = devices.begin()->second;
+		m_physicalDevice = devices.rbegin()->second;
 	}
 	else
 	{

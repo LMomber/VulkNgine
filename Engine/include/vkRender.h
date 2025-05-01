@@ -29,6 +29,8 @@ private:
 	void CreateDescriptorPool();
 	void CreateDescriptorSets();
 
+	void LoadModel();
+
 	void ChooseSharingMode();
 
 	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);

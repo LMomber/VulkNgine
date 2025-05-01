@@ -9,9 +9,16 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tinyobj/tiny_obj_loader.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
 #include <stdexcept>
 #include <array>
 #include <set>
+#include <unordered_map>
 
 // Delete later
 #include <chrono>
@@ -53,7 +60,25 @@ struct Vertex
 
 		return attributeDescriptions;
 	}
+
+	bool operator==(const Vertex& other) const
+	{
+		return pos == other.pos && color == other.color && texCoord == other.texCoord;
+	}
 };
+
+namespace std
+{
+	template<> struct hash<Vertex>
+	{
+		size_t operator()(Vertex const& vertex) const
+		{
+			return ((hash<glm::vec3>()(vertex.pos) ^
+				(hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.texCoord) << 1);
+		}
+	};
+}
 
 struct MVP
 {
@@ -62,36 +87,8 @@ struct MVP
 	alignas(16) glm::mat4 projection;
 };
 
-const std::vector<Vertex> vertices =
-{
-	// Front face
-	{{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f, 0.0f}, {1.f, 0.f}}, // 0
-	{{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}, {0.f, 0.f}}, // 1
-	{{ 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.f, 1.f}}, // 2
-	{{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}, {1.f, 1.f}}, // 3
-
-	// Back face
-	{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {1.f, 0.f}}, // 4
-	{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 1.0f}, {0.f, 0.f}}, // 5
-	{{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.f, 1.f}}, // 6
-	{{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 0.0f}, {1.f, 1.f}}, // 7
-};
-
-const std::vector<uint16_t> indices =
-{
-	// Front face
-	0, 1, 2, 2, 3, 0,
-	// Right face
-	1, 5, 6, 6, 2, 1,
-	// Back face
-	5, 4, 7, 7, 6, 5,
-	// Left face
-	4, 0, 3, 3, 7, 4,
-	// Top face
-	3, 2, 6, 6, 7, 3,
-	// Bottom face
-	4, 5, 1, 1, 0, 4
-};
+std::vector<Vertex> vertices;
+std::vector<uint32_t> indices;
 
 static std::vector<char> ReadFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -121,6 +118,7 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	CreateTextureImage();
 	CreateTextureImageView();
 	CreateTextureSampler();
+	LoadModel();
 	CreateVertexBuffer();
 	CreateIndexBuffer();
 	CreateUniformBuffers();
@@ -471,7 +469,7 @@ void Renderer::CreateCommandPools()
 void Renderer::CreateTextureImage()
 {
 	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load("../Engine/textures/statue.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	if (!pixels)
 	{
@@ -715,6 +713,50 @@ void Renderer::CreateDescriptorSets()
 	}
 }
 
+void Renderer::LoadModel()
+{
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string warn, err;
+
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str()))
+	{
+		throw std::runtime_error(warn + err);
+	}
+
+	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+	for (const auto& shape : shapes)
+	{
+		for (const auto& index : shape.mesh.indices)
+		{
+			Vertex vertex{};
+
+			vertex.pos =
+			{
+				attrib.vertices[3 * index.vertex_index + 0],
+				attrib.vertices[3 * index.vertex_index + 1],
+				attrib.vertices[3 * index.vertex_index + 2]
+			};
+
+			vertex.texCoord =
+			{
+				attrib.texcoords[2 * index.texcoord_index + 0],
+				1.f - attrib.texcoords[2 * index.texcoord_index + 1]
+			};
+
+			if (uniqueVertices.count(vertex) == 0)
+			{
+				uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+				vertices.push_back(vertex);
+			}
+
+			indices.push_back(uniqueVertices[vertex]);
+		}
+	}
+}
+
 void Renderer::ChooseSharingMode()
 {
 	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
@@ -893,7 +935,9 @@ void Renderer::UpdateMVP(const int currentImage)
 	for (int i = 0; i < m_amountOfCubes; i++)
 	{
 		MVP ubo{};
-		ubo.model = glm::rotate(cubeTransforms[i].World(), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		//ubo.model = cubeTransforms[i].World();
+		auto world = glm::rotate(cubeTransforms[i].World(), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.model = glm::rotate(world, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
 		ubo.view = glm::lookAtRH(trans, focusPoint, worldUp);
 		ubo.projection = camera.projection;
 
@@ -970,7 +1014,7 @@ void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-	vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+	vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 	for (int i = 0; i < m_amountOfCubes; i++)
 	{

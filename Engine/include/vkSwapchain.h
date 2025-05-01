@@ -23,6 +23,7 @@ public:
 private:
 	void CreateSwapchain();
 	void CreateImageViews();
+	void CreateDepthResources();
 	void CreateFrameBuffers();
 
 	void CreateRenderPass();
@@ -46,4 +47,8 @@ private:
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_imageViews;
 	std::vector<VkFramebuffer> m_framebuffers{};
+
+	VkImage m_depthImage;
+	VkDeviceMemory m_depthImageMemory;
+	VkImageView m_depthImageView;
 };

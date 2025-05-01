@@ -3,6 +3,7 @@
 #include "vkWindow.h"
 
 #include <algorithm>
+#include <array>
 
 Swapchain::Swapchain(const VkDevice& device, const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, std::shared_ptr<Window> window) :
 	m_device(device), m_physicalDevice(physicalDevice), m_surface(surface), m_pVkWindow(window)
@@ -10,6 +11,7 @@ Swapchain::Swapchain(const VkDevice& device, const VkPhysicalDevice& physicalDev
 	CreateSwapchain();
 	CreateImageViews();
 	CreateRenderPass();
+	CreateDepthResources();
 	CreateFrameBuffers();
 }
 
@@ -83,9 +85,9 @@ void Swapchain::CreateSwapchain()
 
 void Swapchain::RecreateSwapchain()
 {
-	int width, height = 0;
+	int width = 0, height = 0;
 	auto window = m_pVkWindow->GetWindow();
-	glfwGetFramebufferSize(window, &width, &height);
+
 	while (width == 0 || height == 0)
 	{
 		glfwGetFramebufferSize(window, &width, &height);
@@ -100,6 +102,7 @@ void Swapchain::RecreateSwapchain()
 
 	CreateSwapchain();
 	CreateImageViews();
+	CreateDepthResources();
 	CreateFrameBuffers();
 }
 
@@ -131,6 +134,64 @@ void Swapchain::CreateImageViews()
 	}
 }
 
+// TODO: Put image creations & image view creation in functions
+void Swapchain::CreateDepthResources()
+{
+	VkFormat depthFormat = FindSupportedFormat(m_physicalDevice, VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+	VkImageCreateInfo imageInfo{};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = static_cast<uint32_t>(m_extent.width);
+	imageInfo.extent.height = static_cast<uint32_t>(m_extent.height);
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = depthFormat;
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.flags = 0;
+
+	if (vkCreateImage(m_device, &imageInfo, nullptr, &m_depthImage) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create image");
+	}
+
+	VkMemoryRequirements memoryRequirements;
+	vkGetImageMemoryRequirements(m_device, m_depthImage, &memoryRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memoryRequirements.size;
+	allocInfo.memoryTypeIndex = FindMemoryType(m_physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	if (vkAllocateMemory(m_device, &allocInfo, nullptr, &m_depthImageMemory) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate image memory");
+	}
+
+	vkBindImageMemory(m_device, m_depthImage, m_depthImageMemory, 0);
+
+	VkImageViewCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.image = m_depthImage;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.format = depthFormat;
+	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.levelCount = 1;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+	createInfo.subresourceRange.layerCount = 1;
+
+	if (vkCreateImageView(m_device, &createInfo, nullptr, &m_depthImageView) != VK_SUCCESS)
+	{
+		std::runtime_error("Failed to create image view");
+	}
+}
+
 void Swapchain::CreateFrameBuffers()
 {
 	const auto& imageViews = GetImageViews();
@@ -138,15 +199,15 @@ void Swapchain::CreateFrameBuffers()
 
 	for (size_t i = 0; i < imageViews.size(); i++)
 	{
-		VkImageView attachments[]{ imageViews[i] };
+		std::array<VkImageView , 2> attachments = { imageViews[i], m_depthImageView };
 
 		const auto& extent = GetExtent();
 
 		VkFramebufferCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		createInfo.renderPass = m_mainRenderPass;
-		createInfo.attachmentCount = 1;
-		createInfo.pAttachments = attachments;
+		createInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		createInfo.pAttachments = attachments.data();
 		createInfo.width = extent.width;
 		createInfo.height = extent.height;
 		createInfo.layers = 1;
@@ -170,19 +231,35 @@ void Swapchain::CreateRenderPass()
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+	VkAttachmentDescription depthAttachment{};
+	depthAttachment.format = FindSupportedFormat(m_physicalDevice, VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 	VkAttachmentReference colorAttachmentRef{};
 	colorAttachmentRef.attachment = 0;
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference depthAttachmentRef{};
+	depthAttachmentRef.attachment = 1;
+	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	VkSubpassDescription subpass{};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef;
+	subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
+	std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	renderPassInfo.pAttachments = attachments.data();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 
@@ -194,6 +271,10 @@ void Swapchain::CreateRenderPass()
 
 void Swapchain::CleanUp()
 {
+	vkDestroyImageView(m_device, m_depthImageView, nullptr);
+	vkDestroyImage(m_device, m_depthImage, nullptr);
+	vkFreeMemory(m_device, m_depthImageMemory, nullptr);
+
 	for (const auto& frameBuffer : m_framebuffers)
 	{
 		vkDestroyFramebuffer(m_device, frameBuffer, nullptr);

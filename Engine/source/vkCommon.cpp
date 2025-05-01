@@ -77,3 +77,36 @@ QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VkSur
 
 	return indices;
 }
+
+VkFormat FindSupportedFormat(VkPhysicalDevice device, VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features)
+{
+	VkFormatProperties props;
+	vkGetPhysicalDeviceFormatProperties(device, format, &props);
+
+	if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+	{
+		return format;
+	}
+	else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+	{
+		return format;
+	}
+
+	throw std::runtime_error("Specified format is not supported");
+}
+
+uint32_t FindMemoryType(VkPhysicalDevice device, uint32_t typeFilter, const VkMemoryPropertyFlags& properties)
+{
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
+
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+	{
+		if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+		{
+			return i;
+		}
+	}
+
+	throw std::runtime_error("Failed to find suitable meory type");
+}

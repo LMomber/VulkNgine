@@ -73,3 +73,7 @@ SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device, c
 
 QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VkSurfaceKHR& surface);
 
+VkFormat FindSupportedFormat(VkPhysicalDevice device, VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features);
+
+uint32_t FindMemoryType(VkPhysicalDevice device, uint32_t typeFilter, const VkMemoryPropertyFlags& properties);
+

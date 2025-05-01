@@ -25,8 +25,6 @@ public:
 	VkExtent2D GetExtent() const;
 	VkQueue GetQueue(QueueType type) const;
 
-	uint32_t FindMemoryType(uint32_t typeFilter, const VkMemoryPropertyFlags& properties);
-
 private:
 	/*std::unique_ptr<GLFWwindow> m_pWindow;*/
 	std::shared_ptr<Swapchain> m_pSwapchain = nullptr;

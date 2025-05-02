@@ -1,9 +1,11 @@
 #include "vkDevice.h"
 
+#include "vkPhysicalDevice.h"
+
 //#include "vkSwapchain.h"
 
 #include <iostream>
-#include <map>
+//#include <map>
 #include <set>
 #include <algorithm>
 #include <fstream>
@@ -12,15 +14,6 @@
 const std::vector<const char*> validationLayers = 
 {
 	"VK_LAYER_KHRONOS_validation"
-};
-
-const std::vector<const char*> deviceExtensions = 
-{
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-	VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME,
-	VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
-	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-	VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
 };
 
 #ifdef NDEBUG
@@ -35,9 +28,9 @@ void Device::Initialize()
 	CreateInstance();
 	InitDebugMessenger();
 	m_pSurface = std::make_unique<Surface>(m_instance, m_pVkWindow->GetWindow());
-	PickPhysicalDevice();
+	m_pPhysicalDevice = std::make_unique<PhysicalDevice>(m_instance, m_pSurface->GetSurface());
 	CreateLogicalDevice();
-	m_pSwapchain = std::make_shared<Swapchain>(m_device, m_physicalDevice, m_pSurface->GetSurface(), m_pVkWindow);
+	m_pSwapchain = std::make_shared<Swapchain>(m_device, m_pSurface->GetSurface(), m_pVkWindow, m_pPhysicalDevice);
 }
 
 void Device::ShutDown()
@@ -118,82 +111,10 @@ void Device::CreateInstance()
 	}
 }
 
-void Device::PickPhysicalDevice()
-{
-	uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
-
-	if (deviceCount == 0) {
-		throw std::runtime_error("failed to find GPUs with Vulkan support!");
-	}
-
-	std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-	vkEnumeratePhysicalDevices(m_instance, &deviceCount, physicalDevices.data());
-
-	std::multimap<int, VkPhysicalDevice> devices;
-	for (const auto& device : physicalDevices)
-	{
-		int score = RatePhysicalDevice(device);
-		devices.insert(std::pair<int, VkPhysicalDevice>(score, device));
-	}
-
-	if (devices.rbegin()->first > 0)
-	{
-		m_physicalDevice = devices.rbegin()->second;
-	}
-	else
-	{
-		throw std::runtime_error("No devices are suitable for this application");
-	}
-}
-
-int Device::RatePhysicalDevice(const VkPhysicalDevice& device) const
-{
-	if (!IsDeviceSuitable(device)) return 0;
-
-	VkPhysicalDeviceProperties deviceProperties{};
-	vkGetPhysicalDeviceProperties(device, &deviceProperties);
-
-	unsigned int score = 0;
-	if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
-	{
-		score += 1000;
-	}
-
-	score += deviceProperties.limits.maxImageDimension2D;
-
-	return score;
-}
-
-bool Device::IsDeviceSuitable(const VkPhysicalDevice& device) const
-{
-	QueueFamilyIndices indices = FindQueueFamilies(device, GetSurface());
-
-	bool extensionsSupported = CheckDeviceExtensionSupport(device);
-
-	bool swapChainAdequate = false;
-	if (extensionsSupported)
-	{
-		SwapChainSupportDetails swapChainSupport = QuerrySwapChainSupport(device, GetSurface());
-		swapChainAdequate = !swapChainSupport.m_formats.empty() && !swapChainSupport.m_presentModes.empty();
-	}
-
-	VkPhysicalDeviceFeatures features;
-	vkGetPhysicalDeviceFeatures(device, &features);
-
-	return indices.IsComplete() && extensionsSupported && swapChainAdequate && features.samplerAnisotropy;
-}
-
 GLFWwindow* Device::GetWindow() const
 {
 	ASSERT_GLFW_WINDOW_PTR(m_pVkWindow->GetWindow());
 	return m_pVkWindow->GetWindow();
-}
-
-VkPhysicalDevice Device::GetPhysicalDevice() const
-{
-	ASSERT_VK_PHYSICAL_DEVICE(m_physicalDevice);
-	return m_physicalDevice;
 }
 
 VkDevice Device::GetVkDevice() const
@@ -208,16 +129,22 @@ VkInstance Device::GetInstance() const
 	return m_instance;
 }
 
+VkSurfaceKHR Device::GetSurface() const
+{
+	ASSERT_VK_SURFACE_PTR(m_pSurface);
+	return m_pSurface->GetSurface();
+}
+
 std::shared_ptr<Window> Device::GetVkWindow() const
 {
 	ASSERT_VK_WINDOW_PTR(m_pVkWindow);
 	return m_pVkWindow;
 }
 
-VkSurfaceKHR Device::GetSurface() const
+std::shared_ptr<PhysicalDevice> Device::GetDevice() const
 {
-	ASSERT_VK_SURFACE_PTR(m_pSurface);
-	return m_pSurface->GetSurface();
+	assert(m_pPhysicalDevice && "Physical device is either uninitialized or deleted");
+	return m_pPhysicalDevice;
 }
 
 std::shared_ptr<Swapchain> Device::GetSwapchain() const
@@ -253,9 +180,16 @@ VkQueue Device::GetQueue(QueueType type) const
 	throw std::runtime_error("Undefined queue type specified");
 }
 
+VkDeviceMemory Device::AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const
+{
+	VkDeviceMemory memory{};
+	vkAllocateMemory(m_device, &allocInfo, nullptr, &memory);
+	return memory;
+}
+
 void Device::CreateLogicalDevice()
 {
-	QueueFamilyIndices indices = FindQueueFamilies(m_physicalDevice, GetSurface());
+	QueueFamilyIndices indices = m_pPhysicalDevice->FindQueueFamilies(m_pPhysicalDevice->GetDevice(), GetSurface());
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.m_graphicsFamily.value(), indices.m_presentFamily.value(), indices.m_transferFamily.value()};
@@ -315,7 +249,7 @@ void Device::CreateLogicalDevice()
 		createInfo.enabledLayerCount = 0;
 	}
 
-	if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS)
+	if (vkCreateDevice(m_pPhysicalDevice->GetDevice(), &createInfo, nullptr, &m_device) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create logical device");
 	}
@@ -410,23 +344,6 @@ bool Device::CheckValidationLayerSupport()
 	}
 
 	return true;
-}
-
-bool Device::CheckDeviceExtensionSupport(const VkPhysicalDevice& device) const
-{
-	uint32_t extensionCount;
-	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-
-	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-	for (const auto& extension : availableExtensions) {
-		requiredExtensions.erase(extension.extensionName);
-	}
-
-	return requiredExtensions.empty();
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Device::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)

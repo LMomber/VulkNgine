@@ -3,10 +3,11 @@
 #include "vkCommon.h"
 
 class Window;
+class PhysicalDevice;
 class Swapchain
 {
 public:
-	Swapchain(const VkDevice& device, const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, std::shared_ptr<Window> window);
+	Swapchain(const VkDevice& device, const VkSurfaceKHR& surface, std::shared_ptr<Window> window, std::shared_ptr<PhysicalDevice> physicalDevice);
 	~Swapchain();
 
 	void RecreateSwapchain();
@@ -36,13 +37,13 @@ private:
 	VkSwapchainKHR m_swapChain;
 	VkSwapchainKHR m_oldSwapChain = VK_NULL_HANDLE;
 	VkDevice m_device;
-	VkPhysicalDevice m_physicalDevice;
 	VkSurfaceKHR m_surface;
 	VkFormat m_imageFormat;
 	VkExtent2D m_extent;
 	VkRenderPass m_mainRenderPass{};
 
 	std::shared_ptr<Window> m_pVkWindow;
+	std::shared_ptr<PhysicalDevice> m_pPhysicalDevice;
 
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_imageViews;

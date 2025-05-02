@@ -1,12 +1,13 @@
 #include "vkSwapchain.h"
 
 #include "vkWindow.h"
+#include "vkPhysicalDevice.h"
 
 #include <algorithm>
 #include <array>
 
-Swapchain::Swapchain(const VkDevice& device, const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, std::shared_ptr<Window> window) :
-	m_device(device), m_physicalDevice(physicalDevice), m_surface(surface), m_pVkWindow(window)
+Swapchain::Swapchain(const VkDevice& device, const VkSurfaceKHR& surface, std::shared_ptr<Window> window, std::shared_ptr<PhysicalDevice> physicalDevice) :
+	m_device(device), m_surface(surface), m_pVkWindow(window), m_pPhysicalDevice(physicalDevice)
 {
 	CreateSwapchain();
 	CreateImageViews();
@@ -25,7 +26,7 @@ Swapchain::~Swapchain()
 
 void Swapchain::CreateSwapchain()
 {
-	SwapChainSupportDetails swapChainSupport = QuerrySwapChainSupport(m_physicalDevice, m_surface);
+	SwapChainSupportDetails swapChainSupport = m_pPhysicalDevice->QuerrySwapChainSupport(m_pPhysicalDevice->GetDevice(), m_surface);
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(swapChainSupport.m_formats);
 	VkPresentModeKHR presentMode = ChoosePresentMode(swapChainSupport.m_presentModes);
@@ -50,7 +51,7 @@ void Swapchain::CreateSwapchain()
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	QueueFamilyIndices indices = FindQueueFamilies(m_physicalDevice, m_surface);
+	QueueFamilyIndices indices = m_pPhysicalDevice->FindQueueFamilies(m_pPhysicalDevice->GetDevice(), m_surface);
 	uint32_t queueFamilyIndices[] = { indices.m_graphicsFamily.value(), indices.m_presentFamily.value() };
 
 	if (indices.m_graphicsFamily != indices.m_presentFamily) {
@@ -137,7 +138,7 @@ void Swapchain::CreateImageViews()
 // TODO: Put image creations & image view creation in functions
 void Swapchain::CreateDepthResources()
 {
-	VkFormat depthFormat = FindSupportedFormat(m_physicalDevice, VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	VkFormat depthFormat = m_pPhysicalDevice->FindSupportedFormat( VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -166,7 +167,7 @@ void Swapchain::CreateDepthResources()
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memoryRequirements.size;
-	allocInfo.memoryTypeIndex = FindMemoryType(m_physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	allocInfo.memoryTypeIndex = m_pPhysicalDevice->FindMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	if (vkAllocateMemory(m_device, &allocInfo, nullptr, &m_depthImageMemory) != VK_SUCCESS)
 	{
@@ -232,7 +233,7 @@ void Swapchain::CreateRenderPass()
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentDescription depthAttachment{};
-	depthAttachment.format = FindSupportedFormat(m_physicalDevice, VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	depthAttachment.format = m_pPhysicalDevice->FindSupportedFormat(VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

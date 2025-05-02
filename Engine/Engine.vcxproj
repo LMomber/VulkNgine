@@ -148,7 +148,9 @@
     <ClCompile Include="source\input.cpp" />
     <ClCompile Include="source\inputHandler.cpp" />
     <ClCompile Include="source\transform.cpp" />
-    <ClCompile Include="source\vkCommon.cpp" />
+    <ClCompile Include="source\vkMemory.cpp" />
+    <ClCompile Include="source\vkChunkAllocator.cpp" />
+    <ClCompile Include="source\vkPhysicalDevice.cpp" />
     <ClCompile Include="source\vkRender.cpp" />
     <ClCompile Include="source\vkSurface.cpp" />
     <ClCompile Include="source\engine.cpp" />
@@ -163,8 +165,11 @@
     <ClInclude Include="include\renderComponents.h" />
     <ClInclude Include="include\timer.h" />
     <ClInclude Include="include\transform.h" />
+    <ClInclude Include="include\vkMemory.h" />
+    <ClInclude Include="include\vkChunkAllocator.h" />
     <ClInclude Include="include\vkCommon.h" />
     <ClInclude Include="include\vkDevice.h" />
+    <ClInclude Include="include\vkPhysicalDevice.h" />
     <ClInclude Include="include\vkRender.h" />
     <ClInclude Include="include\vkSurface.h" />
     <ClInclude Include="include\vkSwapchain.h" />

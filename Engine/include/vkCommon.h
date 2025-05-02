@@ -45,6 +45,15 @@ const uint32_t HEIGHT = 600;
 const std::string MODEL_PATH = "../Engine/models/viking_room.obj";
 const std::string TEXTURE_PATH = "../Engine/textures/viking_room.png";
 
+const std::vector<const char*> deviceExtensions =
+{
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+	VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME,
+	VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
+	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+	VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
+};
+
 enum QueueType
 {
 	GRAPHICS,
@@ -71,12 +80,3 @@ struct SwapChainSupportDetails
 	std::vector<VkSurfaceFormatKHR> m_formats;
 	std::vector<VkPresentModeKHR> m_presentModes;
 };
-
-SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device, const VkSurfaceKHR& surface);
-
-QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VkSurfaceKHR& surface);
-
-VkFormat FindSupportedFormat(VkPhysicalDevice device, VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features);
-
-uint32_t FindMemoryType(VkPhysicalDevice device, uint32_t typeFilter, const VkMemoryPropertyFlags& properties);
-

@@ -20,8 +20,10 @@
     <ClCompile Include="source\inputHandler.cpp" />
     <ClCompile Include="source\transform.cpp" />
     <ClCompile Include="source\input.cpp" />
-    <ClCompile Include="source\vkCommon.cpp" />
     <ClCompile Include="source\timer.cpp" />
+    <ClCompile Include="source\vkMemory.cpp" />
+    <ClCompile Include="source\vkChunkAllocator.cpp" />
+    <ClCompile Include="source\vkPhysicalDevice.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\engine.h">
@@ -48,6 +50,9 @@
     <ClInclude Include="include\input.h" />
     <ClInclude Include="include\renderComponents.h" />
     <ClInclude Include="include\timer.h" />
+    <ClInclude Include="include\vkMemory.h" />
+    <ClInclude Include="include\vkChunkAllocator.h" />
+    <ClInclude Include="include\vkPhysicalDevice.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

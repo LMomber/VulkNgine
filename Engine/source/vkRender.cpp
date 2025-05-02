@@ -4,6 +4,8 @@
 #include "transform.h"
 #include "renderComponents.h"
 
+#include "vkPhysicalDevice.h"
+
 #include "glm/glm.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -441,7 +443,7 @@ void Renderer::CreateGraphicsPipeline()
 
 void Renderer::CreateCommandPools()
 {
-	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
+	QueueFamilyIndices queueFamilyIndices = m_pDevice->GetDevice()->FindQueueFamilies(m_pDevice->GetDevice()->GetDevice(), m_pDevice->GetSurface());
 
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -503,8 +505,7 @@ void Renderer::CreateTextureImageView()
 
 void Renderer::CreateTextureSampler()
 {
-	VkPhysicalDeviceProperties properties{};
-	vkGetPhysicalDeviceProperties(m_pDevice->GetPhysicalDevice(), &properties);
+	auto properties = m_pDevice->GetDevice()->GetProperties();
 
 	VkSamplerCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -755,7 +756,7 @@ void Renderer::LoadModel()
 
 void Renderer::ChooseSharingMode()
 {
-	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
+	QueueFamilyIndices queueFamilyIndices = m_pDevice->GetDevice()->FindQueueFamilies(m_pDevice->GetDevice()->GetDevice(), m_pDevice->GetSurface());
 
 	std::set<uint32_t> queueSet = { queueFamilyIndices.m_graphicsFamily.value(), queueFamilyIndices.m_transferFamily.value() };
 	std::vector<uint32_t> uniqueQueueFamilyIndices;
@@ -800,7 +801,7 @@ void Renderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkI
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memoryRequirements.size;
-	allocInfo.memoryTypeIndex = FindMemoryType(m_pDevice->GetPhysicalDevice(), memoryRequirements.memoryTypeBits, properties);
+	allocInfo.memoryTypeIndex = m_pDevice->GetDevice()->FindMemoryType(memoryRequirements.memoryTypeBits, properties);
 
 	if (vkAllocateMemory(m_pDevice->GetVkDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
 	{
@@ -857,7 +858,7 @@ void Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemor
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = FindMemoryType(m_pDevice->GetPhysicalDevice(), memRequirements.memoryTypeBits, properties);
+	allocInfo.memoryTypeIndex = m_pDevice->GetDevice()->FindMemoryType(memRequirements.memoryTypeBits, properties);
 
 	if (vkAllocateMemory(vkDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate buffer memory!");

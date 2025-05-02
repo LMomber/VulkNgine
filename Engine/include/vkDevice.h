@@ -5,6 +5,7 @@
 #include "vkSurface.h"
 #include "vkSwapchain.h"
 
+class PhysicalDevice;
 class Device
 {
 public:
@@ -16,24 +17,28 @@ public:
 	//SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice& device) const;
 
 	GLFWwindow* GetWindow() const;
-	VkPhysicalDevice GetPhysicalDevice() const;
 	VkDevice GetVkDevice() const;
 	VkInstance GetInstance() const;
-	std::shared_ptr<Window> GetVkWindow() const;
 	VkSurfaceKHR GetSurface() const;
-	std::shared_ptr<Swapchain> GetSwapchain() const;
 	VkExtent2D GetExtent() const;
 	VkQueue GetQueue(QueueType type) const;
+
+	std::shared_ptr<PhysicalDevice> GetDevice() const;
+	std::shared_ptr<Window> GetVkWindow() const;
+	std::shared_ptr<Swapchain> GetSwapchain() const;
+
+	VkDeviceMemory AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const;
 
 private:
 	/*std::unique_ptr<GLFWwindow> m_pWindow;*/
 	std::shared_ptr<Swapchain> m_pSwapchain = nullptr;
 	std::shared_ptr<Window> m_pVkWindow = nullptr;
+	std::shared_ptr<PhysicalDevice> m_pPhysicalDevice = nullptr;
 
 	std::unique_ptr<Surface> m_pSurface = nullptr;
 
 	VkInstance m_instance{};
-	VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+	//VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
 	VkDevice m_device{};
 
 	VkQueue m_graphicsQueue{};
@@ -49,16 +54,11 @@ private:
 	void CreateInstance();
 	void CreateLogicalDevice();
 
-	void PickPhysicalDevice();
-	int RatePhysicalDevice(const VkPhysicalDevice& device) const;
-	bool IsDeviceSuitable(const VkPhysicalDevice& device) const;
-
 	std::vector<const char*> GetRequiredExtensions();
 
 	void ValidateExtensionAvailability(std::vector<const char*>& inputExtensions);
 
 	bool CheckValidationLayerSupport();
-	bool CheckDeviceExtensionSupport(const VkPhysicalDevice& device) const;
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

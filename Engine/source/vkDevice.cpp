@@ -141,7 +141,7 @@ std::shared_ptr<Window> Device::GetVkWindow() const
 	return m_pVkWindow;
 }
 
-std::shared_ptr<PhysicalDevice> Device::GetDevice() const
+std::shared_ptr<PhysicalDevice> Device::GetPhysicalDevice() const
 {
 	assert(m_pPhysicalDevice && "Physical device is either uninitialized or deleted");
 	return m_pPhysicalDevice;
@@ -185,6 +185,17 @@ VkDeviceMemory Device::AllocateMemory(const VkMemoryAllocateInfo& allocInfo) con
 	VkDeviceMemory memory{};
 	vkAllocateMemory(m_device, &allocInfo, nullptr, &memory);
 	return memory;
+}
+
+void* Device::MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags) const
+{
+	void* data = nullptr;
+	if (vkMapMemory(m_device, memory, offset, size, flags, &data) != VK_SUCCESS)
+	{
+		std::runtime_error("Failed to map memory");
+	}
+
+	return data;
 }
 
 void Device::CreateLogicalDevice()

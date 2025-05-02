@@ -23,11 +23,12 @@ public:
 	VkExtent2D GetExtent() const;
 	VkQueue GetQueue(QueueType type) const;
 
-	std::shared_ptr<PhysicalDevice> GetDevice() const;
+	std::shared_ptr<PhysicalDevice> GetPhysicalDevice() const;
 	std::shared_ptr<Window> GetVkWindow() const;
 	std::shared_ptr<Swapchain> GetSwapchain() const;
 
 	VkDeviceMemory AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const;
+	void* MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags = 0) const;
 
 private:
 	/*std::unique_ptr<GLFWwindow> m_pWindow;*/

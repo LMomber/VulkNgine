@@ -25,6 +25,15 @@ VkPhysicalDeviceProperties PhysicalDevice::GetProperties() const
 	return properties;
 }
 
+VkPhysicalDeviceMemoryProperties PhysicalDevice::GetMemoryProperties() const
+{
+	ASSERT_VK_PHYSICAL_DEVICE(m_physicalDevice);
+
+	VkPhysicalDeviceMemoryProperties properties{};
+	vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &properties);
+	return properties;
+}
+
 SwapChainSupportDetails PhysicalDevice::QuerrySwapChainSupport(const VkPhysicalDevice device, const VkSurfaceKHR surface) const
 {
 	assert(device != VK_NULL_HANDLE && "Specified physical device is null");

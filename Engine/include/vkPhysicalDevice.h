@@ -9,6 +9,7 @@ public:
 
 	VkPhysicalDevice GetDevice() const;
 	VkPhysicalDeviceProperties GetProperties() const;
+	VkPhysicalDeviceMemoryProperties GetMemoryProperties() const;
 
 	SwapChainSupportDetails QuerrySwapChainSupport(const VkPhysicalDevice device, const VkSurfaceKHR surface) const;
 	QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice device, const VkSurfaceKHR surface) const;

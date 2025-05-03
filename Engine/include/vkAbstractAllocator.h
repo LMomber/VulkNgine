@@ -26,8 +26,3 @@ public:
 protected:
     std::shared_ptr<Device> m_device;
 };
-
-//inline AbstractAllocator::~AbstractAllocator() 
-//{
-//
-//}

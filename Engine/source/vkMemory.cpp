@@ -36,7 +36,7 @@ bool Chunk::Allocate(VkDeviceSize size, VkDeviceSize alignment, Block& block)
     for (uint32_t i = 0; i < m_blocks.size(); ++i) {
         if (m_blocks[i].free) {
             // Compute virtual size after taking care about offsetAlignment
-            uint32_t newSize = m_blocks[i].size;
+            VkDeviceSize newSize = m_blocks[i].size;
 
             if (m_blocks[i].offset % alignment != 0)
                 newSize -= alignment - m_blocks[i].offset % alignment;

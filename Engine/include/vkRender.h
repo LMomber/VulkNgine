@@ -3,8 +3,6 @@
 #include "vkCommon.h"
 #include "vkDevice.h"
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
-
 class Renderer
 {
 public:
@@ -17,14 +15,12 @@ public:
 private:
 	void CreateDescriptorSetLayout();
 	void CreateGraphicsPipeline();
-	void CreateCommandPools();
 	void CreateTextureImage();
 	void CreateTextureImageView();
 	void CreateTextureSampler();
 	void CreateVertexBuffer();
 	void CreateIndexBuffer();
 	void CreateUniformBuffers();
-	void CreateCommandBuffers();
 	void CreateSyncObjects();
 	void CreateDescriptorPool();
 	void CreateDescriptorSets();
@@ -56,8 +52,6 @@ private:
 	VkDescriptorSetLayout m_descriptorSetLayout;
 	VkPipelineLayout m_pipelineLayout{};
 	VkPipeline m_graphicsPipeline{};
-	VkCommandPool m_commandPool{};
-	VkCommandPool m_transferCommandPool{};
 
 	VkBuffer m_vertexBuffer;
 	VkDeviceMemory m_vertexBufferMemory;
@@ -76,10 +70,11 @@ private:
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;
 
-	std::vector<VkCommandBuffer> m_commandBuffers{};
 	std::vector<VkSemaphore> m_imageAvailableSemaphores{};
 	std::vector<VkSemaphore> m_renderFinishedSemaphores{};
 	std::vector<VkFence> m_inFlightFences{};
+
+	std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> m_commandBuffers{};
 
 	uint32_t m_currentFrame = 0;
 

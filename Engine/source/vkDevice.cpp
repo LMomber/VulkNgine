@@ -1,11 +1,9 @@
 #include "vkDevice.h"
 
 #include "vkPhysicalDevice.h"
-
-//#include "vkSwapchain.h"
+#include "vkQueue.h"
 
 #include <iostream>
-//#include <map>
 #include <set>
 #include <algorithm>
 #include <fstream>
@@ -29,12 +27,17 @@ void Device::Initialize()
 	InitDebugMessenger();
 	m_pSurface = std::make_unique<Surface>(m_instance, m_pVkWindow->GetWindow());
 	m_pPhysicalDevice = std::make_unique<PhysicalDevice>(m_instance, m_pSurface->GetSurface());
-	CreateLogicalDevice();
+
+	QueueFamilyIndices indices = m_pPhysicalDevice->FindQueueFamilies(m_pPhysicalDevice->GetDevice(), GetSurface());
+
+	CreateLogicalDevice(indices);
 	m_pSwapchain = std::make_shared<Swapchain>(m_device, m_pSurface->GetSurface(), m_pVkWindow, m_pPhysicalDevice);
+	m_pQueue = std::make_shared<Queue>(m_device, indices);
 }
 
 void Device::ShutDown()
 {
+	m_pQueue.reset();
 	m_pSwapchain.reset();
 
 	vkDestroyDevice(m_device, nullptr);
@@ -131,13 +134,13 @@ VkInstance Device::GetInstance() const
 
 VkSurfaceKHR Device::GetSurface() const
 {
-	ASSERT_VK_SURFACE_PTR(m_pSurface);
+	ASSERT_VK_SURFACE_CLASS(m_pSurface);
 	return m_pSurface->GetSurface();
 }
 
 std::shared_ptr<Window> Device::GetVkWindow() const
 {
-	ASSERT_VK_WINDOW_PTR(m_pVkWindow);
+	ASSERT_VK_WINDOW_CLASS(m_pVkWindow);
 	return m_pVkWindow;
 }
 
@@ -149,35 +152,20 @@ std::shared_ptr<PhysicalDevice> Device::GetPhysicalDevice() const
 
 std::shared_ptr<Swapchain> Device::GetSwapchain() const
 {
-	ASSERT_VK_SWAPCHAIN_PTR(m_pSwapchain);
+	ASSERT_VK_SWAPCHAIN_CLASS(m_pSwapchain);
 	return m_pSwapchain;
+}
+
+std::shared_ptr<Queue> Device::GetQueue() const
+{
+	ASSERT_VK_QUEUE_CLASS(m_pQueue);
+	return m_pQueue;
 }
 
 VkExtent2D Device::GetExtent() const
 {
-	ASSERT_VK_SWAPCHAIN_PTR(m_pSwapchain);
+	ASSERT_VK_SWAPCHAIN_CLASS(m_pSwapchain);
 	return m_pSwapchain->GetExtent();
-}
-
-VkQueue Device::GetQueue(QueueType type) const
-{
-	switch (type)
-	{
-	case GRAPHICS:
-		return m_graphicsQueue;
-		break;
-	case PRESENT:
-		return m_presentQueue;
-		break;
-	case TRANSFER:
-		return m_transferQueue;
-		break;
-	case COMPUTE:
-		throw std::runtime_error("No functionality for queue type 'COMPUTE' has been implemented");
-		break;
-	}
-
-	throw std::runtime_error("Undefined queue type specified");
 }
 
 VkDeviceMemory Device::AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const
@@ -198,9 +186,8 @@ void* Device::MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize
 	return data;
 }
 
-void Device::CreateLogicalDevice()
+void Device::CreateLogicalDevice(QueueFamilyIndices indices)
 {
-	QueueFamilyIndices indices = m_pPhysicalDevice->FindQueueFamilies(m_pPhysicalDevice->GetDevice(), GetSurface());
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.m_graphicsFamily.value(), indices.m_presentFamily.value(), indices.m_transferFamily.value()};
@@ -264,10 +251,6 @@ void Device::CreateLogicalDevice()
 	{
 		throw std::runtime_error("Failed to create logical device");
 	}
-
-	vkGetDeviceQueue(m_device, indices.m_graphicsFamily.value(), 0, &m_graphicsQueue);
-	vkGetDeviceQueue(m_device, indices.m_presentFamily.value(), 0, &m_presentQueue);
-	vkGetDeviceQueue(m_device, indices.m_transferFamily.value(), 0, &m_transferQueue);
 }
 
 std::vector<const char*> Device::GetRequiredExtensions()

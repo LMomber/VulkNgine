@@ -5,6 +5,10 @@
 #include "renderComponents.h"
 
 #include "vkPhysicalDevice.h"
+#include "vkQueue.h"
+
+// Delete whenever CommandBuffer class is in place
+#include "vkCommandPool.h"
 
 #include "glm/glm.hpp"
 
@@ -109,9 +113,13 @@ static std::vector<char> ReadFile(const std::string& filename) {
 Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		m_commandBuffers[i] = device->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, i);
+	}
+
 	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
-	CreateCommandPools();
 	ChooseSharingMode();
 	CreateTextureImage();
 	CreateTextureImageView();
@@ -122,7 +130,6 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
-	CreateCommandBuffers();
 	CreateSyncObjects();
 }
 
@@ -160,9 +167,6 @@ Renderer::~Renderer()
 		vkDestroyFence(vkDevice, m_inFlightFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(vkDevice, m_commandPool, nullptr);
-	vkDestroyCommandPool(vkDevice, m_transferCommandPool, nullptr);
-
 	vkDestroyPipeline(vkDevice, m_graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(vkDevice, m_pipelineLayout, nullptr);
 }
@@ -178,6 +182,7 @@ void Renderer::Render()
 	const auto swapchain = m_pDevice->GetSwapchain()->GetVkSwapChain();
 
 	vkWaitForFences(vkDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+	vkResetFences(vkDevice, 1, &m_inFlightFences[m_currentFrame]);
 
 	uint32_t imageIndex;
 	VkResult result = vkAcquireNextImageKHR(vkDevice, swapchain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -192,10 +197,7 @@ void Renderer::Render()
 		throw std::runtime_error("Failed to acquire swapchain image");
 	}
 
-	vkResetFences(vkDevice, 1, &m_inFlightFences[m_currentFrame]);
-
-	vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
-
+	m_pDevice->GetQueue()->ResetCommandBuffers(m_currentFrame);
 	RecordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
 
 	VkSubmitInfo submitInfo{};
@@ -213,7 +215,7 @@ void Renderer::Render()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	if (vkQueueSubmit(m_pDevice->GetQueue(QueueType::GRAPHICS), 1, &submitInfo, m_inFlightFences[m_currentFrame]) != VK_SUCCESS)
+	if (vkQueueSubmit(m_pDevice->GetQueue()->GetQueue(QueueType::GRAPHICS), 1, &submitInfo, m_inFlightFences[m_currentFrame]) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to submit draw command buffer");
 	}
@@ -237,7 +239,7 @@ void Renderer::Render()
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr; // Optional
 
-	result = vkQueuePresentKHR(m_pDevice->GetQueue(QueueType::PRESENT), &presentInfo);
+	result = vkQueuePresentKHR(m_pDevice->GetQueue()->GetQueue(QueueType::PRESENT), &presentInfo);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
@@ -441,29 +443,6 @@ void Renderer::CreateGraphicsPipeline()
 	vkDestroyShaderModule(m_pDevice->GetVkDevice(), fragShaderModule, nullptr);
 }
 
-void Renderer::CreateCommandPools()
-{
-	QueueFamilyIndices queueFamilyIndices = m_pDevice->GetPhysicalDevice()->FindQueueFamilies(m_pDevice->GetPhysicalDevice()->GetDevice(), m_pDevice->GetSurface());
-
-	VkCommandPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	poolInfo.queueFamilyIndex = queueFamilyIndices.m_graphicsFamily.value();
-
-	if (vkCreateCommandPool(m_pDevice->GetVkDevice(), &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create command pool");
-	}
-#
-	poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-	poolInfo.queueFamilyIndex = queueFamilyIndices.m_transferFamily.value();
-
-	if (vkCreateCommandPool(m_pDevice->GetVkDevice(), &poolInfo, nullptr, &m_transferCommandPool) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create command pool");
-	}
-}
-
 void Renderer::CreateTextureImage()
 {
 	int texWidth, texHeight, texChannels;
@@ -598,22 +577,6 @@ void Renderer::CreateUniformBuffers()
 		CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
 
 		vkMapMemory(m_pDevice->GetVkDevice(), m_uniformBuffersMemory[i], 0, bufferSize, 0, &m_mappedUniformBuffers[i]);
-	}
-}
-
-void Renderer::CreateCommandBuffers()
-{
-	m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = m_commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
-
-	if (vkAllocateCommandBuffers(m_pDevice->GetVkDevice(), &allocInfo, m_commandBuffers.data()) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to allocate command buffers");
 	}
 }
 
@@ -1023,16 +986,13 @@ void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 	}
 }
 
+// Port to command buffer class
 VkCommandBuffer Renderer::BeginSingleTimeCommands()
 {
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = m_commandPool;
-	allocInfo.commandBufferCount = 1;
+	const QueueType type = QueueType::GRAPHICS;
+	const auto queue = m_pDevice->GetQueue();
 
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(m_pDevice->GetVkDevice(), &allocInfo, &commandBuffer);
+	auto commandBuffer = queue->GetOrCreateCommandBuffer(type, m_currentFrame);
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1043,19 +1003,22 @@ VkCommandBuffer Renderer::BeginSingleTimeCommands()
 	return commandBuffer;
 }
 
+// Port to command buffer class
 void Renderer::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
 {
 	vkEndCommandBuffer(commandBuffer);
+
+	const QueueType type = QueueType::GRAPHICS;
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	vkQueueSubmit(m_pDevice->GetQueue(QueueType::GRAPHICS), 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(m_pDevice->GetQueue(QueueType::GRAPHICS));
+	auto queue = m_pDevice->GetQueue();
 
-	vkFreeCommandBuffers(m_pDevice->GetVkDevice(), m_commandPool, 1, &commandBuffer);
+	vkQueueSubmit(queue->GetQueue(type), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(queue->GetQueue(type));
 }
 
 void Renderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
@@ -1132,5 +1095,5 @@ void Renderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayo
 
 bool Renderer::HasStencilComponent(VkFormat format)
 {
-	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT || VK_FORMAT_D16_UNORM_S8_UINT || VK_FORMAT_D24_UNORM_S8_UINT;
+	return (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT || VK_FORMAT_D16_UNORM_S8_UINT || VK_FORMAT_D24_UNORM_S8_UINT);
 }

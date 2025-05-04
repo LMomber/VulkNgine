@@ -27,6 +27,7 @@
     <ClCompile Include="source\vkDeviceAllocator.cpp" />
     <ClCompile Include="source\vkQueue.cpp" />
     <ClCompile Include="source\vkCommandPool.cpp" />
+    <ClCompile Include="source\vkCommandBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\engine.h">
@@ -60,6 +61,7 @@
     <ClInclude Include="include\vkDeviceAllocator.h" />
     <ClInclude Include="include\vkQueue.h" />
     <ClInclude Include="include\vkCommandPool.h" />
+    <ClInclude Include="include\vkCommandBuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

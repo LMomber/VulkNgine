@@ -11,16 +11,13 @@ Swapchain::Swapchain(const VkDevice& device, const VkSurfaceKHR& surface, std::s
 {
 	CreateSwapchain();
 	CreateImageViews();
-	CreateRenderPass();
 	CreateDepthResources();
-	CreateFrameBuffers();
 }
 
 Swapchain::~Swapchain()
 {
 	CleanUp();
 
-	vkDestroyRenderPass(m_device, m_mainRenderPass, nullptr);
 	vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
 }
 
@@ -104,7 +101,6 @@ void Swapchain::RecreateSwapchain()
 	CreateSwapchain();
 	CreateImageViews();
 	CreateDepthResources();
-	CreateFrameBuffers();
 }
 
 void Swapchain::CreateImageViews()
@@ -193,93 +189,11 @@ void Swapchain::CreateDepthResources()
 	}
 }
 
-void Swapchain::CreateFrameBuffers()
-{
-	const auto& imageViews = GetImageViews();
-	m_framebuffers.resize(imageViews.size());
-
-	for (size_t i = 0; i < imageViews.size(); i++)
-	{
-		std::array<VkImageView , 2> attachments = { imageViews[i], m_depthImageView };
-
-		const auto& extent = GetExtent();
-
-		VkFramebufferCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		createInfo.renderPass = m_mainRenderPass;
-		createInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		createInfo.pAttachments = attachments.data();
-		createInfo.width = extent.width;
-		createInfo.height = extent.height;
-		createInfo.layers = 1;
-
-		if (vkCreateFramebuffer(m_device, &createInfo, nullptr, &m_framebuffers[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create framebuffer");
-		}
-	}
-}
-
-void Swapchain::CreateRenderPass()
-{
-	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format = m_imageFormat;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-	VkAttachmentDescription depthAttachment{};
-	depthAttachment.format = m_pPhysicalDevice->FindSupportedFormat(VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment = 0;
-	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference depthAttachmentRef{};
-	depthAttachmentRef.attachment = 1;
-	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDescription subpass{};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef;
-	subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-	std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
-	VkRenderPassCreateInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-	renderPassInfo.pAttachments = attachments.data();
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-
-	if (vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_mainRenderPass) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create render pass");
-	}
-}
-
 void Swapchain::CleanUp()
 {
 	vkDestroyImageView(m_device, m_depthImageView, nullptr);
 	vkDestroyImage(m_device, m_depthImage, nullptr);
 	vkFreeMemory(m_device, m_depthImageMemory, nullptr);
-
-	for (const auto& frameBuffer : m_framebuffers)
-	{
-		vkDestroyFramebuffer(m_device, frameBuffer, nullptr);
-	}
 
 	for (const auto& imageView : m_imageViews)
 	{

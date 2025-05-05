@@ -3,6 +3,16 @@
 #include "vkCommon.h"
 #include "vkDevice.h"
 
+struct FrameContext
+{
+	void Init(std::shared_ptr<Device> device);
+	void Destroy(std::shared_ptr<Device> device) const;
+
+	VkSemaphore m_imageAvailableSemaphore;
+	VkSemaphore m_renderFinishedSemaphore;
+	uint64_t m_timelineValue;
+};
+
 class Renderer
 {
 public:
@@ -12,6 +22,8 @@ public:
 	void Update();
 	void Render();
 
+	Renderer(const Renderer&) = delete;
+	Renderer& operator=(const Renderer&) = delete;
 private:
 	void CreateDescriptorSetLayout();
 	void CreateGraphicsPipeline();
@@ -48,7 +60,7 @@ private:
 	bool HasStencilComponent(VkFormat format);
 
 	std::shared_ptr<Device> m_pDevice;
-	
+
 	VkDescriptorSetLayout m_descriptorSetLayout;
 	VkPipelineLayout m_pipelineLayout{};
 	VkPipeline m_graphicsPipeline{};
@@ -70,13 +82,14 @@ private:
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;
 
-	std::vector<VkSemaphore> m_imageAvailableSemaphores{};
-	std::vector<VkSemaphore> m_renderFinishedSemaphores{};
-	std::vector<VkFence> m_inFlightFences{};
+	uint64_t m_currentTimelineValue = 0;
+	uint32_t m_currentFrame = 0;
+
+	VkSemaphore m_globalTimelineSemaphore;
+	std::array<FrameContext, MAX_FRAMES_IN_FLIGHT> m_frameContexts{};
 
 	std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> m_commandBuffers{};
 
-	uint32_t m_currentFrame = 0;
 
 	std::vector<uint32_t> m_queueSetIndices;
 	VkSharingMode m_sharingMode;

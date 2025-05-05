@@ -160,11 +160,11 @@ Renderer::~Renderer()
 	vkDestroyBuffer(vkDevice, m_vertexBuffer, nullptr);
 	vkFreeMemory(vkDevice, m_vertexBufferMemory, nullptr);
 
+	vkDestroySemaphore(vkDevice, m_globalTimelineSemaphore, nullptr);
+
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		vkDestroySemaphore(vkDevice, m_imageAvailableSemaphores[i], nullptr);
-		vkDestroySemaphore(vkDevice, m_renderFinishedSemaphores[i], nullptr);
-		vkDestroyFence(vkDevice, m_inFlightFences[i], nullptr);
+		m_frameContexts[i].Destroy(m_pDevice);
 	}
 
 	vkDestroyPipeline(vkDevice, m_graphicsPipeline, nullptr);
@@ -178,14 +178,22 @@ void Renderer::Update()
 
 void Renderer::Render()
 {
+	FrameContext frame = m_frameContexts[m_currentFrame];
+
 	const auto vkDevice = m_pDevice->GetVkDevice();
 	const auto swapchain = m_pDevice->GetSwapchain()->GetVkSwapChain();
 
-	vkWaitForFences(vkDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(vkDevice, 1, &m_inFlightFences[m_currentFrame]);
+	VkSemaphoreWaitInfo waitInfo{};
+	waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+	waitInfo.semaphoreCount = 1;
+	waitInfo.pSemaphores = &m_globalTimelineSemaphore;
+	waitInfo.pValues = &frame.m_timelineValue;
+	waitInfo.flags = 0;
+
+	vkWaitSemaphores(vkDevice, &waitInfo, UINT64_MAX);
 
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(vkDevice, swapchain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(vkDevice, swapchain, UINT64_MAX, frame.m_imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 	const auto& swapchainRef = m_pDevice->GetSwapchain();
 	const auto& image = swapchainRef->GetImages()[imageIndex];
@@ -209,35 +217,37 @@ void Renderer::Render()
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = { m_imageAvailableSemaphores[m_currentFrame] };
+	uint64_t signalValue = ++m_currentTimelineValue;
+	frame.m_timelineValue = signalValue;
+
+	VkTimelineSemaphoreSubmitInfo timelineInfo{};
+	timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+	timelineInfo.signalSemaphoreValueCount = 2;
+	timelineInfo.pSignalSemaphoreValues = &signalValue;
+
+	VkSemaphore waitSemaphores[] = { frame.m_imageAvailableSemaphore };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
+
+	VkSemaphore signalSemaphores[] = { m_globalTimelineSemaphore, frame.m_renderFinishedSemaphore };
+	submitInfo.signalSemaphoreCount = 2;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+	submitInfo.pNext = &timelineInfo;
+
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &m_commandBuffers[m_currentFrame];
 
-	VkSemaphore signalSemaphores[] = { m_renderFinishedSemaphores[m_currentFrame] };
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
-
-	if (vkQueueSubmit(m_pDevice->GetQueue()->GetQueue(QueueType::GRAPHICS), 1, &submitInfo, m_inFlightFences[m_currentFrame]) != VK_SUCCESS)
+	if (vkQueueSubmit(m_pDevice->GetQueue()->GetQueue(QueueType::GRAPHICS), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to submit draw command buffer");
 	}
 
-	VkSubpassDependency dependency{};
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	dependency.srcAccessMask = 0;
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
+	presentInfo.pWaitSemaphores = &frame.m_renderFinishedSemaphore;
 
 	VkSwapchainKHR swapChains[] = { swapchain };
 	presentInfo.swapchainCount = 1;
@@ -601,25 +611,20 @@ void Renderer::CreateUniformBuffers()
 
 void Renderer::CreateSyncObjects()
 {
-	m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+	VkSemaphoreTypeCreateInfo timelineCreateInfo{};
+	timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+	timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+	timelineCreateInfo.initialValue = 0;
 
-	VkSemaphoreCreateInfo semaphoreInfo{};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	VkSemaphoreCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	createInfo.pNext = &timelineCreateInfo;
 
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	vkCreateSemaphore(m_pDevice->GetVkDevice(), &createInfo, nullptr, &m_globalTimelineSemaphore);
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		if (vkCreateSemaphore(m_pDevice->GetVkDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(m_pDevice->GetVkDevice(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
-			vkCreateFence(m_pDevice->GetVkDevice(), &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create semaphore/fence");
-		}
+		m_frameContexts[i].Init(m_pDevice);
 	}
 }
 
@@ -1140,5 +1145,28 @@ void Renderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayo
 
 bool Renderer::HasStencilComponent(VkFormat format)
 {
-	return (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT || VK_FORMAT_D16_UNORM_S8_UINT || VK_FORMAT_D24_UNORM_S8_UINT);
+	return (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT 
+		|| format == VK_FORMAT_D16_UNORM_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT);
+}
+
+void FrameContext::Init(std::shared_ptr<Device> device)
+{
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	if (vkCreateSemaphore(device->GetVkDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphore) != VK_SUCCESS) 
+	{
+		throw std::runtime_error("Failed to create semaphores for FrameContext");
+	}
+
+	if (vkCreateSemaphore(device->GetVkDevice(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphore) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create semaphores for FrameContext");
+	}
+}
+
+void FrameContext::Destroy(std::shared_ptr<Device> device) const
+{
+	if (m_imageAvailableSemaphore) vkDestroySemaphore(device->GetVkDevice(), m_imageAvailableSemaphore, nullptr);
+	if (m_renderFinishedSemaphore) vkDestroySemaphore(device->GetVkDevice(), m_renderFinishedSemaphore, nullptr);
 }

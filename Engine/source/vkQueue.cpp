@@ -1,6 +1,7 @@
 #include "vkQueue.h"
 
 #include "vkCommandPool.h"
+#include "vkCommandBuffer.h"
 
 Queue::Queue(VkDevice device, const QueueFamilyIndices& queueFamilyIndices) :
 	m_device(device)
@@ -55,12 +56,12 @@ std::shared_ptr<CommandPool> Queue::GetCommandPool() const
 	return m_pCommandPool;
 }
 
-VkCommandBuffer Queue::GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame)
+const CommandBuffer& Queue::GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame)
 {
 	return m_pCommandPool->GetOrCreateCommandBuffer(type, currentFrame);
 }
 
-std::vector<VkCommandBuffer> Queue::GetOrCreateCommandBuffers(const QueueType type, const uint32_t count, const unsigned int currentFrame)
+std::vector<CommandBuffer> Queue::GetOrCreateCommandBuffers(const QueueType type, const uint32_t count, const unsigned int currentFrame)
 {
 	return m_pCommandPool->GetOrCreateCommandBuffers(type, count, currentFrame);
 }

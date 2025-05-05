@@ -13,6 +13,7 @@ struct FrameContext
 	uint64_t m_timelineValue;
 };
 
+class CommandBuffer;
 class Renderer
 {
 public:
@@ -51,9 +52,9 @@ private:
 
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
-	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-	VkCommandBuffer BeginSingleTimeCommands();
-	void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+	void RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex);
+	const CommandBuffer& BeginSingleTimeCommands();
+	void EndSingleTimeCommands(CommandBuffer commandBuffer);
 
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 

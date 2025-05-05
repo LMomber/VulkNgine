@@ -1,5 +1,7 @@
 #include "vkCommandPool.h"
 
+#include "vkCommandBuffer.h"
+
 #define ASSERT_CURRENT_FRAME(currentFrame) assert(currentFrame < MAX_FRAMES_IN_FLIGHT && "currentFrame has a higher value that the maximum amount of frames in flight")
 
 CommandPool::CommandPool(VkDevice device, const QueueFamilyIndices& queueFamilyIndices) : m_device(device)
@@ -40,11 +42,11 @@ CommandPool::~CommandPool()
 	}
 }
 
-VkCommandBuffer CommandPool::GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame)
+const CommandBuffer& CommandPool::GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame)
 {
 	ASSERT_CURRENT_FRAME(currentFrame);
 
-	const std::vector<VkCommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
+	const std::vector<CommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
 	int& currentIndex = GetCurrentIndex(type, currentFrame);
 	currentIndex++;
 
@@ -58,18 +60,18 @@ VkCommandBuffer CommandPool::GetOrCreateCommandBuffer(const QueueType type, cons
 	}
 }
 
-std::vector<VkCommandBuffer> CommandPool::GetOrCreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame)
+const std::vector<CommandBuffer>& CommandPool::GetOrCreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame)
 {
 	ASSERT_CURRENT_FRAME(currentFrame);
 
-	const std::vector<VkCommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
+	const std::vector<CommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
 	int& currentIndex = GetCurrentIndex(type, currentFrame);
 	currentIndex++;
 	const int endIndex = currentIndex + count;
 
 	if (endIndex < commandBufferList.size())
 	{
-		return std::vector<VkCommandBuffer>(commandBufferList.begin() + currentIndex, commandBufferList.begin() + endIndex);
+		return std::vector<CommandBuffer>(commandBufferList.begin() + currentIndex, commandBufferList.begin() + endIndex);
 	}
 	else
 	{
@@ -77,18 +79,21 @@ std::vector<VkCommandBuffer> CommandPool::GetOrCreateCommandBuffers(const QueueT
 	}
 }
 
-void CommandPool::ResetCommandBuffers(const unsigned int currentFrame) const
+void CommandPool::ResetCommandBuffers(const unsigned int currentFrame)
 {
 	ASSERT_CURRENT_FRAME(currentFrame);
 
 	vkResetCommandPool(m_device, m_graphicsCommandPools[currentFrame], 0);
 	vkResetCommandPool(m_device, m_transferCommandPools[currentFrame], 0);
+
+	m_currentGraphicsIndex[currentFrame] = 0;
+	m_currentTransferIndex[currentFrame] = 0;
 }
 
-VkCommandBuffer CommandPool::CreateCommandBuffer(const QueueType type, const unsigned int currentFrame)
+const CommandBuffer& CommandPool::CreateCommandBuffer(const QueueType type, const unsigned int currentFrame)
 {
 	VkCommandPool commandPool = GetCommandPool(type, currentFrame);
-	std::vector<VkCommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
+	std::vector<CommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
 	commandBufferList.emplace_back();
 
 	// Index already gets incremented in GetOrCreateCommandBuffer()
@@ -100,7 +105,9 @@ VkCommandBuffer CommandPool::CreateCommandBuffer(const QueueType type, const uns
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 
-	if (vkAllocateCommandBuffers(m_device, &allocInfo, &commandBufferList[currentIndex]) != VK_SUCCESS)
+	VkCommandBuffer* pCommandBuffer = commandBufferList[currentIndex].GetVkPtr();
+
+	if (vkAllocateCommandBuffers(m_device, &allocInfo, pCommandBuffer) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to allocate command buffers");
 	}
@@ -108,10 +115,10 @@ VkCommandBuffer CommandPool::CreateCommandBuffer(const QueueType type, const uns
 	return commandBufferList[currentIndex];
 }
 
-std::vector<VkCommandBuffer> CommandPool::CreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame)
+std::vector<CommandBuffer> CommandPool::CreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame)
 {
 	VkCommandPool commandPool = GetCommandPool(type, currentFrame);
-	std::vector<VkCommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
+	std::vector<CommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
 
 	// CurrentIndex already gets incremented in GetOrCreateCommandBuffer()
 	int& currentIndex = GetCurrentIndex(type, currentFrame);
@@ -137,12 +144,14 @@ std::vector<VkCommandBuffer> CommandPool::CreateCommandBuffers(const QueueType t
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = count;
 
-	if (vkAllocateCommandBuffers(m_device, &allocInfo, &commandBufferList[startingIndex]) != VK_SUCCESS)
+	VkCommandBuffer* pCommandBuffer = commandBufferList[startingIndex].GetVkPtr();
+
+	if (vkAllocateCommandBuffers(m_device, &allocInfo, pCommandBuffer) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to allocate command buffers");
 	}
 
-	return std::vector<VkCommandBuffer>(commandBufferList.begin() + startingIndex, commandBufferList.begin() + endIndex);
+	return std::vector<CommandBuffer>(commandBufferList.begin() + startingIndex, commandBufferList.begin() + endIndex);
 }
 
 // Make private when CommandBuffer class is in place, // Change name..
@@ -167,7 +176,7 @@ VkCommandPool CommandPool::GetCommandPool(const QueueType type, const unsigned i
 	}
 }
 
-std::vector<VkCommandBuffer>& CommandPool::GetCommandBufferList(const QueueType type, const unsigned int currentFrame)
+std::vector<CommandBuffer>& CommandPool::GetCommandBufferList(const QueueType type, const unsigned int currentFrame)
 {
 	switch (type)
 	{

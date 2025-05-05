@@ -3,6 +3,7 @@
 #include "vkCommon.h"
 
 class CommandPool;
+class CommandBuffer;
 class Queue
 {
 public:
@@ -14,8 +15,8 @@ public:
 	// Delete when CommandBuffer class is in place
 	std::shared_ptr<CommandPool> GetCommandPool() const;
 
-	VkCommandBuffer GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame);
-	std::vector<VkCommandBuffer> GetOrCreateCommandBuffers(const QueueType type, const uint32_t count, const unsigned int currentFrame);
+	const CommandBuffer& GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame);
+	std::vector<CommandBuffer> GetOrCreateCommandBuffers(const QueueType type, const uint32_t count, const unsigned int currentFrame);
 
 	void ResetCommandBuffers(const unsigned int currentFrame) const;
 

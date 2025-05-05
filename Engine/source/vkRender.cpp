@@ -6,6 +6,7 @@
 
 #include "vkPhysicalDevice.h"
 #include "vkQueue.h"
+#include "vkCommandBuffer.h"
 
 // Delete whenever CommandBuffer class is in place
 #include "vkCommandPool.h"
@@ -174,8 +175,8 @@ void Renderer::Update()
 void Renderer::Render()
 {
 	FrameContext frame = m_frameContexts[m_currentFrame];
-
-	const VkCommandBuffer commandBuffer = m_pDevice->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, m_currentFrame);
+	CommandBuffer commandBuffer = m_pDevice->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, m_currentFrame);
+	const VkCommandBuffer* pVkCommandBuffer = commandBuffer.GetVkPtr(); // Needed for submit info
 
 	const auto vkDevice = m_pDevice->GetVkDevice();
 	const auto swapchain = m_pDevice->GetSwapchain()->GetVkSwapChain();
@@ -234,7 +235,7 @@ void Renderer::Render()
 	submitInfo.pNext = &timelineInfo;
 
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.pCommandBuffers = pVkCommandBuffer;
 
 	if (vkQueueSubmit(m_pDevice->GetQueue()->GetQueue(QueueType::GRAPHICS), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
 	{
@@ -853,20 +854,20 @@ void Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemor
 
 void Renderer::CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 {
-	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+	CommandBuffer commandBuffer = BeginSingleTimeCommands();
 
 	VkBufferCopy copyRegion{};
 	copyRegion.srcOffset = 0;
 	copyRegion.dstOffset = 0;
 	copyRegion.size = size;
-	vkCmdCopyBuffer(commandBuffer, src, dst, 1, &copyRegion);
+	commandBuffer.CopyBuffer(src, dst, 1, &copyRegion);
 
 	EndSingleTimeCommands(commandBuffer);
 }
 
 void Renderer::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
-	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+	CommandBuffer commandBuffer = BeginSingleTimeCommands();
 
 	VkBufferImageCopy region{};
 	region.bufferOffset = 0;
@@ -879,7 +880,7 @@ void Renderer::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
 	region.imageOffset = { 0, 0, 0 };
 	region.imageExtent = { width, height, 1 };
 
-	vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	commandBuffer.CopyBufferToImage(buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
 	EndSingleTimeCommands(commandBuffer);
 }
@@ -936,17 +937,14 @@ VkShaderModule Renderer::CreateShaderModule(const std::vector<char>& code)
 	return shaderModule;
 }
 
-void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex)
 {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = 0; // Optional
 	beginInfo.pInheritanceInfo = nullptr; // Optional
 
-	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to begin recording command buffer");
-	}
+	commandBuffer.BeginCommandBuffer(&beginInfo);
 
 	const auto swapchain = m_pDevice->GetSwapchain();
 	const auto& extent = swapchain->GetExtent();
@@ -972,12 +970,12 @@ void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 	renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 	renderInfo.renderArea.offset = { 0, 0 };
 	renderInfo.renderArea.extent = extent;
-	renderInfo.layerCount = 1;	
+	renderInfo.layerCount = 1;
 	renderInfo.colorAttachmentCount = 1;
 	renderInfo.pColorAttachments = &colorAttachment;
 	renderInfo.pDepthAttachment = &depthAttachment;
-
-	vkCmdBeginRendering(commandBuffer, &renderInfo);
+	
+	commandBuffer.BeginRendering(&renderInfo);
 
 	VkViewport viewport{};
 	viewport.x = 0.0f;
@@ -986,65 +984,62 @@ void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 	viewport.height = static_cast<float>(extent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	commandBuffer.SetViewPort(&viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
 	scissor.extent = extent;
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	commandBuffer.SetScissor(&scissor);
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
+	commandBuffer.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
 
 	VkBuffer vertexBuffers[] = { m_vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-	vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	commandBuffer.BindVertexBuffers(vertexBuffers, offsets);
+	commandBuffer.BindIndexBuffer(m_indexBuffer, VK_INDEX_TYPE_UINT32);
 
 	for (int i = 0; i < m_amountOfCubes; i++)
 	{
 		const int descriptorSetIndex = m_currentFrame * m_amountOfCubes + i;
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[descriptorSetIndex], 0, nullptr);
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+		commandBuffer.BindDescriptorSets(m_pipelineLayout, &m_descriptorSets[descriptorSetIndex]);
+		commandBuffer.DrawIndexed(static_cast<uint32_t>(indices.size()));
 	}
 
-	vkCmdEndRendering(commandBuffer);
-
-	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to record command buffer");
-	}
+	commandBuffer.EndRendering();
+	commandBuffer.EndCommandBuffer();
 }
 
 // Port to command buffer class
-VkCommandBuffer Renderer::BeginSingleTimeCommands()
+const CommandBuffer& Renderer::BeginSingleTimeCommands()
 {
 	const QueueType type = QueueType::GRAPHICS;
 	const auto queue = m_pDevice->GetQueue();
 
-	auto commandBuffer = queue->GetOrCreateCommandBuffer(type, m_currentFrame);
+	const auto& commandBuffer = queue->GetOrCreateCommandBuffer(type, m_currentFrame);
 
 	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	commandBuffer.BeginCommandBuffer(&beginInfo);
 
 	return commandBuffer;
 }
 
 // Port to command buffer class
-void Renderer::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
+void Renderer::EndSingleTimeCommands(CommandBuffer commandBuffer)
 {
-	vkEndCommandBuffer(commandBuffer);
+	commandBuffer.EndCommandBuffer();
 
 	const QueueType type = QueueType::GRAPHICS;
+
+	const auto vkCommandBuffer = commandBuffer.GetVkPtr();
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.pCommandBuffers = vkCommandBuffer;
 
 	auto queue = m_pDevice->GetQueue();
 
@@ -1054,7 +1049,7 @@ void Renderer::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
 
 void Renderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
-	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+	const CommandBuffer& commandBuffer = BeginSingleTimeCommands();
 
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1129,13 +1124,8 @@ void Renderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayo
 	{
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	}
-
-	vkCmdPipelineBarrier(commandBuffer,
-		sourceStage, destStage,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &barrier);
+	
+	commandBuffer.ImageMemoryBarrier(sourceStage, destStage, 1, &barrier);
 
 	EndSingleTimeCommands(commandBuffer);
 }

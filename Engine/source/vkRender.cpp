@@ -113,11 +113,6 @@ static std::vector<char> ReadFile(const std::string& filename) {
 Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		m_commandBuffers[i] = device->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, i);
-	}
-
 	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
 	ChooseSharingMode();
@@ -180,6 +175,8 @@ void Renderer::Render()
 {
 	FrameContext frame = m_frameContexts[m_currentFrame];
 
+	const VkCommandBuffer commandBuffer = m_pDevice->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, m_currentFrame);
+
 	const auto vkDevice = m_pDevice->GetVkDevice();
 	const auto swapchain = m_pDevice->GetSwapchain()->GetVkSwapChain();
 
@@ -212,7 +209,7 @@ void Renderer::Render()
 	}
 
 	m_pDevice->GetQueue()->ResetCommandBuffers(m_currentFrame);
-	RecordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
+	RecordCommandBuffer(commandBuffer, imageIndex);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -237,7 +234,7 @@ void Renderer::Render()
 	submitInfo.pNext = &timelineInfo;
 
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &m_commandBuffers[m_currentFrame];
+	submitInfo.pCommandBuffers = &commandBuffer;
 
 	if (vkQueueSubmit(m_pDevice->GetQueue()->GetQueue(QueueType::GRAPHICS), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
 	{

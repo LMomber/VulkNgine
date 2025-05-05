@@ -88,9 +88,6 @@ private:
 	VkSemaphore m_globalTimelineSemaphore;
 	std::array<FrameContext, MAX_FRAMES_IN_FLIGHT> m_frameContexts{};
 
-	std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> m_commandBuffers{};
-
-
 	std::vector<uint32_t> m_queueSetIndices;
 	VkSharingMode m_sharingMode;
 

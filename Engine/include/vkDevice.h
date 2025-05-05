@@ -10,6 +10,8 @@ class Queue;
 class Device
 {
 public:
+	Device() = default;
+
 	void Initialize();
 	void ShutDown();
 	
@@ -26,6 +28,9 @@ public:
 
 	VkDeviceMemory AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const;
 	void* MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags = 0) const;
+
+	Device(const Device&) = delete;
+	Device& operator=(const Device&) = delete;
 
 private:
 	std::shared_ptr<Swapchain> m_pSwapchain = nullptr;

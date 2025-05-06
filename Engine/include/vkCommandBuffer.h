@@ -7,6 +7,7 @@ class CommandBuffer
 {
 public:
 	// Doesn't need initializers, allocating is done in the command pool, as well as resetting.
+
 	void BeginCommandBuffer(const VkCommandBufferBeginInfo* info) const;
 	void EndCommandBuffer() const;
 

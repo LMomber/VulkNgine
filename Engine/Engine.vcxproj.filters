@@ -28,6 +28,7 @@
     <ClCompile Include="source\vkQueue.cpp" />
     <ClCompile Include="source\vkCommandPool.cpp" />
     <ClCompile Include="source\vkCommandBuffer.cpp" />
+    <ClCompile Include="source\vkPipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\engine.h">
@@ -62,6 +63,7 @@
     <ClInclude Include="include\vkQueue.h" />
     <ClInclude Include="include\vkCommandPool.h" />
     <ClInclude Include="include\vkCommandBuffer.h" />
+    <ClInclude Include="include\vkPipeline.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

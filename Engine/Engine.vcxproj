@@ -154,6 +154,7 @@
     <ClCompile Include="source\vkMemory.cpp" />
     <ClCompile Include="source\vkChunkAllocator.cpp" />
     <ClCompile Include="source\vkPhysicalDevice.cpp" />
+    <ClCompile Include="source\vkPipeline.cpp" />
     <ClCompile Include="source\vkQueue.cpp" />
     <ClCompile Include="source\vkRender.cpp" />
     <ClCompile Include="source\vkSurface.cpp" />
@@ -178,6 +179,7 @@
     <ClInclude Include="include\vkCommon.h" />
     <ClInclude Include="include\vkDevice.h" />
     <ClInclude Include="include\vkPhysicalDevice.h" />
+    <ClInclude Include="include\vkPipeline.h" />
     <ClInclude Include="include\vkQueue.h" />
     <ClInclude Include="include\vkRender.h" />
     <ClInclude Include="include\vkSurface.h" />

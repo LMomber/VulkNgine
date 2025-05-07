@@ -60,7 +60,7 @@ const CommandBuffer& CommandPool::GetOrCreateCommandBuffer(const QueueType type,
 	}
 }
 
-const std::vector<CommandBuffer>& CommandPool::GetOrCreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame)
+std::vector<CommandBuffer> CommandPool::GetOrCreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame)
 {
 	ASSERT_CURRENT_FRAME(currentFrame);
 

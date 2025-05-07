@@ -117,8 +117,8 @@ void GraphicsPipeline::SetInputAssemblyState(VkPrimitiveTopology topology, VkBoo
 void GraphicsPipeline::SetViewportState(uint32_t viewportCount, uint32_t scissorCount)
 {
 	m_viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	m_viewportState.viewportCount = 1;
-	m_viewportState.scissorCount = 1;
+	m_viewportState.viewportCount = viewportCount;
+	m_viewportState.scissorCount = scissorCount;
 }
 
 void GraphicsPipeline::SetRasterizationState(VkBool32 depthClampEnable, VkBool32 rasterizerDiscardEnable, VkPolygonMode polygonMode, VkCullModeFlags cullMode, VkFrontFace frontFaceMode, float lineWidth, VkBool32 depthBiasEnable, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor)
@@ -228,7 +228,7 @@ VkShaderStageFlagBits GraphicsPipeline::GetShaderStageFlag(ShaderType type) cons
 		return VK_SHADER_STAGE_FRAGMENT_BIT;
 		break;
 	default:
-		std::runtime_error("Specified shader type is not yet implemented");
+		throw std::runtime_error("Specified shader type is not yet implemented");
 		break;
 	}
 }

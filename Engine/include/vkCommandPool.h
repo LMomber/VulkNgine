@@ -10,7 +10,7 @@ public:
 	~CommandPool();
 
 	const CommandBuffer& GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame);
-	const std::vector<CommandBuffer>& GetOrCreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame);
+	std::vector<CommandBuffer> GetOrCreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame);
 
 	void ResetCommandBuffers(const unsigned int currentFrame);
 

@@ -29,6 +29,8 @@
     <ClCompile Include="source\vkCommandPool.cpp" />
     <ClCompile Include="source\vkCommandBuffer.cpp" />
     <ClCompile Include="source\vkPipeline.cpp" />
+    <ClCompile Include="source\vkDescriptorAllocator.cpp" />
+    <ClCompile Include="source\vkDescriptorLayoutCache.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\engine.h">
@@ -64,6 +66,8 @@
     <ClInclude Include="include\vkCommandPool.h" />
     <ClInclude Include="include\vkCommandBuffer.h" />
     <ClInclude Include="include\vkPipeline.h" />
+    <ClInclude Include="include\vkDescriptorAllocator.h" />
+    <ClInclude Include="include\vkDescriptorLayoutCache.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

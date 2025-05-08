@@ -144,6 +144,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\vkDescriptorBuilder.cpp" />
     <ClCompile Include="source\vkDescriptorLayoutCache.cpp" />
     <ClCompile Include="source\vkDescriptorAllocator.cpp" />
     <ClCompile Include="source\timer.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="include\vkAbstractAllocator.h" />
     <ClInclude Include="include\vkCommandBuffer.h" />
     <ClInclude Include="include\vkCommandPool.h" />
+    <ClInclude Include="include\vkDescriptorBuilder.h" />
     <ClInclude Include="include\vkDescriptorAllocator.h" />
     <ClInclude Include="include\vkDescriptorLayoutCache.h" />
     <ClInclude Include="include\vkDeviceAllocator.h" />

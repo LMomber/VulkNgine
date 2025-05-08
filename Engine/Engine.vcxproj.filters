@@ -31,6 +31,7 @@
     <ClCompile Include="source\vkPipeline.cpp" />
     <ClCompile Include="source\vkDescriptorAllocator.cpp" />
     <ClCompile Include="source\vkDescriptorLayoutCache.cpp" />
+    <ClCompile Include="source\vkDescriptorBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\engine.h">
@@ -68,6 +69,7 @@
     <ClInclude Include="include\vkPipeline.h" />
     <ClInclude Include="include\vkDescriptorAllocator.h" />
     <ClInclude Include="include\vkDescriptorLayoutCache.h" />
+    <ClInclude Include="include\vkDescriptorBuilder.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

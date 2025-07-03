@@ -146,27 +146,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="source\vkDescriptorBuilder.cpp" />
-    <ClCompile Include="source\vkDescriptorLayoutCache.cpp" />
-    <ClCompile Include="source\vkDescriptorAllocator.cpp" />
-    <ClCompile Include="source\timer.cpp" />
-    <ClCompile Include="source\input.cpp" />
-    <ClCompile Include="source\inputHandler.cpp" />
-    <ClCompile Include="source\transform.cpp" />
-    <ClCompile Include="source\vkCommandBuffer.cpp" />
-    <ClCompile Include="source\vkCommandPool.cpp" />
-    <ClCompile Include="source\vkDeviceAllocator.cpp" />
-    <ClCompile Include="source\vkMemory.cpp" />
-    <ClCompile Include="source\vkChunkAllocator.cpp" />
-    <ClCompile Include="source\vkPhysicalDevice.cpp" />
-    <ClCompile Include="source\vkPipeline.cpp" />
-    <ClCompile Include="source\vkQueue.cpp" />
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
+    <ClCompile Include="source\core\timer.cpp" />
+    <ClCompile Include="source\core\input.cpp" />
+    <ClCompile Include="source\core\inputHandler.cpp" />
+    <ClCompile Include="source\core\transform.cpp" />
+    <ClCompile Include="source\rendering\vulkan\commands\vkCommandBuffer.cpp" />
+    <ClCompile Include="source\rendering\vulkan\commands\vkCommandPool.cpp" />
+    <ClCompile Include="source\rendering\vulkan\memory\vkDeviceAllocator.cpp" />
+    <ClCompile Include="source\rendering\vulkan\memory\vkMemory.cpp" />
+    <ClCompile Include="source\rendering\vulkan\memory\vkChunkAllocator.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkPhysicalDevice.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkPipeline.cpp" />
+    <ClCompile Include="source\rendering\vulkan\commands\vkQueue.cpp" />
     <ClCompile Include="source\vkRender.cpp" />
-    <ClCompile Include="source\vkSurface.cpp" />
-    <ClCompile Include="source\engine.cpp" />
-    <ClCompile Include="source\vkWindow.cpp" />
-    <ClCompile Include="source\vkDevice.cpp" />
-    <ClCompile Include="source\vkSwapchain.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkSurface.cpp" />
+    <ClCompile Include="source\core\engine.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkWindow.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkDevice.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkSwapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core\engine.h" />

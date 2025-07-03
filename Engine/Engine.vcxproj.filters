@@ -34,42 +34,42 @@
     <ClCompile Include="source\vkDescriptorBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\engine.h">
+    <ClInclude Include="include\core\engine.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\vkCommon.h">
+    <ClInclude Include="include\rendering\vulkan\vkCommon.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\vkDevice.h">
+    <ClInclude Include="include\rendering\vulkan\core\vkDevice.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\vkSurface.h">
+    <ClInclude Include="include\rendering\vulkan\core\vkSurface.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\vkSwapchain.h">
+    <ClInclude Include="include\rendering\vulkan\core\vkSwapchain.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\vkWindow.h">
+    <ClInclude Include="include\rendering\vulkan\core\vkWindow.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="include\vkRender.h" />
-    <ClInclude Include="include\inputHandler.h" />
-    <ClInclude Include="include\transform.h" />
-    <ClInclude Include="include\input.h" />
-    <ClInclude Include="include\renderComponents.h" />
-    <ClInclude Include="include\timer.h" />
-    <ClInclude Include="include\vkMemory.h" />
-    <ClInclude Include="include\vkChunkAllocator.h" />
-    <ClInclude Include="include\vkPhysicalDevice.h" />
-    <ClInclude Include="include\vkAbstractAllocator.h" />
-    <ClInclude Include="include\vkDeviceAllocator.h" />
-    <ClInclude Include="include\vkQueue.h" />
-    <ClInclude Include="include\vkCommandPool.h" />
-    <ClInclude Include="include\vkCommandBuffer.h" />
-    <ClInclude Include="include\vkPipeline.h" />
-    <ClInclude Include="include\vkDescriptorAllocator.h" />
-    <ClInclude Include="include\vkDescriptorLayoutCache.h" />
-    <ClInclude Include="include\vkDescriptorBuilder.h" />
+    <ClInclude Include="include\rendering\vulkan\vkRender.h" />
+    <ClInclude Include="include\core\inputHandler.h" />
+    <ClInclude Include="include\core\transform.h" />
+    <ClInclude Include="include\core\input.h" />
+    <ClInclude Include="include\rendering\renderComponents.h" />
+    <ClInclude Include="include\core\timer.h" />
+    <ClInclude Include="include\rendering\vulkan\memory\vkMemory.h" />
+    <ClInclude Include="include\rendering\vulkan\memory\vkChunkAllocator.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkPhysicalDevice.h" />
+    <ClInclude Include="include\rendering\vulkan\memory\vkAbstractAllocator.h" />
+    <ClInclude Include="include\rendering\vulkan\memory\vkDeviceAllocator.h" />
+    <ClInclude Include="include\rendering\vulkan\commands\vkQueue.h" />
+    <ClInclude Include="include\rendering\vulkan\commands\vkCommandPool.h" />
+    <ClInclude Include="include\rendering\vulkan\commands\vkCommandBuffer.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkPipeline.h" />
+    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorAllocator.h" />
+    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorLayoutCache.h" />
+    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorBuilder.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

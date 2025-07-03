@@ -111,7 +111,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Engine\external;$(ProjectDir)..\Engine\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Engine\external;$(ProjectDir)..\Engine\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;$(ProjectDir)..\Engine\include\core;$(ProjectDir)..\Engine\include\rendering;$(ProjectDir)..\Engine\include\rendering\vulkan;$(ProjectDir)..\Engine\include\rendering\vulkan\commands;$(ProjectDir)..\Engine\include\rendering\vulkan\core;$(ProjectDir)..\Engine\include\rendering\vulkan\descriptors;$(ProjectDir)..\Engine\include\rendering\vulkan\memory;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,7 +129,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Engine\external;$(ProjectDir)..\Engine\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Engine\external;$(ProjectDir)..\Engine\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;$(ProjectDir)..\Engine\include\core;$(ProjectDir)..\Engine\include\rendering;$(ProjectDir)..\Engine\include\rendering\vulkan;$(ProjectDir)..\Engine\include\rendering\vulkan\commands;$(ProjectDir)..\Engine\include\rendering\vulkan\core;$(ProjectDir)..\Engine\include\rendering\vulkan\descriptors;$(ProjectDir)..\Engine\include\rendering\vulkan\memory;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

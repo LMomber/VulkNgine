@@ -116,6 +116,9 @@ static std::vector<char> ReadFile(const std::string& filename) {
 Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
+	const unsigned int memorySize = 2048;
+	m_pDeviceAllocator = std::make_unique<DeviceAllocator>(m_pDevice, memorySize);
+
 	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
 	ChooseSharingMode();

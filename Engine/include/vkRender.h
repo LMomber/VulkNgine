@@ -2,6 +2,7 @@
 
 #include "vkCommon.h"
 #include "vkDevice.h"
+#include "vkDeviceAllocator.h"
 
 struct FrameContext
 {
@@ -62,6 +63,7 @@ private:
 	bool HasStencilComponent(VkFormat format);
 
 	std::shared_ptr<Device> m_pDevice;
+	std::unique_ptr<DeviceAllocator> m_pDeviceAllocator;
 
 	VkDescriptorSetLayout m_descriptorSetLayout;
 

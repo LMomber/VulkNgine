@@ -1,4 +1,4 @@
-#include "vkDescriptionBuilder.h"
+#include "vkDescriptorBuilder.h"
 
 #include "vkDescriptorLayoutCache.h"
 
@@ -117,3 +117,4 @@ bool DescriptorBuilder::Build(VkDescriptorSet& set)
 
 	return true;
 }
+

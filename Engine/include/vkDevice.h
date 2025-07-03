@@ -4,6 +4,7 @@
 #include "vkWindow.h"
 #include "vkSurface.h"
 #include "vkSwapchain.h"
+#include "vkDeviceAllocator.h"
 
 class PhysicalDevice;
 class Queue;
@@ -26,24 +27,14 @@ public:
 	std::shared_ptr<Swapchain> GetSwapchain() const;
 	std::shared_ptr<Queue> GetQueue() const;
 
-	VkDeviceMemory AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const;
-	void* MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags = 0) const;
-
 	Device(const Device&) = delete;
 	Device& operator=(const Device&) = delete;
 
 private:
-	std::shared_ptr<Swapchain> m_pSwapchain = nullptr;
-	std::shared_ptr<Window> m_pVkWindow = nullptr;
-	std::shared_ptr<PhysicalDevice> m_pPhysicalDevice = nullptr;
-	std::shared_ptr<Queue> m_pQueue = nullptr;
+	friend class Chunk;
 
-	std::unique_ptr<Surface> m_pSurface = nullptr;
-
-	VkInstance m_instance{};
-	VkDevice m_device{};
-
-	VkDebugUtilsMessengerEXT m_debugMessenger{};
+	VkDeviceMemory AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const;
+	void* MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags = 0) const;
 
 	void InitDebugMessenger();
 
@@ -64,4 +55,17 @@ private:
 	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+	std::shared_ptr<Swapchain> m_pSwapchain = nullptr;
+	std::shared_ptr<Window> m_pVkWindow = nullptr;
+	std::shared_ptr<PhysicalDevice> m_pPhysicalDevice = nullptr;
+	std::shared_ptr<Queue> m_pQueue = nullptr;
+	std::unique_ptr<DeviceAllocator> m_pDeviceAllocator = nullptr;
+
+	std::unique_ptr<Surface> m_pSurface = nullptr;
+
+	VkInstance m_instance{};
+	VkDevice m_device{};
+
+	VkDebugUtilsMessengerEXT m_debugMessenger{};
 };

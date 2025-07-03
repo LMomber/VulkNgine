@@ -18,7 +18,7 @@ public:
         return m_device;
     }
 
-    virtual ~AbstractAllocator() = 0;
+    ~AbstractAllocator() = default;
 
     AbstractAllocator(const AbstractAllocator&) = delete;
     AbstractAllocator& operator=(const AbstractAllocator&) = delete;

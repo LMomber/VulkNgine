@@ -42,7 +42,7 @@ CommandPool::~CommandPool()
 	}
 }
 
-const CommandBuffer& CommandPool::GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame)
+const CommandBuffer& CommandPool::GetOrCreateCommandBuffer(QueueType type, unsigned int currentFrame)
 {
 	ASSERT_CURRENT_FRAME(currentFrame);
 
@@ -60,7 +60,7 @@ const CommandBuffer& CommandPool::GetOrCreateCommandBuffer(const QueueType type,
 	}
 }
 
-std::vector<CommandBuffer> CommandPool::GetOrCreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame)
+std::vector<CommandBuffer> CommandPool::GetOrCreateCommandBuffers(QueueType type, unsigned int count, unsigned int currentFrame)
 {
 	ASSERT_CURRENT_FRAME(currentFrame);
 
@@ -79,7 +79,7 @@ std::vector<CommandBuffer> CommandPool::GetOrCreateCommandBuffers(const QueueTyp
 	}
 }
 
-void CommandPool::ResetCommandBuffers(const unsigned int currentFrame)
+void CommandPool::ResetCommandBuffers(unsigned int currentFrame)
 {
 	ASSERT_CURRENT_FRAME(currentFrame);
 
@@ -90,9 +90,9 @@ void CommandPool::ResetCommandBuffers(const unsigned int currentFrame)
 	m_currentTransferIndex[currentFrame] = 0;
 }
 
-const CommandBuffer& CommandPool::CreateCommandBuffer(const QueueType type, const unsigned int currentFrame)
+const CommandBuffer& CommandPool::CreateCommandBuffer(QueueType type, unsigned int currentFrame)
 {
-	VkCommandPool commandPool = GetCommandPool(type, currentFrame);
+	VkCommandPool commandPool = GetVkCommandPool(type, currentFrame);
 	std::vector<CommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
 	commandBufferList.emplace_back();
 
@@ -115,9 +115,9 @@ const CommandBuffer& CommandPool::CreateCommandBuffer(const QueueType type, cons
 	return commandBufferList[currentIndex];
 }
 
-std::vector<CommandBuffer> CommandPool::CreateCommandBuffers(const QueueType type, const unsigned int count, const unsigned int currentFrame)
+std::vector<CommandBuffer> CommandPool::CreateCommandBuffers(QueueType type, unsigned int count, unsigned int currentFrame)
 {
-	VkCommandPool commandPool = GetCommandPool(type, currentFrame);
+	VkCommandPool commandPool = GetVkCommandPool(type, currentFrame);
 	std::vector<CommandBuffer>& commandBufferList = GetCommandBufferList(type, currentFrame);
 
 	// CurrentIndex already gets incremented in GetOrCreateCommandBuffer()
@@ -155,7 +155,7 @@ std::vector<CommandBuffer> CommandPool::CreateCommandBuffers(const QueueType typ
 }
 
 // Make private when CommandBuffer class is in place, // Change name..
-VkCommandPool CommandPool::GetCommandPool(const QueueType type, const unsigned int currentFrame) const
+VkCommandPool CommandPool::GetVkCommandPool(QueueType type, unsigned int currentFrame) const
 {
 	// Get rid of assert when function is private
 	ASSERT_CURRENT_FRAME(currentFrame);
@@ -176,7 +176,7 @@ VkCommandPool CommandPool::GetCommandPool(const QueueType type, const unsigned i
 	}
 }
 
-std::vector<CommandBuffer>& CommandPool::GetCommandBufferList(const QueueType type, const unsigned int currentFrame)
+std::vector<CommandBuffer>& CommandPool::GetCommandBufferList(QueueType type, unsigned int currentFrame)
 {
 	switch (type)
 	{
@@ -194,7 +194,7 @@ std::vector<CommandBuffer>& CommandPool::GetCommandBufferList(const QueueType ty
 	}
 }
 
-int& CommandPool::GetCurrentIndex(const QueueType type, const unsigned int currentFrame)
+int& CommandPool::GetCurrentIndex(QueueType type, unsigned int currentFrame)
 {
 	switch (type)
 	{

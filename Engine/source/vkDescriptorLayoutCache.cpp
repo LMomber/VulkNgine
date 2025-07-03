@@ -15,7 +15,7 @@ DescriptorLayoutCache::~DescriptorLayoutCache()
 	}
 }
 
-VkDescriptorSetLayout DescriptorLayoutCache::CreateDescriptorLayout(VkDescriptorSetLayoutCreateInfo* info)
+VkDescriptorSetLayout DescriptorLayoutCache::CreateDescriptorLayout(const VkDescriptorSetLayoutCreateInfo* info)
 {
 	DescriptorLayoutInfo layoutInfo;
 	layoutInfo.m_bindings.reserve(info->bindingCount);

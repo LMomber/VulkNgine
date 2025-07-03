@@ -29,7 +29,7 @@ Queue::Queue(VkDevice device, const QueueFamilyIndices& queueFamilyIndices) :
 	m_pCommandPool = std::make_shared<CommandPool>(device, queueFamilyIndices);
 }
 
-VkQueue Queue::GetQueue(const QueueType type) const
+VkQueue Queue::GetQueue(QueueType type) const
 {
 	switch (type)
 	{
@@ -56,17 +56,17 @@ std::shared_ptr<CommandPool> Queue::GetCommandPool() const
 	return m_pCommandPool;
 }
 
-const CommandBuffer& Queue::GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame)
+const CommandBuffer& Queue::GetOrCreateCommandBuffer(QueueType type, unsigned int currentFrame)
 {
 	return m_pCommandPool->GetOrCreateCommandBuffer(type, currentFrame);
 }
 
-std::vector<CommandBuffer> Queue::GetOrCreateCommandBuffers(const QueueType type, const uint32_t count, const unsigned int currentFrame)
+std::vector<CommandBuffer> Queue::GetOrCreateCommandBuffers(QueueType type, uint32_t count, unsigned int currentFrame)
 {
 	return m_pCommandPool->GetOrCreateCommandBuffers(type, count, currentFrame);
 }
 
-void Queue::ResetCommandBuffers(const unsigned int currentFrame) const
+void Queue::ResetCommandBuffers(unsigned int currentFrame) const
 {
 	m_pCommandPool->ResetCommandBuffers(currentFrame);
 }

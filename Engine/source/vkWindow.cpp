@@ -27,7 +27,7 @@ Window::~Window()
 	glfwDestroyWindow(m_pVkWindow);
 }
 
-VkExtent2D Window::ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+VkExtent2D Window::ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities) const
 {
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 	{

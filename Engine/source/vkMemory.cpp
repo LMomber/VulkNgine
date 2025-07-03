@@ -3,9 +3,13 @@
 #include "vkDevice.h"
 #include "vkPhysicalDevice.h"
 
-Chunk::Chunk(std::shared_ptr<Device> device, VkDeviceSize size, int memoryTypeIndex) :
-	m_pDevice(device), m_size(size), m_memoryTypeIndex(memoryTypeIndex)
+#include "engine.h"
+
+Chunk::Chunk(VkDeviceSize size, int memoryTypeIndex) :
+	m_size(size), m_memoryTypeIndex(memoryTypeIndex)
 {
+    auto& device = Core::engine.GetDevice();
+
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = size;
@@ -15,13 +19,13 @@ Chunk::Chunk(std::shared_ptr<Device> device, VkDeviceSize size, int memoryTypeIn
 	block.free;
 	block.offset = 0;
 	block.size = size;
-	m_memory = block.memory = m_pDevice->AllocateMemory(allocInfo);
+	m_memory = block.memory = device.AllocateMemory(allocInfo);
 
-	const auto propertyFlags = device->GetPhysicalDevice()->GetMemoryProperties().memoryTypes[memoryTypeIndex].propertyFlags;
+	const auto propertyFlags = device.GetPhysicalDevice()->GetMemoryProperties().memoryTypes[memoryTypeIndex].propertyFlags;
 
 	if ((propertyFlags & VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
 	{
-		m_ptr = device->MapMemory(m_memory, 0, VK_WHOLE_SIZE);
+		m_ptr = device.MapMemory(m_memory, 0, VK_WHOLE_SIZE);
 	}
 
 	m_blocks.push_back(block);
@@ -84,7 +88,7 @@ bool Chunk::IsIn(Block const& block) const
     return block.memory == m_memory;
 }
 
-void Chunk::Deallocate(Block const& block)
+void Chunk::Deallocate(const Block& block)
 {
 	auto blockIt(std::find(m_blocks.begin(), m_blocks.end(), block));
 	assert(blockIt != m_blocks.end());

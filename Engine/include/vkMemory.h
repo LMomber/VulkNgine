@@ -9,7 +9,7 @@ struct Block {
     bool free;
     void* ptr = nullptr; // Useless if it is a GPU allocation
 
-    bool operator==(Block const& block)
+    bool operator==(const Block& block)
     {
         if (memory == block.memory &&
             offset == block.offset &&
@@ -25,11 +25,11 @@ class Device;
 class Chunk 
 {
 public:
-    Chunk(std::shared_ptr<Device> device, VkDeviceSize size, int memoryTypeIndex);
+    Chunk(VkDeviceSize size, int memoryTypeIndex);
 
     bool Allocate(VkDeviceSize size, VkDeviceSize alignment, Block& block);
-    bool IsIn(Block const& block) const;
-    void Deallocate(Block const& block);
+    bool IsIn(const Block& block) const;
+    void Deallocate(const Block& block);
     int GetMemoryTypeIndex() const;
 
     ~Chunk();
@@ -38,7 +38,6 @@ public:
     Chunk& operator=(const Chunk&) = delete;
 
 protected:
-    std::shared_ptr<Device> m_pDevice;
     VkDeviceMemory m_memory = VK_NULL_HANDLE;
     VkDeviceSize m_size;
     int m_memoryTypeIndex;

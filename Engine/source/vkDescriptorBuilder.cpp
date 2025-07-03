@@ -15,7 +15,7 @@ DescriptorBuilder DescriptorBuilder::Begin(DescriptorLayoutCache* layoutCache, D
 	return builder;
 }
 
-DescriptorBuilder& DescriptorBuilder::BindBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type, VkShaderStageFlags stageFlags)
+DescriptorBuilder& DescriptorBuilder::BindBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo, VkDescriptorType type, VkShaderStageFlags stageFlags)
 {
 	VkDescriptorSetLayoutBinding newBinding{};
 	newBinding.descriptorCount = 1;
@@ -39,7 +39,7 @@ DescriptorBuilder& DescriptorBuilder::BindBuffer(uint32_t binding, VkDescriptorB
 	return *this;
 }
 
-DescriptorBuilder& DescriptorBuilder::BindImage(uint32_t binding, VkDescriptorImageInfo* imageInfo, VkDescriptorType type, VkShaderStageFlags stageFlags)
+DescriptorBuilder& DescriptorBuilder::BindImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo, VkDescriptorType type, VkShaderStageFlags stageFlags)
 {
 	VkDescriptorSetLayoutBinding newBinding{};
 	newBinding.descriptorCount = 1;

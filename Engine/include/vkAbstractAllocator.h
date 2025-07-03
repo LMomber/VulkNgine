@@ -7,22 +7,13 @@ class Device;
 class AbstractAllocator
 {
 public:
-    AbstractAllocator(std::shared_ptr<Device> device) :
-        m_device(device) {}
+    AbstractAllocator() = default;
 
     virtual Block Allocate(VkDeviceSize size, VkDeviceSize alignment, int memoryTypeIndex) = 0;
-    virtual void Deallocate(Block& block) = 0;
-
-    std::shared_ptr<Device> GetDevice() const 
-    {
-        return m_device;
-    }
+    virtual void Deallocate(const Block& block) = 0;
 
     ~AbstractAllocator() = default;
 
     AbstractAllocator(const AbstractAllocator&) = delete;
     AbstractAllocator& operator=(const AbstractAllocator&) = delete;
-
-protected:
-    std::shared_ptr<Device> m_device;
 };

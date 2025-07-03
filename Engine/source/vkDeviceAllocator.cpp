@@ -1,7 +1,7 @@
 #include "vkDeviceAllocator.h"
 
-DeviceAllocator::DeviceAllocator(std::shared_ptr<Device> device, VkDeviceSize size) :
-	AbstractAllocator(device), m_chunkAllocator(device, size)
+DeviceAllocator::DeviceAllocator(VkDeviceSize size) :
+	m_chunkAllocator(size)
 {
 }
 
@@ -20,7 +20,7 @@ Block DeviceAllocator::Allocate(VkDeviceSize size, VkDeviceSize alignment, int m
     return block;
 }
 
-void DeviceAllocator::Deallocate(Block& block)
+void DeviceAllocator::Deallocate(const Block& block)
 {
     for (auto& chunk : m_chunks) {
         if (chunk->IsIn(block)) {

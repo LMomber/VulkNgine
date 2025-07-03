@@ -28,8 +28,8 @@ private:
 
 	void CleanUp();
 
-	VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> availableFormats) const;
-	VkPresentModeKHR ChoosePresentMode(const std::vector<VkPresentModeKHR> availableModes) const;
+	VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
+	VkPresentModeKHR ChoosePresentMode(const std::vector<VkPresentModeKHR>& availableModes) const;
 
 	VkSwapchainKHR m_swapChain;
 	VkSwapchainKHR m_oldSwapChain = VK_NULL_HANDLE;

@@ -15,9 +15,9 @@ const std::vector<const char*> validationLayers =
 };
 
 #ifdef NDEBUG
-const bool enableValidationLayers = false;
+const bool g_enableValidationLayers = false;
 #else 
-const bool enableValidationLayers = true;
+const bool g_enableValidationLayers = true;
 #endif
 
 void Device::Initialize()
@@ -42,7 +42,7 @@ void Device::ShutDown()
 
 	vkDestroyDevice(m_device, nullptr);
 
-	if (enableValidationLayers) {
+	if (g_enableValidationLayers) {
 		DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
 	}
 
@@ -57,7 +57,7 @@ void Device::ShutDown()
 
 void Device::InitDebugMessenger()
 {
-	if (!enableValidationLayers) return;
+	if (!g_enableValidationLayers) return;
 
 	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
 	PopulateDebugMessengerCreateInfo(createInfo);
@@ -95,7 +95,7 @@ void Device::CreateInstance()
 	//createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-	if (enableValidationLayers) {
+	if (g_enableValidationLayers) {
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 
@@ -237,7 +237,7 @@ void Device::CreateLogicalDevice(QueueFamilyIndices indices)
 	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	createInfo.pNext = &features2;
 
-	if (enableValidationLayers)
+	if (g_enableValidationLayers)
 	{
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -253,7 +253,7 @@ void Device::CreateLogicalDevice(QueueFamilyIndices indices)
 	}
 }
 
-std::vector<const char*> Device::GetRequiredExtensions()
+std::vector<const char*> Device::GetRequiredExtensions() const
 {
 	uint32_t glfwExtensionCount = 0;
 	const char** glfwExtensions;
@@ -261,7 +261,8 @@ std::vector<const char*> Device::GetRequiredExtensions()
 
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-	if (enableValidationLayers) {
+	if (g_enableValidationLayers) 
+	{
 		glfwExtensionCount++;
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
@@ -281,7 +282,7 @@ std::vector<const char*> Device::GetRequiredExtensions()
 	return requiredGlfwExtensions;
 }
 
-void Device::ValidateExtensionAvailability(std::vector<const char*>& inputExtensions)
+void Device::ValidateExtensionAvailability(const std::vector<const char*>& inputExtensions) const
 {
 	assert((inputExtensions.size() > 0) && "input extension array is empty");
 
@@ -311,7 +312,7 @@ void Device::ValidateExtensionAvailability(std::vector<const char*>& inputExtens
 	}
 }
 
-bool Device::CheckValidationLayerSupport()
+bool Device::CheckValidationLayerSupport() const
 {
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -366,10 +367,12 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Device::DebugCallback(VkDebugUtilsMessageSeverity
 VkResult Device::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-	if (func != nullptr) {
+	if (func != nullptr) 
+	{
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
 	}
-	else {
+	else 
+	{
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 }
@@ -377,12 +380,13 @@ VkResult Device::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebug
 void Device::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
 	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-	if (func != nullptr) {
+	if (func != nullptr) 
+	{
 		func(instance, debugMessenger, pAllocator);
 	}
 }
 
-void Device::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+void Device::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) const
 {
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;

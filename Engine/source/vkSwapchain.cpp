@@ -203,7 +203,7 @@ void Swapchain::CleanUp()
 	vkDestroySwapchainKHR(m_device, m_oldSwapChain, nullptr);
 }
 
-VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> availableFormats) const
+VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const
 {
 	for (const auto& availableFormat : availableFormats)
 	{
@@ -216,10 +216,12 @@ VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFor
 	return availableFormats[0];
 }
 
-VkPresentModeKHR Swapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR> availableModes) const
+VkPresentModeKHR Swapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR>& availableModes) const
 {
-	for (const auto& availablePresentMode : availableModes) {
-		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+	for (const auto& availablePresentMode : availableModes) 
+	{
+		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) 
+		{
 			return availablePresentMode;
 		}
 	}

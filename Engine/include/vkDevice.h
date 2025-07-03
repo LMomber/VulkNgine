@@ -36,16 +36,17 @@ private:
 	VkDeviceMemory AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const;
 	void* MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags = 0) const;
 
-	void InitDebugMessenger();
-
 	void CreateInstance();
 	void CreateLogicalDevice(QueueFamilyIndices indices);
 
-	std::vector<const char*> GetRequiredExtensions();
+	std::vector<const char*> GetRequiredExtensions() const;
 
-	void ValidateExtensionAvailability(std::vector<const char*>& inputExtensions);
+	void ValidateExtensionAvailability(const std::vector<const char*>& inputExtensions) const;
 
-	bool CheckValidationLayerSupport();
+	bool CheckValidationLayerSupport() const;
+
+	// Debug Messenger
+	void InitDebugMessenger();
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -54,7 +55,8 @@ private:
 		void* pUserData);
 	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
-	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) const;
+	//
 
 	std::shared_ptr<Swapchain> m_pSwapchain = nullptr;
 	std::shared_ptr<Window> m_pVkWindow = nullptr;

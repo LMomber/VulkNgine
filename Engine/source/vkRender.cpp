@@ -117,7 +117,7 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
 	const unsigned int memorySize = 2048;
-	m_pDeviceAllocator = std::make_unique<DeviceAllocator>(m_pDevice, memorySize);
+	m_pDeviceAllocator = std::make_unique<DeviceAllocator>(memorySize);
 
 	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
@@ -579,7 +579,7 @@ void Renderer::CreateDescriptorSets()
 	}
 }
 
-void Renderer::LoadModel()
+void Renderer::LoadModel() const
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -641,7 +641,7 @@ void Renderer::ChooseSharingMode()
 	m_sharingMode = m_queueSetIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 }
 
-void Renderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+void Renderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const
 {
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -680,7 +680,7 @@ void Renderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkI
 	vkBindImageMemory(m_pDevice->GetVkDevice(), image, imageMemory, 0);
 }
 
-VkImageView Renderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+VkImageView Renderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const
 {
 	VkImageView imageView;
 
@@ -703,7 +703,7 @@ VkImageView Renderer::CreateImageView(VkImage image, VkFormat format, VkImageAsp
 	return imageView;
 }
 
-void Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+void Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const
 {
 	assert(size > 0 && "Invalid buffer size");
 
@@ -736,7 +736,7 @@ void Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemor
 	vkBindBufferMemory(vkDevice, buffer, bufferMemory, 0);
 }
 
-void Renderer::CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
+void Renderer::CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) const
 {
 	CommandBuffer commandBuffer = BeginSingleTimeCommands();
 
@@ -749,7 +749,7 @@ void Renderer::CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 	EndSingleTimeCommands(commandBuffer);
 }
 
-void Renderer::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+void Renderer::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const
 {
 	CommandBuffer commandBuffer = BeginSingleTimeCommands();
 
@@ -814,7 +814,7 @@ VkShaderModule Renderer::CreateShaderModule(const std::vector<char>& code)
 	return shaderModule;
 }
 
-void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex)
+void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex) const
 {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -885,7 +885,7 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 }
 
 // Port to command buffer class
-const CommandBuffer& Renderer::BeginSingleTimeCommands()
+const CommandBuffer& Renderer::BeginSingleTimeCommands() const
 {
 	const QueueType type = QueueType::GRAPHICS;
 	const auto queue = m_pDevice->GetQueue();
@@ -902,7 +902,7 @@ const CommandBuffer& Renderer::BeginSingleTimeCommands()
 }
 
 // Port to command buffer class
-void Renderer::EndSingleTimeCommands(CommandBuffer commandBuffer)
+void Renderer::EndSingleTimeCommands(CommandBuffer commandBuffer) const
 {
 	commandBuffer.EndCommandBuffer();
 
@@ -921,7 +921,7 @@ void Renderer::EndSingleTimeCommands(CommandBuffer commandBuffer)
 	vkQueueWaitIdle(queue->GetQueue(type));
 }
 
-void Renderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+void Renderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const
 {
 	const CommandBuffer& commandBuffer = BeginSingleTimeCommands();
 
@@ -1004,7 +1004,7 @@ void Renderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayo
 	EndSingleTimeCommands(commandBuffer);
 }
 
-bool Renderer::HasStencilComponent(VkFormat format)
+bool Renderer::HasStencilComponent(VkFormat format) const
 {
 	return (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT
 		|| format == VK_FORMAT_D16_UNORM_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT);

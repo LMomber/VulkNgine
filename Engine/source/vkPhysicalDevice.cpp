@@ -34,7 +34,7 @@ VkPhysicalDeviceMemoryProperties PhysicalDevice::GetMemoryProperties() const
 	return properties;
 }
 
-SwapChainSupportDetails PhysicalDevice::QuerrySwapChainSupport(const VkPhysicalDevice device, const VkSurfaceKHR surface) const
+SwapChainSupportDetails PhysicalDevice::QuerrySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) const
 {
 	assert(device != VK_NULL_HANDLE && "Specified physical device is null");
 	assert(surface != VK_NULL_HANDLE && "Window surface is either uninitialized or deleted");
@@ -62,7 +62,7 @@ SwapChainSupportDetails PhysicalDevice::QuerrySwapChainSupport(const VkPhysicalD
 	return details;
 }
 
-QueueFamilyIndices PhysicalDevice::FindQueueFamilies(const VkPhysicalDevice device, const VkSurfaceKHR surface) const
+QueueFamilyIndices PhysicalDevice::FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) const
 {
 	assert(device != VK_NULL_HANDLE && "Specified physical device is null");
 	assert(surface != VK_NULL_HANDLE && "Window surface is either uninitialized or deleted");
@@ -112,7 +112,7 @@ QueueFamilyIndices PhysicalDevice::FindQueueFamilies(const VkPhysicalDevice devi
 	return indices;
 }
 
-VkFormat PhysicalDevice::FindSupportedFormat(const VkFormat format, const VkImageTiling tiling, const VkFormatFeatureFlags features) const
+VkFormat PhysicalDevice::FindSupportedFormat(VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features) const
 {
 	VkFormatProperties props;
 	vkGetPhysicalDeviceFormatProperties(m_physicalDevice, format, &props);
@@ -129,7 +129,7 @@ VkFormat PhysicalDevice::FindSupportedFormat(const VkFormat format, const VkImag
 	throw std::runtime_error("Specified format is not supported");
 }
 
-uint32_t PhysicalDevice::FindMemoryType(const uint32_t typeFilter, const VkMemoryPropertyFlags& properties) const
+uint32_t PhysicalDevice::FindMemoryType(uint32_t typeFilter, const VkMemoryPropertyFlags& properties) const
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
@@ -145,7 +145,7 @@ uint32_t PhysicalDevice::FindMemoryType(const uint32_t typeFilter, const VkMemor
 	throw std::runtime_error("Failed to find suitable meory type");
 }
 
-void PhysicalDevice::PickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface)
+void PhysicalDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -174,7 +174,7 @@ void PhysicalDevice::PickPhysicalDevice(const VkInstance instance, const VkSurfa
 	}
 }
 
-int PhysicalDevice::RatePhysicalDevice(const VkPhysicalDevice device, const VkSurfaceKHR surface) const
+int PhysicalDevice::RatePhysicalDevice(VkPhysicalDevice device, VkSurfaceKHR surface) const
 {
 	if (!IsDeviceSuitable(device, surface)) return 0;
 
@@ -192,7 +192,7 @@ int PhysicalDevice::RatePhysicalDevice(const VkPhysicalDevice device, const VkSu
 	return score;
 }
 
-bool PhysicalDevice::IsDeviceSuitable(const VkPhysicalDevice device, const VkSurfaceKHR surface) const
+bool PhysicalDevice::IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) const
 {
 	QueueFamilyIndices indices = FindQueueFamilies(device, surface);
 
@@ -211,7 +211,7 @@ bool PhysicalDevice::IsDeviceSuitable(const VkPhysicalDevice device, const VkSur
 	return indices.IsComplete() && extensionsSupported && swapChainAdequate && features.samplerAnisotropy;
 }
 
-bool PhysicalDevice::CheckDeviceExtensionSupport(const VkPhysicalDevice device) const
+bool PhysicalDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device) const
 {
 	uint32_t extensionCount;
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);

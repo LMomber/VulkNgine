@@ -13,7 +13,7 @@ void InputHandler::Update(float deltaTime)
 {
     static float constant = 30.f;
     float speed = constant * deltaTime;
-    float rotationSpeed = speed * 2.5f;
+    float rotationSpeed = speed * 5.f;
 
     entt::entity cameraEntity = Core::engine.GetRegistry().view<Camera>().front();
 

@@ -40,27 +40,27 @@ private:
 	void CreateDescriptorPool();
 	void CreateDescriptorSets();
 
-	void LoadModel();
+	void LoadModel() const;
 
 	void ChooseSharingMode();
 
-	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-	void CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
-	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
+	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
+	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const;
+	void CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) const;
+	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
 
 	void UpdateMVP(const int currentFrame);
 
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
-	void RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex);
-	const CommandBuffer& BeginSingleTimeCommands();
-	void EndSingleTimeCommands(CommandBuffer commandBuffer);
+	void RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex) const;
+	const CommandBuffer& BeginSingleTimeCommands() const;
+	void EndSingleTimeCommands(CommandBuffer commandBuffer) const;
 
-	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
 
-	bool HasStencilComponent(VkFormat format);
+	bool HasStencilComponent(VkFormat format) const;
 
 	std::shared_ptr<Device> m_pDevice;
 	std::unique_ptr<DeviceAllocator> m_pDeviceAllocator;

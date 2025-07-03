@@ -10,15 +10,15 @@ public:
 	Queue(VkDevice device, const QueueFamilyIndices& queueFamilyIndices);
 
 	// Change name.. probably the class name over the function name. Make it plural?
-	VkQueue GetQueue(const QueueType type) const;
+	VkQueue GetQueue(QueueType type) const;
 
 	// Delete when CommandBuffer class is in place
 	std::shared_ptr<CommandPool> GetCommandPool() const;
 
-	const CommandBuffer& GetOrCreateCommandBuffer(const QueueType type, const unsigned int currentFrame);
-	std::vector<CommandBuffer> GetOrCreateCommandBuffers(const QueueType type, const uint32_t count, const unsigned int currentFrame);
+	const CommandBuffer& GetOrCreateCommandBuffer(QueueType type, unsigned int currentFrame);
+	std::vector<CommandBuffer> GetOrCreateCommandBuffers(QueueType type, uint32_t count, unsigned int currentFrame);
 
-	void ResetCommandBuffers(const unsigned int currentFrame) const;
+	void ResetCommandBuffers(unsigned int currentFrame) const;
 
 	Queue(const Queue&) = delete;
 	Queue& operator=(const Queue&) = delete;

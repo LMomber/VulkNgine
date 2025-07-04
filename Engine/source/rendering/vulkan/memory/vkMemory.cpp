@@ -5,10 +5,15 @@
 
 #include "engine.h"
 
+static inline VkDeviceSize AlignUp(VkDeviceSize value, VkDeviceSize alignment)
+{
+	return (value + alignment - 1) & ~(alignment - 1);
+}
+
 Chunk::Chunk(VkDeviceSize size, int memoryTypeIndex) :
 	m_size(size), m_memoryTypeIndex(memoryTypeIndex)
 {
-    auto& device = Core::engine.GetDevice();
+	auto& device = Core::engine.GetDevice();
 
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -33,59 +38,74 @@ Chunk::Chunk(VkDeviceSize size, int memoryTypeIndex) :
 
 bool Chunk::Allocate(VkDeviceSize size, VkDeviceSize alignment, Block& block)
 {
-    // if chunk is too small
-    if (size > m_size)
-        return false;
+	// if chunk is too small
+	if (size > m_size)
+	{
+		return false;
+	}
 
-    for (uint32_t i = 0; i < m_blocks.size(); ++i) {
-        if (m_blocks[i].free) {
-            // Compute virtual size after taking care about offsetAlignment
-            VkDeviceSize newSize = m_blocks[i].size;
+	for (uint32_t i = 0; i < m_blocks.size(); ++i)
+	{
+		Block& current = m_blocks[i];
+		if (!current.free)
+		{
+			continue;
+		}
 
-            if (m_blocks[i].offset % alignment != 0)
-                newSize -= alignment - m_blocks[i].offset % alignment;
+		VkDeviceSize alignedOffset = AlignUp(current.offset, alignment);
+		VkDeviceSize padding = alignedOffset - current.offset;
 
-            // If match
-            if (newSize >= size) {
+		if (padding + size > current.size)
+		{
+			continue;
+		}
 
-                // We compute offset and size that care about alignment (for this Block)
-                m_blocks[i].size = newSize;
-                if (m_blocks[i].offset % alignment != 0)
-                    m_blocks[i].offset += alignment - m_blocks[i].offset % alignment;
+		VkDeviceSize remainingSize = current.size - (padding + size);
 
-                // Compute the ptr address
-                if (m_ptr != nullptr)
-                    m_blocks[i].ptr = (char*)m_ptr + m_blocks[i].offset;
+		// Split the padding that this allocation requires into it's own memory block and inject in between blocks.
+		if (padding > 0)
+		{
+			Block paddingBlock;
+			paddingBlock.free = true;
+			paddingBlock.offset = current.offset;
+			paddingBlock.size = padding;
+			paddingBlock.memory = current.memory;
+			paddingBlock.ptr = m_ptr ? static_cast<char*>(m_ptr) + current.offset : nullptr;
 
-                // if perfect match
-                if (m_blocks[i].size == size) {
-                    m_blocks[i].free = false;
-                    block = m_blocks[i];
-                    return true;
-                }
+			m_blocks.insert(m_blocks.begin() + i, paddingBlock);
 
-                Block nextBlock;
-                nextBlock.free = true;
-                nextBlock.offset = m_blocks[i].offset + size;
-                nextBlock.memory = m_memory;
-                nextBlock.size = m_blocks[i].size - size;
-                m_blocks.emplace_back(nextBlock); // We add the newBlock
+			++i;
+		}
 
-                m_blocks[i].size = size;
-                m_blocks[i].free = false;
+		current.offset = alignedOffset;
+		current.size = size;
+		current.free = false;
+		current.ptr = m_ptr ? static_cast<char*>(m_ptr) + current.offset : nullptr;
 
-                block = m_blocks[i];
-                return true;
-            }
-        }
-    }
+		block = current;
 
-    return false;
+		// Add a block for the remaining free memory
+		if (remainingSize > 0)
+		{
+			Block newBlock;
+			newBlock.free = true;
+			newBlock.offset = alignedOffset + size;
+			newBlock.size = remainingSize;
+			newBlock.memory = current.memory;
+			newBlock.ptr = m_ptr ? static_cast<char*>(m_ptr) + newBlock.offset : nullptr;
+
+			m_blocks.insert(m_blocks.begin() + i + 1, newBlock);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 bool Chunk::IsIn(Block const& block) const
 {
-    return block.memory == m_memory;
+	return block.memory == m_memory;
 }
 
 void Chunk::Deallocate(const Block& block)
@@ -93,19 +113,40 @@ void Chunk::Deallocate(const Block& block)
 	auto blockIt(std::find(m_blocks.begin(), m_blocks.end(), block));
 	assert(blockIt != m_blocks.end());
 
-	// Just put the block to free
 	blockIt->free = true;
+
+	// Coalescing next block
+	auto nextBlock = std::next(blockIt);
+	if (nextBlock != m_blocks.end())
+	{
+		if (nextBlock->free)
+		{
+			blockIt->size += nextBlock->size;
+			m_blocks.erase(nextBlock);
+		}
+	}
+
+	// Coalescing previous block
+	if (blockIt != m_blocks.begin())
+	{
+		auto prevBlock = std::prev(blockIt);
+		if (prevBlock->free)
+		{
+			prevBlock->size += blockIt->size;
+			m_blocks.erase(blockIt);
+		}
+	}
 }
 
 int Chunk::GetMemoryTypeIndex() const
 {
-    return m_memoryTypeIndex;
+	return m_memoryTypeIndex;
 }
 
 Chunk::~Chunk()
 {
-    for (auto& block : m_blocks)
-    {
-        block.free = true;
-    }
+	for (auto& block : m_blocks)
+	{
+		block.free = true;
+	}
 }

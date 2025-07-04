@@ -73,7 +73,7 @@ bool DescriptorBuilder::Build(VkDescriptorSet& set, VkDescriptorSetLayout& layou
 	layoutInfo.pBindings = m_bindings.data();
 	layoutInfo.bindingCount = static_cast<uint32_t>(m_bindings.size());
 
-	layout = m_cache->CreateDescriptorLayout(&layoutInfo);
+	layout = m_cache->GetOrCreateDescriptorLayout(&layoutInfo);
 
 	bool success = m_alloc->Allocate(&set, layout);
 	if (!success)
@@ -100,7 +100,7 @@ bool DescriptorBuilder::Build(VkDescriptorSet& set)
 	layoutInfo.pBindings = m_bindings.data();
 	layoutInfo.bindingCount = static_cast<uint32_t>(m_bindings.size());
 
-	VkDescriptorSetLayout layout = m_cache->CreateDescriptorLayout(&layoutInfo);
+	VkDescriptorSetLayout layout = m_cache->GetOrCreateDescriptorLayout(&layoutInfo);
 
 	bool success = m_alloc->Allocate(&set, layout);
 	if (!success)

@@ -10,7 +10,7 @@ public:
 	DescriptorLayoutCache(VkDevice device);
 	~DescriptorLayoutCache();
 
-	VkDescriptorSetLayout CreateDescriptorLayout(const VkDescriptorSetLayoutCreateInfo* info);
+	VkDescriptorSetLayout GetOrCreateDescriptorLayout(const VkDescriptorSetLayoutCreateInfo* info);
 
 	struct DescriptorLayoutInfo
 	{

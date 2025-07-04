@@ -59,13 +59,14 @@ const std::vector<const char*> deviceExtensions =
 	VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
 };
 
-enum ShaderType
+enum class ShaderType
 {
 	VERTEX,
-	FRAGMENT
+	FRAGMENT,
+	COMPUTE
 };
 
-enum QueueType
+enum class QueueType
 {
 	GRAPHICS,
 	PRESENT,

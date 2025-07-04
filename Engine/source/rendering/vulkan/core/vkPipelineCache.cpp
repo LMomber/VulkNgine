@@ -70,10 +70,10 @@ VkShaderStageFlagBits ShaderCache::GetShaderStageFlag(ShaderType type)
 {
 	switch (type)
 	{
-	case VERTEX:
+	case ShaderType::VERTEX:
 		return VK_SHADER_STAGE_VERTEX_BIT;
 		break;
-	case FRAGMENT:
+	case ShaderType::FRAGMENT:
 		return VK_SHADER_STAGE_FRAGMENT_BIT;
 		break;
 	default:
@@ -101,9 +101,28 @@ std::shared_ptr<Pipeline> PipelineCache::GetOrCreateGraphicsPipeline(const Graph
 	}
 }
 
+std::shared_ptr<Pipeline> PipelineCache::GetOrCreateComputePipeline(const ComputePipelineInfo& info)
+{
+	size_t hash = info.Hash();
+
+	auto it = m_computePipelineCache.find(hash);
+	if (it != m_computePipelineCache.end())
+	{
+		return it->second;
+	}
+	else
+	{
+		const auto pipeline = CreateComputePipeline(info);
+		m_computePipelineCache[hash] = pipeline;
+
+		return pipeline;
+	}
+}
+
 void PipelineCache::Reset()
 {
 	m_graphicsPipelineCache.clear();
+	m_computePipelineCache.clear();
 }
 
 std::shared_ptr<Pipeline> PipelineCache::CreateGraphicsPipeline(const GraphicsPipelineInfo& info)
@@ -129,7 +148,7 @@ std::shared_ptr<Pipeline> PipelineCache::CreateGraphicsPipeline(const GraphicsPi
 	pipelineInfo.pDepthStencilState = &info.m_depthStencilState;
 	pipelineInfo.pColorBlendState = &info.m_colorBlendState;
 	pipelineInfo.pDynamicState = &info.m_dynamicState;
-	pipelineInfo.layout = output.get()->m_layout;
+	pipelineInfo.layout = output->GetLayout();
 	pipelineInfo.renderPass = nullptr;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
@@ -139,6 +158,32 @@ std::shared_ptr<Pipeline> PipelineCache::CreateGraphicsPipeline(const GraphicsPi
 	if (vkCreateGraphicsPipelines(Core::engine.GetDevice().GetVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &output.get()->m_pipeline) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create graphics pipeline");
+	}
+
+	return output;
+}
+
+std::shared_ptr<Pipeline> PipelineCache::CreateComputePipeline(const ComputePipelineInfo& info)
+{
+	assert(info.m_shaderStages.size() == 1 && "Compute pipeline should have exactly 1 shader");
+
+	std::shared_ptr<Pipeline> output = std::make_shared<Pipeline>();
+
+	if (vkCreatePipelineLayout(Core::engine.GetDevice().GetVkDevice(), &info.m_layoutInfo, nullptr, &output.get()->m_layout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create pipeline layout");
+	}
+
+	VkComputePipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+	pipelineInfo.layout = output->GetLayout();
+	pipelineInfo.stage = info.m_shaderStages[0];
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+	pipelineInfo.basePipelineIndex = -1; // Optional
+
+	if (vkCreateComputePipelines(Core::engine.GetDevice().GetVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &output.get()->m_pipeline))
+	{
+		throw std::runtime_error("Failed to create compute pipeline");
 	}
 
 	return output;

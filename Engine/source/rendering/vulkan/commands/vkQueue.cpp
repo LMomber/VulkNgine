@@ -33,16 +33,16 @@ VkQueue Queue::GetQueue(QueueType type) const
 {
 	switch (type)
 	{
-	case GRAPHICS:
+	case QueueType::GRAPHICS:
 		return m_graphicsQueue;
 		break;
-	case PRESENT:
+	case QueueType::PRESENT:
 		return m_presentQueue;
 		break;
-	case TRANSFER:
+	case QueueType::TRANSFER:
 		return m_transferQueue;
 		break;
-	case COMPUTE:
+	case QueueType::COMPUTE:
 		throw std::runtime_error("No functionality for queue type 'COMPUTE' has been implemented");
 		// TODO
 		break;

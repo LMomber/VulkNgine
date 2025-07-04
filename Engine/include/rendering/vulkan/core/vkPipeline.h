@@ -4,7 +4,25 @@
 
 #include <string>
 
-struct GraphicsPipelineInfo
+struct BasePipelineInfo
+{
+	virtual void SetShader(const std::string& filename, ShaderType type) = 0;
+
+	void SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts);
+	void SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts, const std::vector<VkPushConstantRange>& pushConstants);
+
+	std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages{};
+	VkPipelineLayoutCreateInfo m_layoutInfo{};
+};
+
+struct ComputePipelineInfo : public BasePipelineInfo
+{	
+	void SetShader(const std::string& filename, ShaderType type);
+
+	std::size_t Hash() const;
+};
+
+struct GraphicsPipelineInfo : public BasePipelineInfo
 {
 	void SetShader(const std::string& filename, ShaderType type);
 	void SetDynamicStates(const std::vector<VkDynamicState>& dynamicStates);
@@ -38,8 +56,6 @@ struct GraphicsPipelineInfo
 		float blendConstant3 = 0.f,
 		float blendConstant4 = 0.f);
 
-	void SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts);
-	void SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts, const std::vector<VkPushConstantRange>& pushConstants);
 	void SetDepthStencilState(VkBool32 depthTestEnable,
 		VkBool32 depthWriteEnable,
 		VkCompareOp depthCompareOp,
@@ -52,12 +68,11 @@ struct GraphicsPipelineInfo
 
 	void SetRenderInfo(const std::vector<VkFormat>& imageFormats, VkFormat depthFormat = VK_FORMAT_UNDEFINED, VkFormat StencilFormat = VK_FORMAT_UNDEFINED);
 
-	size_t Hash() const;
+	std::size_t Hash() const;
 
 private:
 	friend class PipelineCache;
 
-	std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages{};
 	VkPipelineDynamicStateCreateInfo m_dynamicState{};
 	VkPipelineVertexInputStateCreateInfo m_vertexInputState{};
 	VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyState{};
@@ -66,7 +81,6 @@ private:
 	VkPipelineMultisampleStateCreateInfo m_multisampleState{};
 	VkPipelineColorBlendStateCreateInfo m_colorBlendState{};
 	VkPipelineDepthStencilStateCreateInfo m_depthStencilState{};
-	VkPipelineLayoutCreateInfo m_layoutInfo{};
 	VkPipelineRenderingCreateInfo m_renderInfo{};
 };
 

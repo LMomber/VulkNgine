@@ -319,8 +319,8 @@ void Renderer::CreateGraphicsPipeline()
 	imageFormats.push_back(m_pDevice->GetSwapchain()->GetImageFormat());
 
 	GraphicsPipelineInfo pipelineInfo{};
-	pipelineInfo.SetShader("../Engine/shaders/vert.spv", VERTEX);
-	pipelineInfo.SetShader("../Engine/shaders/frag.spv", FRAGMENT);
+	pipelineInfo.SetShader("../Engine/shaders/vert.spv", ShaderType::VERTEX);
+	pipelineInfo.SetShader("../Engine/shaders/frag.spv", ShaderType::FRAGMENT);
 	pipelineInfo.SetDynamicStates(dynamicStates);
 	pipelineInfo.SetVertexInputState(bindingDescriptions, attributeDescriptions);
 	pipelineInfo.SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);

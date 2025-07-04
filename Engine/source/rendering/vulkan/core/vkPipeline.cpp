@@ -18,6 +18,8 @@ VkPipelineLayout Pipeline::GetLayout() const
 
 void GraphicsPipelineInfo::SetShader(const std::string& filename, ShaderType type)
 {
+	assert(type != ShaderType::COMPUTE && "Compute shaders are not compatible with graphics pipelines");
+
 #ifdef _DEBUG
 	const auto shaderStageFlag = ShaderCache::GetShaderStageFlag(type);
 	for (const auto& shaderStage : m_shaderStages)
@@ -105,24 +107,6 @@ void GraphicsPipelineInfo::SetColorBlendState(VkBool32 logicOpEnable, VkLogicOp 
 	m_colorBlendState.blendConstants[3] = blendConstant4; // Optional
 }
 
-void GraphicsPipelineInfo::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts)
-{
-	m_layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	m_layoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
-	m_layoutInfo.pSetLayouts = layouts.data();
-	m_layoutInfo.pushConstantRangeCount = 0;
-	m_layoutInfo.pPushConstantRanges = nullptr;
-}
-
-void GraphicsPipelineInfo::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts, const std::vector<VkPushConstantRange>& pushConstants)
-{
-	m_layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	m_layoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
-	m_layoutInfo.pSetLayouts = layouts.data();
-	m_layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
-	m_layoutInfo.pPushConstantRanges = pushConstants.data();
-}
-
 void GraphicsPipelineInfo::SetDepthStencilState(VkBool32 depthTestEnable, VkBool32 depthWriteEnable, VkCompareOp depthCompareOp, VkBool32 depthBoundsTestEnable, float minDepthBounds, float maxDepthBounds, VkBool32 stencilTestEnable, VkStencilOpState front, VkStencilOpState back)
 {
 	m_depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -146,14 +130,14 @@ void GraphicsPipelineInfo::SetRenderInfo(const std::vector<VkFormat>& imageForma
 	m_renderInfo.stencilAttachmentFormat = StencilFormat;
 }
 
-size_t GraphicsPipelineInfo::Hash() const
+std::size_t GraphicsPipelineInfo::Hash() const
 {
 	assert(m_shaderStages.size() > 0 && "No shaders are specified in this pipeline.");
 
-	size_t result = 0;
+	std::size_t result = 0;
 
 	// Shaders
-	for (size_t i = 0; i < m_shaderStages.size(); ++i)
+	for (std::size_t i = 0; i < m_shaderStages.size(); ++i)
 	{
 		HashCombine(result, m_shaderStages[i].stage);
 		HashCombine(result, reinterpret_cast<std::uintptr_t>(m_shaderStages[i].module));
@@ -285,4 +269,57 @@ Pipeline::~Pipeline()
 {
 	vkDestroyPipeline(Core::engine.GetDevice().GetVkDevice(), m_pipeline, nullptr);
 	vkDestroyPipelineLayout(Core::engine.GetDevice().GetVkDevice(), m_layout, nullptr);
+}
+
+void ComputePipelineInfo::SetShader(const std::string& filename, ShaderType type)
+{
+	assert(type == ShaderType::COMPUTE && "Only compute shaders are compatible with the compute pipeline");
+	assert(m_shaderStages.size() <= 1 && "Compute pipelines can only have a single shader");
+
+	m_shaderStages.emplace_back();
+	m_shaderStages[0] = ShaderCache::GetOrCreateShader(filename, type);
+}
+
+std::size_t ComputePipelineInfo::Hash() const
+{
+	assert(m_shaderStages.size() > 0 && "No shaders are specified in this pipeline.");
+
+	std::size_t result = 0;
+
+	// Shaders
+	for (std::size_t i = 0; i < m_shaderStages.size(); ++i)
+	{
+		HashCombine(result, m_shaderStages[i].stage);
+		HashCombine(result, reinterpret_cast<std::uintptr_t>(m_shaderStages[i].module));
+		// HashCombine(result, m_shaderStages[i].pName); // I think this causes issues
+	}
+	//
+
+	// Layout Info 
+	// (I'm pretty sure that hashing the actual layouts & push constant ranges would cause issues, 
+	// since you can have multiple identical layouts in different memory locations)
+	// TODO: Look into caching Pipeline Layouts and Push Constant ranges.
+	HashCombine(result, m_layoutInfo.setLayoutCount);
+	HashCombine(result, m_layoutInfo.pushConstantRangeCount);
+	//
+
+	return result;
+}
+
+void BasePipelineInfo::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts)
+{
+	m_layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	m_layoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+	m_layoutInfo.pSetLayouts = layouts.data();
+	m_layoutInfo.pushConstantRangeCount = 0;
+	m_layoutInfo.pPushConstantRanges = nullptr;
+}
+
+void BasePipelineInfo::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts, const std::vector<VkPushConstantRange>& pushConstants)
+{
+	m_layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	m_layoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+	m_layoutInfo.pSetLayouts = layouts.data();
+	m_layoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstants.size());
+	m_layoutInfo.pPushConstantRanges = pushConstants.data();
 }

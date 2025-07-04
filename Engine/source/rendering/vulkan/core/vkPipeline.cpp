@@ -26,7 +26,7 @@ void GraphicsPipelineInfo::SetShader(const std::string& filename, ShaderType typ
 	{
 		if (shaderStage.stage == shaderStageFlag)
 		{
-			std::runtime_error("This shader type is already specified for this pipeline");
+			throw std::runtime_error("This shader type is already specified for this pipeline");
 			return;
 		}
 	}

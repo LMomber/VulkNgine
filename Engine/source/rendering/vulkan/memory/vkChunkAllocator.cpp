@@ -25,7 +25,9 @@ bool ChunkAllocator::IsPowerOfTwo(VkDeviceSize size) const
 	VkDeviceSize power = static_cast<VkDeviceSize>(std::log2l(static_cast<long double>(size)));
 
 	for (VkDeviceSize i = 0; i < power; ++i)
+	{
 		mask += static_cast<VkDeviceSize>(static_cast<uint64_t>(1) << i);
+	}
 
 	return !(size & mask);
 }

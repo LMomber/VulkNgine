@@ -679,7 +679,7 @@ VkImageView Renderer::CreateImageView(VkImage image, VkFormat format, VkImageAsp
 
 	if (vkCreateImageView(m_pDevice->GetVkDevice(), &createInfo, nullptr, &imageView) != VK_SUCCESS)
 	{
-		std::runtime_error("Failed to create image view");
+		throw std::runtime_error("Failed to create image view");
 	}
 
 	return imageView;

@@ -2,7 +2,8 @@
 
 #include "vkCommon.h"
 
-struct Block {
+struct Block 
+{
     VkDeviceMemory memory;
     VkDeviceSize offset;
     VkDeviceSize size;
@@ -16,7 +17,9 @@ struct Block {
             size == block.size &&
             free == block.free &&
             ptr == block.ptr)
+        {
             return true;
+        }
         return false;
     }
 };

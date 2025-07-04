@@ -180,7 +180,7 @@ void* Device::MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize
 	void* data = nullptr;
 	if (vkMapMemory(m_device, memory, offset, size, flags, &data) != VK_SUCCESS)
 	{
-		std::runtime_error("Failed to map memory");
+		throw std::runtime_error("Failed to map memory");
 	}
 
 	return data;

@@ -185,7 +185,7 @@ void Swapchain::CreateDepthResources()
 
 	if (vkCreateImageView(m_device, &createInfo, nullptr, &m_depthImageView) != VK_SUCCESS)
 	{
-		std::runtime_error("Failed to create image view");
+		throw std::runtime_error("Failed to create image view");
 	}
 }
 

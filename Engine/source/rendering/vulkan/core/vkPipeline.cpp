@@ -1,104 +1,49 @@
 #include "vkPipeline.h"
 
+#include "hash.h"
 #include "engine.h"
 #include "vkDevice.h"
 
-GraphicsPipeline::~GraphicsPipeline()
-{
-	for (const auto& shaderStage : m_shaderStages)
-	{
-		vkDestroyShaderModule(Core::engine.GetDevice().GetVkDevice(), shaderStage.module, nullptr);
-	}
+#include "vkPipelineCache.h"
 
-	vkDestroyPipeline(Core::engine.GetDevice().GetVkDevice(), m_pipeline, nullptr);
-	vkDestroyPipelineLayout(Core::engine.GetDevice().GetVkDevice(), m_layout, nullptr);
-}
-
-void GraphicsPipeline::Create()
-{
-	assert(!m_shaderStages.empty() && "No shaders specified");
-
-	if (vkCreatePipelineLayout(Core::engine.GetDevice().GetVkDevice(), &m_layoutInfo, nullptr, &m_layout) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create pipeline layout");
-	}
-
-	VkGraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineInfo.stageCount = static_cast<uint32_t>(m_shaderStages.size());
-	pipelineInfo.pStages = m_shaderStages.data();
-	pipelineInfo.pVertexInputState = &m_vertexInputState;
-	pipelineInfo.pInputAssemblyState = &m_inputAssemblyState;
-	pipelineInfo.pViewportState = &m_viewportState;
-	pipelineInfo.pRasterizationState = &m_rasterizationState;
-	pipelineInfo.pMultisampleState = &m_multisampleState;
-	pipelineInfo.pDepthStencilState = &m_depthStencilState;
-	pipelineInfo.pColorBlendState = &m_colorBlendState;
-	pipelineInfo.pDynamicState = &m_dynamicState;
-	pipelineInfo.layout = m_layout;
-	pipelineInfo.renderPass = nullptr;
-	pipelineInfo.subpass = 0;
-	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
-	pipelineInfo.basePipelineIndex = -1; // Optional
-	pipelineInfo.pNext = &m_renderInfo;
-
-	if (vkCreateGraphicsPipelines(Core::engine.GetDevice().GetVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create graphics pipeline");
-	}
-}
-
-VkPipeline GraphicsPipeline::Get() const
+VkPipeline Pipeline::Get() const
 {
 	return m_pipeline;
 }
 
-VkPipelineLayout GraphicsPipeline::GetLayout() const
+VkPipelineLayout Pipeline::GetLayout() const
 {
 	return m_layout;
 }
 
-void GraphicsPipeline::SetShader(const std::vector<char>& shaderCode, ShaderType type)
+void GraphicsPipelineInfo::SetShader(const std::string& filename, ShaderType type)
 {
-	assert(!shaderCode.empty() && "Shader code vector is empty");
-
-	auto shaderStageFlag = GetShaderStageFlag(type);
-
 #ifdef _DEBUG
+	const auto shaderStageFlag = ShaderCache::GetShaderStageFlag(type);
 	for (const auto& shaderStage : m_shaderStages)
 	{
 		if (shaderStage.stage == shaderStageFlag)
 		{
 			std::runtime_error("This shader type is already specified for this pipeline");
+			return;
 		}
 	}
 #endif
 
-	const VkShaderModule shaderModule = CreateShaderModule(shaderCode);
-
 	m_shaderStages.emplace_back();
-	
-	VkPipelineShaderStageCreateInfo shaderStageInfo{};
-	m_shaderStages.back().sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_shaderStages.back().stage = shaderStageFlag;
-	m_shaderStages.back().module = shaderModule;
-	m_shaderStages.back().pName = "main";
-
+	m_shaderStages.back() = ShaderCache::GetOrCreateShader(filename, type);
 }
 
-void GraphicsPipeline::SetDynamicStates(const std::vector<VkDynamicState>& dynamicStates)
+void GraphicsPipelineInfo::SetDynamicStates(const std::vector<VkDynamicState>& dynamicStates)
 {
 	assert(!dynamicStates.empty() && "Dynamic states vector is empty");
 
-	// Needed for check in Create()
-	m_dynamicStates = dynamicStates;
-
 	m_dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	m_dynamicState.dynamicStateCount = static_cast<uint32_t>(m_dynamicStates.size());
-	m_dynamicState.pDynamicStates = m_dynamicStates.data();
+	m_dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	m_dynamicState.pDynamicStates = dynamicStates.data();
 }
 
-void GraphicsPipeline::SetVertexInputState(const std::vector<VkVertexInputBindingDescription>& bindingDescriptions, const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
+void GraphicsPipelineInfo::SetVertexInputState(const std::vector<VkVertexInputBindingDescription>& bindingDescriptions, const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
 {
 	m_vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	m_vertexInputState.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
@@ -107,21 +52,21 @@ void GraphicsPipeline::SetVertexInputState(const std::vector<VkVertexInputBindin
 	m_vertexInputState.pVertexAttributeDescriptions = attributeDescriptions.data();
 }
 
-void GraphicsPipeline::SetInputAssemblyState(VkPrimitiveTopology topology, VkBool32 primitiveRestartEnable)
+void GraphicsPipelineInfo::SetInputAssemblyState(VkPrimitiveTopology topology, VkBool32 primitiveRestartEnable)
 {
 	m_inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	m_inputAssemblyState.topology = topology;
 	m_inputAssemblyState.primitiveRestartEnable = primitiveRestartEnable;
 }
 
-void GraphicsPipeline::SetViewportState(uint32_t viewportCount, uint32_t scissorCount)
+void GraphicsPipelineInfo::SetViewportState(uint32_t viewportCount, uint32_t scissorCount)
 {
 	m_viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	m_viewportState.viewportCount = viewportCount;
 	m_viewportState.scissorCount = scissorCount;
 }
 
-void GraphicsPipeline::SetRasterizationState(VkBool32 depthClampEnable, VkBool32 rasterizerDiscardEnable, VkPolygonMode polygonMode, VkCullModeFlags cullMode, VkFrontFace frontFaceMode, float lineWidth, VkBool32 depthBiasEnable, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor)
+void GraphicsPipelineInfo::SetRasterizationState(VkBool32 depthClampEnable, VkBool32 rasterizerDiscardEnable, VkPolygonMode polygonMode, VkCullModeFlags cullMode, VkFrontFace frontFaceMode, float lineWidth, VkBool32 depthBiasEnable, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor)
 {
 	m_rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	m_rasterizationState.depthClampEnable = depthClampEnable;
@@ -136,7 +81,7 @@ void GraphicsPipeline::SetRasterizationState(VkBool32 depthClampEnable, VkBool32
 	m_rasterizationState.depthBiasSlopeFactor = depthBiasSlopeFactor; // Optional
 }
 
-void GraphicsPipeline::SetMultisampleState(VkBool32 sampleShadingEnable, VkSampleCountFlagBits rasterizationSamples, float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable)
+void GraphicsPipelineInfo::SetMultisampleState(VkBool32 sampleShadingEnable, VkSampleCountFlagBits rasterizationSamples, float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable)
 {
 	m_multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	m_multisampleState.sampleShadingEnable = sampleShadingEnable;
@@ -147,7 +92,7 @@ void GraphicsPipeline::SetMultisampleState(VkBool32 sampleShadingEnable, VkSampl
 	m_multisampleState.alphaToOneEnable = alphaToOneEnable; // Optional
 }
 
-void GraphicsPipeline::SetColorBlendState(VkBool32 logicOpEnable, VkLogicOp logicOp, const std::vector<VkPipelineColorBlendAttachmentState>& attachments, float blendConstant1, float blendConstant2, float blendConstant3, float blendConstant4)
+void GraphicsPipelineInfo::SetColorBlendState(VkBool32 logicOpEnable, VkLogicOp logicOp, const std::vector<VkPipelineColorBlendAttachmentState>& attachments, float blendConstant1, float blendConstant2, float blendConstant3, float blendConstant4)
 {
 	m_colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	m_colorBlendState.logicOpEnable = logicOpEnable;
@@ -160,7 +105,7 @@ void GraphicsPipeline::SetColorBlendState(VkBool32 logicOpEnable, VkLogicOp logi
 	m_colorBlendState.blendConstants[3] = blendConstant4; // Optional
 }
 
-void GraphicsPipeline::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts)
+void GraphicsPipelineInfo::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts)
 {
 	m_layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	m_layoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
@@ -169,7 +114,7 @@ void GraphicsPipeline::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& l
 	m_layoutInfo.pPushConstantRanges = nullptr;
 }
 
-void GraphicsPipeline::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts, const std::vector<VkPushConstantRange>& pushConstants)
+void GraphicsPipelineInfo::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& layouts, const std::vector<VkPushConstantRange>& pushConstants)
 {
 	m_layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	m_layoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
@@ -178,7 +123,7 @@ void GraphicsPipeline::SetLayoutInfo(const std::vector<VkDescriptorSetLayout>& l
 	m_layoutInfo.pPushConstantRanges = pushConstants.data();
 }
 
-void GraphicsPipeline::SetDepthStencilState(VkBool32 depthTestEnable, VkBool32 depthWriteEnable, VkCompareOp depthCompareOp, VkBool32 depthBoundsTestEnable, float minDepthBounds, float maxDepthBounds, VkBool32 stencilTestEnable, VkStencilOpState front, VkStencilOpState back)
+void GraphicsPipelineInfo::SetDepthStencilState(VkBool32 depthTestEnable, VkBool32 depthWriteEnable, VkCompareOp depthCompareOp, VkBool32 depthBoundsTestEnable, float minDepthBounds, float maxDepthBounds, VkBool32 stencilTestEnable, VkStencilOpState front, VkStencilOpState back)
 {
 	m_depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	m_depthStencilState.depthTestEnable = depthTestEnable;
@@ -192,7 +137,7 @@ void GraphicsPipeline::SetDepthStencilState(VkBool32 depthTestEnable, VkBool32 d
 	m_depthStencilState.back = back;
 }
 
-void GraphicsPipeline::SetRenderInfo(const std::vector<VkFormat>& imageFormats, VkFormat depthFormat, VkFormat StencilFormat)
+void GraphicsPipelineInfo::SetRenderInfo(const std::vector<VkFormat>& imageFormats, VkFormat depthFormat, VkFormat StencilFormat)
 {
 	m_renderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 	m_renderInfo.colorAttachmentCount = static_cast<uint32_t>(imageFormats.size());
@@ -201,34 +146,143 @@ void GraphicsPipeline::SetRenderInfo(const std::vector<VkFormat>& imageFormats, 
 	m_renderInfo.stencilAttachmentFormat = StencilFormat;
 }
 
-VkShaderModule GraphicsPipeline::CreateShaderModule(const std::vector<char>& code)
+size_t GraphicsPipelineInfo::Hash() const
 {
-	VkShaderModuleCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+	assert(m_shaderStages.size() > 0 && "No shaders are specified in this pipeline.");
 
-	VkShaderModule shaderModule;
-	if (vkCreateShaderModule(Core::engine.GetDevice().GetVkDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
+	size_t result = 0;
+
+	// Shaders
+	for (size_t i = 0; i < m_shaderStages.size(); ++i)
 	{
-		throw std::runtime_error("Shader module creation failed");
+		HashCombine(result, m_shaderStages[i].stage);
+		HashCombine(result, reinterpret_cast<std::uintptr_t>(m_shaderStages[i].module));
+		// HashCombine(result, m_shaderStages[i].pName); // I think this causes issues
+	}
+	//
+
+	// Dynamic states
+	if (m_dynamicState.dynamicStateCount > 0 && m_dynamicState.pDynamicStates)
+	{
+		std::vector<VkDynamicState> states;
+		states.reserve(m_dynamicState.dynamicStateCount);
+
+		bool isSorted = true;
+		int lastEnum = std::numeric_limits<int>::min();
+
+		for (uint32_t i = 0; i < m_dynamicState.dynamicStateCount; ++i)
+		{
+			states.push_back(m_dynamicState.pDynamicStates[i]);
+
+			if (m_dynamicState.pDynamicStates[i] < lastEnum)
+			{
+				isSorted = false;
+			}
+
+			lastEnum = m_dynamicState.pDynamicStates[i];
+		}
+
+		if (!isSorted)
+		{
+			std::sort(states.begin(), states.end(), [](const VkDynamicState& a, const VkDynamicState& b)
+				{return static_cast<int>(a) < static_cast<int>(b); });
+		}
+
+		for (const auto& state : states)
+		{
+			HashCombine(result, state);
+		}
+	}
+	//
+
+	// TODO: Maybe only hash the attribute and binding counts? Less expensive but also less accurate
+	// 
+	// Vertex Descriptions
+	if (m_vertexInputState.vertexAttributeDescriptionCount > 0)
+	{
+		for (uint32_t i = 0; i < m_vertexInputState.vertexAttributeDescriptionCount; ++i)
+		{
+			HashCombine(result, m_vertexInputState.pVertexAttributeDescriptions->binding);
+			HashCombine(result, m_vertexInputState.pVertexAttributeDescriptions->location);
+			HashCombine(result, m_vertexInputState.pVertexAttributeDescriptions->format);
+			HashCombine(result, m_vertexInputState.pVertexAttributeDescriptions->offset);
+		}
 	}
 
-	return shaderModule;
+	if (m_vertexInputState.vertexBindingDescriptionCount > 0)
+	{
+		for (uint32_t i = 0; i < m_vertexInputState.vertexBindingDescriptionCount; ++i)
+		{
+			HashCombine(result, m_vertexInputState.pVertexBindingDescriptions->binding);
+			HashCombine(result, m_vertexInputState.pVertexBindingDescriptions->stride);
+			HashCombine(result, m_vertexInputState.pVertexBindingDescriptions->inputRate);
+		}
+	}
+	//
+
+	// Input Assembly State
+	HashCombine(result, m_inputAssemblyState.topology);
+	HashCombine(result, m_inputAssemblyState.primitiveRestartEnable);
+	//
+
+	// Viewport State
+	HashCombine(result, m_viewportState.scissorCount);
+	HashCombine(result, m_viewportState.viewportCount);
+	//
+
+	// Rasterization State
+	HashCombine(result, m_rasterizationState.polygonMode);
+	HashCombine(result, m_rasterizationState.cullMode);
+	HashCombine(result, m_rasterizationState.frontFace);
+	HashCombine(result, m_rasterizationState.depthBiasEnable);
+	//
+
+	// Multisample State
+	HashCombine(result, m_multisampleState.rasterizationSamples);
+	HashCombine(result, m_multisampleState.alphaToCoverageEnable);
+	HashCombine(result, m_multisampleState.alphaToOneEnable);
+	HashCombine(result, m_multisampleState.sampleShadingEnable);
+	//
+
+	// Color Blend State
+	HashCombine(result, m_colorBlendState.attachmentCount);
+	HashCombine(result, m_colorBlendState.logicOpEnable);
+	//
+
+	// Depth Stencil State
+	HashCombine(result, m_depthStencilState.depthBoundsTestEnable);
+	HashCombine(result, m_depthStencilState.depthTestEnable);
+	HashCombine(result, m_depthStencilState.depthWriteEnable);
+	HashCombine(result, m_depthStencilState.stencilTestEnable);
+	//
+
+	// Layout Info 
+	// (I'm pretty sure that hashing the actual layouts & push constant ranges would cause issues, 
+	// since you can have multiple identical layouts in different memory locations)
+	// TODO: Look into caching Pipeline Layouts and Push Constant ranges.
+	HashCombine(result, m_layoutInfo.setLayoutCount);
+	HashCombine(result, m_layoutInfo.pushConstantRangeCount);
+	//
+
+	// Rendering Info
+	HashCombine(result, m_renderInfo.viewMask);
+	HashCombine(result, m_renderInfo.colorAttachmentCount);
+	if (m_renderInfo.colorAttachmentCount > 0)
+	{
+		for (uint32_t i = 0; i < m_renderInfo.colorAttachmentCount; ++i)
+		{
+			HashCombine(result, m_renderInfo.pColorAttachmentFormats[i]);
+		}
+	}
+	HashCombine(result, m_renderInfo.depthAttachmentFormat);
+	HashCombine(result, m_renderInfo.stencilAttachmentFormat);
+	//
+
+	return result;
 }
 
-VkShaderStageFlagBits GraphicsPipeline::GetShaderStageFlag(ShaderType type) const
+Pipeline::~Pipeline()
 {
-	switch (type)
-	{
-	case VERTEX:
-		return VK_SHADER_STAGE_VERTEX_BIT;
-		break;
-	case FRAGMENT:
-		return VK_SHADER_STAGE_FRAGMENT_BIT;
-		break;
-	default:
-		throw std::runtime_error("Specified shader type is not yet implemented");
-		break;
-	}
+	vkDestroyPipeline(Core::engine.GetDevice().GetVkDevice(), m_pipeline, nullptr);
+	vkDestroyPipelineLayout(Core::engine.GetDevice().GetVkDevice(), m_layout, nullptr);
 }

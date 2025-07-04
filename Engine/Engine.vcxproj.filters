@@ -32,6 +32,8 @@
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp" />
+    <ClCompile Include="source\core\fileIO.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core\engine.h">
@@ -70,6 +72,9 @@
     <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorAllocator.h" />
     <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorLayoutCache.h" />
     <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorBuilder.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkPipelineCache.h" />
+    <ClInclude Include="include\core\hash.h" />
+    <ClInclude Include="include\core\fileIO.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

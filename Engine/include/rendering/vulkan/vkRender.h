@@ -15,7 +15,7 @@ struct FrameContext
 };
 
 class CommandBuffer;
-class GraphicsPipeline;
+class Pipeline;
 class Renderer
 {
 public:
@@ -67,8 +67,7 @@ private:
 
 	VkDescriptorSetLayout m_descriptorSetLayout;
 
-	// Pointer so that I can forward declare the class
-	std::unique_ptr<GraphicsPipeline> m_pipeline;
+	std::shared_ptr<Pipeline> m_pipeline;
 
 	VkBuffer m_vertexBuffer;
 	VkDeviceMemory m_vertexBufferMemory;

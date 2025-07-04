@@ -146,6 +146,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\core\fileIO.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
@@ -170,11 +172,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core\engine.h" />
+    <ClInclude Include="include\core\fileIO.h" />
+    <ClInclude Include="include\core\hash.h" />
     <ClInclude Include="include\core\input.h" />
     <ClInclude Include="include\core\inputHandler.h" />
     <ClInclude Include="include\rendering\renderComponents.h" />
     <ClInclude Include="include\core\timer.h" />
     <ClInclude Include="include\core\transform.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkPipelineCache.h" />
     <ClInclude Include="include\rendering\vulkan\memory\vkAbstractAllocator.h" />
     <ClInclude Include="include\rendering\vulkan\commands\vkCommandBuffer.h" />
     <ClInclude Include="include\rendering\vulkan\commands\vkCommandPool.h" />

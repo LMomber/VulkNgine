@@ -2,12 +2,14 @@
 
 #include "engine.h"
 #include "transform.h"
+#include "fileIO.h"
 #include "renderComponents.h"
 
 #include "vkPhysicalDevice.h"
 #include "vkQueue.h"
 #include "vkCommandBuffer.h"
 #include "vkPipeline.h"
+#include "vkPipelineCache.h"
 
 // Delete whenever CommandBuffer class is in place
 #include "vkCommandPool.h"
@@ -95,24 +97,6 @@ struct MVP
 std::vector<Vertex> vertices;
 std::vector<uint32_t> indices;
 
-static std::vector<char> ReadFile(const std::string& filename) {
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-	if (!file.is_open()) {
-		throw std::runtime_error("failed to open file!");
-	}
-
-	size_t fileSize = (size_t)file.tellg();
-	std::vector<char> buffer(fileSize);
-
-	file.seekg(0);
-	file.read(buffer.data(), fileSize);
-
-	file.close();
-
-	return buffer;
-}
-
 Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
@@ -139,6 +123,9 @@ Renderer::~Renderer()
 	const auto vkDevice = m_pDevice->GetVkDevice();
 
 	vkDeviceWaitIdle(vkDevice);
+
+	PipelineCache::Reset();
+	ShaderCache::Reset();
 
 	vkDestroySampler(vkDevice, m_textureSampler, nullptr);
 	vkDestroyImageView(vkDevice, m_textureImageView, nullptr);
@@ -167,8 +154,6 @@ Renderer::~Renderer()
 	{
 		m_frameContexts[i].Destroy(m_pDevice);
 	}
-
-	m_pipeline.reset();
 }
 
 void Renderer::Update()
@@ -304,9 +289,6 @@ void Renderer::CreateDescriptorSetLayout()
 
 void Renderer::CreateGraphicsPipeline()
 {
-	const auto vertShaderCode = ReadFile("../Engine/shaders/vert.spv");
-	const auto fragShaderCode = ReadFile("../Engine/shaders/frag.spv");
-
 	std::vector<VkDynamicState> dynamicStates =
 	{
 		VK_DYNAMIC_STATE_VIEWPORT,
@@ -336,22 +318,22 @@ void Renderer::CreateGraphicsPipeline()
 	std::vector<VkFormat> imageFormats;
 	imageFormats.push_back(m_pDevice->GetSwapchain()->GetImageFormat());
 
-	m_pipeline = std::make_unique<GraphicsPipeline>();
-	m_pipeline->SetShader(vertShaderCode, VERTEX);
-	m_pipeline->SetShader(fragShaderCode, FRAGMENT);
-	m_pipeline->SetDynamicStates(dynamicStates);
-	m_pipeline->SetVertexInputState(bindingDescriptions, attributeDescriptions);
-	m_pipeline->SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
-	m_pipeline->SetViewportState();
-	m_pipeline->SetRasterizationState(VK_FALSE, VK_FALSE, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-	m_pipeline->SetMultisampleState(VK_FALSE, VK_SAMPLE_COUNT_1_BIT);
-	m_pipeline->SetColorBlendState(VK_FALSE, VK_LOGIC_OP_COPY, colorBlendAttachments);
-	m_pipeline->SetLayoutInfo(layouts);
-	m_pipeline->SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE);
-	m_pipeline->SetRenderInfo(imageFormats, m_pDevice->GetPhysicalDevice()->FindSupportedFormat(
+	GraphicsPipelineInfo pipelineInfo{};
+	pipelineInfo.SetShader("../Engine/shaders/vert.spv", VERTEX);
+	pipelineInfo.SetShader("../Engine/shaders/frag.spv", FRAGMENT);
+	pipelineInfo.SetDynamicStates(dynamicStates);
+	pipelineInfo.SetVertexInputState(bindingDescriptions, attributeDescriptions);
+	pipelineInfo.SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
+	pipelineInfo.SetViewportState();
+	pipelineInfo.SetRasterizationState(VK_FALSE, VK_FALSE, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+	pipelineInfo.SetMultisampleState(VK_FALSE, VK_SAMPLE_COUNT_1_BIT);
+	pipelineInfo.SetColorBlendState(VK_FALSE, VK_LOGIC_OP_COPY, colorBlendAttachments);
+	pipelineInfo.SetLayoutInfo(layouts);
+	pipelineInfo.SetDepthStencilState(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS, VK_FALSE);
+	pipelineInfo.SetRenderInfo(imageFormats, m_pDevice->GetPhysicalDevice()->FindSupportedFormat(
 		VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT));
 
-	m_pipeline->Create();
+	m_pipeline = PipelineCache::GetOrCreateGraphicsPipeline(pipelineInfo);
 }
 
 void Renderer::CreateTextureImage()

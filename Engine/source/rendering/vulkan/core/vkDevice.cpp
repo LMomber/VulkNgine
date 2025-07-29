@@ -3,6 +3,9 @@
 #include "vkPhysicalDevice.h"
 #include "vkQueue.h"
 
+#define VMA_IMPLEMENTATION
+#include <vma/vk_mem_alloc.h>
+
 #include <iostream>
 #include <set>
 #include <algorithm>
@@ -33,12 +36,21 @@ void Device::Initialize()
 	CreateLogicalDevice(indices);
 	m_pSwapchain = std::make_shared<Swapchain>(m_device, m_pSurface->GetSurface(), m_pVkWindow, m_pPhysicalDevice);
 	m_pQueue = std::make_shared<Queue>(m_device, indices);
+
+	VmaAllocatorCreateInfo allocatorInfo = {};
+	allocatorInfo.physicalDevice = m_pPhysicalDevice->GetDevice();
+	allocatorInfo.device = m_device;
+	allocatorInfo.instance = m_instance;
+
+	vmaCreateAllocator(&allocatorInfo, &m_allocator);
 }
 
 void Device::ShutDown()
 {
 	m_pQueue.reset();
 	m_pSwapchain.reset();
+
+	vmaDestroyAllocator(m_allocator);
 
 	vkDestroyDevice(m_device, nullptr);
 
@@ -77,9 +89,9 @@ void Device::CreateInstance()
 
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "Hello Triangle";
+	appInfo.pApplicationName = "VulkNgine";
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.pEngineName = "No Engine";
+	appInfo.pEngineName = "VulkNgine";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_4;
 
@@ -110,7 +122,7 @@ void Device::CreateInstance()
 
 	if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS)
 	{
-		throw std::runtime_error("failed to create instance");
+		throw std::runtime_error("Failed to create instance");
 	}
 }
 
@@ -168,22 +180,9 @@ VkExtent2D Device::GetExtent() const
 	return m_pSwapchain->GetExtent();
 }
 
-VkDeviceMemory Device::AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const
+const VmaAllocator& Device::GetAllocator() const
 {
-	VkDeviceMemory memory{};
-	vkAllocateMemory(m_device, &allocInfo, nullptr, &memory);
-	return memory;
-}
-
-void* Device::MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags) const
-{
-	void* data = nullptr;
-	if (vkMapMemory(m_device, memory, offset, size, flags, &data) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to map memory");
-	}
-
-	return data;
+	return m_allocator;
 }
 
 void Device::CreateLogicalDevice(QueueFamilyIndices indices)

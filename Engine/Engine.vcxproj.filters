@@ -21,10 +21,7 @@
     <ClCompile Include="source\core\transform.cpp" />
     <ClCompile Include="source\core\input.cpp" />
     <ClCompile Include="source\core\timer.cpp" />
-    <ClCompile Include="source\rendering\vulkan\memory\vkMemory.cpp" />
-    <ClCompile Include="source\rendering\vulkan\memory\vkChunkAllocator.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkPhysicalDevice.cpp" />
-    <ClCompile Include="source\rendering\vulkan\memory\vkDeviceAllocator.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkQueue.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkCommandPool.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkCommandBuffer.cpp" />
@@ -60,11 +57,7 @@
     <ClInclude Include="include\core\input.h" />
     <ClInclude Include="include\rendering\renderComponents.h" />
     <ClInclude Include="include\core\timer.h" />
-    <ClInclude Include="include\rendering\vulkan\memory\vkMemory.h" />
-    <ClInclude Include="include\rendering\vulkan\memory\vkChunkAllocator.h" />
     <ClInclude Include="include\rendering\vulkan\core\vkPhysicalDevice.h" />
-    <ClInclude Include="include\rendering\vulkan\memory\vkAbstractAllocator.h" />
-    <ClInclude Include="include\rendering\vulkan\memory\vkDeviceAllocator.h" />
     <ClInclude Include="include\rendering\vulkan\commands\vkQueue.h" />
     <ClInclude Include="include\rendering\vulkan\commands\vkCommandPool.h" />
     <ClInclude Include="include\rendering\vulkan\commands\vkCommandBuffer.h" />
@@ -75,6 +68,7 @@
     <ClInclude Include="include\rendering\vulkan\core\vkPipelineCache.h" />
     <ClInclude Include="include\core\hash.h" />
     <ClInclude Include="include\core\fileIO.h" />
+    <ClInclude Include="external\vma\vk_mem_alloc.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

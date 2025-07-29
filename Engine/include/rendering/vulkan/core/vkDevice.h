@@ -4,7 +4,9 @@
 #include "vkWindow.h"
 #include "vkSurface.h"
 #include "vkSwapchain.h"
-#include "vkDeviceAllocator.h"
+
+struct VmaAllocator_T;
+typedef VmaAllocator_T* VmaAllocator;
 
 class PhysicalDevice;
 class Queue;
@@ -15,7 +17,7 @@ public:
 
 	void Initialize();
 	void ShutDown();
-	
+
 	GLFWwindow* GetWindow() const;
 	VkDevice GetVkDevice() const;
 	VkInstance GetInstance() const;
@@ -27,14 +29,12 @@ public:
 	std::shared_ptr<Swapchain> GetSwapchain() const;
 	std::shared_ptr<Queue> GetQueue() const;
 
+	const VmaAllocator& GetAllocator() const;
+
 	Device(const Device&) = delete;
 	Device& operator=(const Device&) = delete;
 
 private:
-	friend class Chunk;
-
-	VkDeviceMemory AllocateMemory(const VkMemoryAllocateInfo& allocInfo) const;
-	void* MapMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags = 0) const;
 
 	void CreateInstance();
 	void CreateLogicalDevice(QueueFamilyIndices indices);
@@ -62,7 +62,8 @@ private:
 	std::shared_ptr<Window> m_pVkWindow = nullptr;
 	std::shared_ptr<PhysicalDevice> m_pPhysicalDevice = nullptr;
 	std::shared_ptr<Queue> m_pQueue = nullptr;
-	std::unique_ptr<DeviceAllocator> m_pDeviceAllocator = nullptr;
+
+	VmaAllocator m_allocator;
 
 	std::unique_ptr<Surface> m_pSurface = nullptr;
 

@@ -23,7 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{feb3c38d-6c91-4aee-853d-5fc99d0221ae}</ProjectGuid>
     <RootNamespace>Vulkangine</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>Engine</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -157,9 +157,6 @@
     <ClCompile Include="source\core\transform.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkCommandBuffer.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkCommandPool.cpp" />
-    <ClCompile Include="source\rendering\vulkan\memory\vkDeviceAllocator.cpp" />
-    <ClCompile Include="source\rendering\vulkan\memory\vkMemory.cpp" />
-    <ClCompile Include="source\rendering\vulkan\memory\vkChunkAllocator.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkPhysicalDevice.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkPipeline.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkQueue.cpp" />
@@ -171,6 +168,7 @@
     <ClCompile Include="source\rendering\vulkan\core\vkSwapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="external\vma\vk_mem_alloc.h" />
     <ClInclude Include="include\core\engine.h" />
     <ClInclude Include="include\core\fileIO.h" />
     <ClInclude Include="include\core\hash.h" />
@@ -180,15 +178,11 @@
     <ClInclude Include="include\core\timer.h" />
     <ClInclude Include="include\core\transform.h" />
     <ClInclude Include="include\rendering\vulkan\core\vkPipelineCache.h" />
-    <ClInclude Include="include\rendering\vulkan\memory\vkAbstractAllocator.h" />
     <ClInclude Include="include\rendering\vulkan\commands\vkCommandBuffer.h" />
     <ClInclude Include="include\rendering\vulkan\commands\vkCommandPool.h" />
     <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorBuilder.h" />
     <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorAllocator.h" />
     <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorLayoutCache.h" />
-    <ClInclude Include="include\rendering\vulkan\memory\vkDeviceAllocator.h" />
-    <ClInclude Include="include\rendering\vulkan\memory\vkMemory.h" />
-    <ClInclude Include="include\rendering\vulkan\memory\vkChunkAllocator.h" />
     <ClInclude Include="include\rendering\vulkan\vkCommon.h" />
     <ClInclude Include="include\rendering\vulkan\core\vkDevice.h" />
     <ClInclude Include="include\rendering\vulkan\core\vkPhysicalDevice.h" />

@@ -100,9 +100,6 @@ std::vector<uint32_t> indices;
 Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
-	const unsigned int memorySize = 2048;
-	m_pDeviceAllocator = std::make_unique<DeviceAllocator>(memorySize);
-
 	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
 	ChooseSharingMode();
@@ -136,11 +133,16 @@ Renderer::~Renderer()
 	vkDestroyDescriptorPool(vkDevice, m_descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(vkDevice, m_descriptorSetLayout, nullptr);
 
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	{
+		vmaDestroyBuffer(m_pDevice->GetAllocator(), m_uniformBuffers[i], m_uniformAllocations[i]);
+	}
+
+	/*for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		vkDestroyBuffer(vkDevice, m_uniformBuffers[i], nullptr);
 		vkFreeMemory(vkDevice, m_uniformBuffersMemory[i], nullptr);
-	}
+	}*/
 
 	vkDestroyBuffer(vkDevice, m_indexBuffer, nullptr);
 	vkFreeMemory(vkDevice, m_indexBufferMemory, nullptr);
@@ -461,15 +463,28 @@ void Renderer::CreateUniformBuffers()
 	const auto bufferSize = sizeof(MVP);
 
 	m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+	m_uniformAllocations.resize(MAX_FRAMES_IN_FLIGHT);
 	m_mappedUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
-	VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = bufferSize;
+		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		vkMapMemory(m_pDevice->GetVkDevice(), m_uniformBuffersMemory[i], 0, bufferSize, 0, &m_mappedUniformBuffers[i]);
+		VmaAllocationCreateInfo allocCreateInfo{};
+		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+		allocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+		VmaAllocationInfo allocInfo{};
+		if (vmaCreateBuffer(m_pDevice->GetAllocator(), &bufferInfo, &allocCreateInfo, &m_uniformBuffers[i], &m_uniformAllocations[i], &allocInfo) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Memory allocation failed");
+		}
+
+		m_mappedUniformBuffers[i] = allocInfo.pMappedData;
 	}
 }
 

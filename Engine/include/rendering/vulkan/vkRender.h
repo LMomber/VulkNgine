@@ -2,7 +2,8 @@
 
 #include "vkCommon.h"
 #include "vkDevice.h"
-#include "vkDeviceAllocator.h"
+
+#include <vma/vk_mem_alloc.h>
 
 struct FrameContext
 {
@@ -63,7 +64,6 @@ private:
 	bool HasStencilComponent(VkFormat format) const;
 
 	std::shared_ptr<Device> m_pDevice;
-	std::unique_ptr<DeviceAllocator> m_pDeviceAllocator;
 
 	VkDescriptorSetLayout m_descriptorSetLayout;
 
@@ -75,7 +75,7 @@ private:
 	VkDeviceMemory m_indexBufferMemory;
 
 	std::vector<VkBuffer> m_uniformBuffers;
-	std::vector<VkDeviceMemory> m_uniformBuffersMemory;
+	std::vector<VmaAllocation> m_uniformAllocations;
 	std::vector<void*> m_mappedUniformBuffers;
 
 	VkImage m_textureImage;

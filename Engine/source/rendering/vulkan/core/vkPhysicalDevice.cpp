@@ -142,7 +142,7 @@ uint32_t PhysicalDevice::FindMemoryType(uint32_t typeFilter, const VkMemoryPrope
 		}
 	}
 
-	throw std::runtime_error("Failed to find suitable meory type");
+	throw std::runtime_error("Failed to find suitable memory type");
 }
 
 void PhysicalDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
@@ -151,7 +151,7 @@ void PhysicalDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surfac
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
 	if (deviceCount == 0) {
-		throw std::runtime_error("failed to find GPUs with Vulkan support!");
+		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 	}
 
 	std::vector<VkPhysicalDevice> physicalDevices(deviceCount);

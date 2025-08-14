@@ -3,7 +3,9 @@
 #include "vkCommon.h"
 #include "vkDevice.h"
 
+#pragma warning(push, 0)
 #include <vma/vk_mem_alloc.h>
+#pragma warning(pop)
 
 struct FrameContext
 {
@@ -34,8 +36,6 @@ private:
 	void CreateTextureImage();
 	void CreateTextureImageView();
 	void CreateTextureSampler();
-	void CreateVertexBuffer();
-	void CreateIndexBuffer();
 	void CreateUniformBuffers();
 	void CreateSyncObjects();
 	void CreateDescriptorPool();
@@ -45,11 +45,20 @@ private:
 
 	void ChooseSharingMode();
 
-	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
+	//void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
+	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags ImageUsageFlags, VmaMemoryUsage memoryUsageFlags, VkImage& image, VmaAllocation& imageAllocation) const;
 	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
-	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const;
+	//void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const;
 	void CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) const;
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
+
+	// VMA
+	void CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlagBits bufferUsageFlags, VmaMemoryUsage memoryUsageFlags);
+
+	template <typename T>
+	void CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, std::vector<T>& bufferData, VkBufferUsageFlagBits usageFlag);
+	void CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, void* bufferData, VkBufferUsageFlagBits usageFlag);
+	//
 
 	void UpdateMVP(const int currentFrame);
 
@@ -70,16 +79,19 @@ private:
 	std::shared_ptr<Pipeline> m_pipeline;
 
 	VkBuffer m_vertexBuffer;
-	VkDeviceMemory m_vertexBufferMemory;
+	//VkDeviceMemory m_vertexBufferMemory;
+	VmaAllocation m_vertexAllocation;
 	VkBuffer m_indexBuffer;
-	VkDeviceMemory m_indexBufferMemory;
+	//VkDeviceMemory m_indexBufferMemory;
+	VmaAllocation m_indexAllocation;
 
 	std::vector<VkBuffer> m_uniformBuffers;
 	std::vector<VmaAllocation> m_uniformAllocations;
 	std::vector<void*> m_mappedUniformBuffers;
 
 	VkImage m_textureImage;
-	VkDeviceMemory m_textureImageMemory;
+	VmaAllocation m_textureAllocation;
+	//yVkDeviceMemory m_textureImageMemory;
 	VkImageView m_textureImageView;
 	VkSampler m_textureSampler;
 

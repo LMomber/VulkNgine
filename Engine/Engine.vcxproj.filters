@@ -16,7 +16,6 @@
     <ClCompile Include="source\rendering\vulkan\core\vkWindow.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\vkRender.cpp" />
     <ClCompile Include="source\core\inputHandler.cpp" />
     <ClCompile Include="source\core\transform.cpp" />
     <ClCompile Include="source\core\input.cpp" />
@@ -27,10 +26,11 @@
     <ClCompile Include="source\rendering\vulkan\commands\vkCommandBuffer.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkPipeline.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
-    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp" />
     <ClCompile Include="source\core\fileIO.cpp" />
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
+    <ClCompile Include="source\rendering\vulkan\vkRender.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core\engine.h">

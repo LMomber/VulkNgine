@@ -85,9 +85,6 @@ void CommandPool::ResetCommandBuffers(unsigned int currentFrame)
 
 	vkResetCommandPool(m_device, m_graphicsCommandPools[currentFrame], 0);
 	vkResetCommandPool(m_device, m_transferCommandPools[currentFrame], 0);
-
-	m_currentGraphicsIndex[currentFrame] = 0;
-	m_currentTransferIndex[currentFrame] = 0;
 }
 
 const CommandBuffer& CommandPool::CreateCommandBuffer(QueueType type, unsigned int currentFrame)

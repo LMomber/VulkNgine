@@ -151,7 +151,6 @@
     <ClCompile Include="source\core\fileIO.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
-    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
     <ClCompile Include="source\core\timer.cpp" />
     <ClCompile Include="source\core\input.cpp" />
@@ -162,12 +161,13 @@
     <ClCompile Include="source\rendering\vulkan\core\vkPhysicalDevice.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkPipeline.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkQueue.cpp" />
-    <ClCompile Include="source\vkRender.cpp" />
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkSurface.cpp" />
     <ClCompile Include="source\core\engine.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkWindow.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkDevice.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkSwapchain.cpp" />
+    <ClCompile Include="source\rendering\vulkan\vkRender.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\vma\vk_mem_alloc.h" />

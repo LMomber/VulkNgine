@@ -359,9 +359,6 @@ void Renderer::CreateTextureImage()
 
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
-	// -------------------------
-	// Create staging buffer
-	// -------------------------
 	VkBuffer stagingBuffer;
 	VmaAllocation stagingAllocation;
 	{
@@ -385,9 +382,6 @@ void Renderer::CreateTextureImage()
 
 	stbi_image_free(pixels);
 
-	// -------------------------
-	// Create GPU texture image
-	// -------------------------
 	{
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -411,9 +405,6 @@ void Renderer::CreateTextureImage()
 			&m_textureImage, &m_textureAllocation, nullptr);
 	}
 
-	// -------------------------
-	// Transfer data to the image
-	// -------------------------
 	TransitionImageLayout(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	CopyBufferToImage(stagingBuffer, m_textureImage,
@@ -421,9 +412,6 @@ void Renderer::CreateTextureImage()
 	TransitionImageLayout(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	// -------------------------
-	// Cleanup staging buffer
-	// -------------------------
 	vmaDestroyBuffer(m_pDevice->GetAllocator(), stagingBuffer, stagingAllocation);
 }
 

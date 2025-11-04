@@ -70,3 +70,8 @@ void Queue::ResetCommandBuffers(unsigned int currentFrame) const
 {
 	m_pCommandPool->ResetCommandBuffers(currentFrame);
 }
+
+void Queue::ResetCommandBufferIndices(unsigned int currentFrame) const
+{
+	m_pCommandPool->ResetCommandBufferIndices(currentFrame);
+}

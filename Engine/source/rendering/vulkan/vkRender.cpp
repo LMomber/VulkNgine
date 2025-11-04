@@ -268,6 +268,7 @@ void Renderer::Render()
 		throw std::runtime_error("Failed to acquire swapchain image");
 	}
 
+	m_pDevice->GetQueue()->ResetCommandBufferIndices(m_currentFrame);
 	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 

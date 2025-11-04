@@ -19,6 +19,7 @@ public:
 	std::vector<CommandBuffer> GetOrCreateCommandBuffers(QueueType type, uint32_t count, unsigned int currentFrame);
 
 	void ResetCommandBuffers(unsigned int currentFrame) const;
+	void ResetCommandBufferIndices(unsigned int currentFrame) const;
 
 	Queue(const Queue&) = delete;
 	Queue& operator=(const Queue&) = delete;

@@ -13,6 +13,7 @@ public:
 	std::vector<CommandBuffer> GetOrCreateCommandBuffers(QueueType type, unsigned int count, unsigned int currentFrame);
 
 	void ResetCommandBuffers(unsigned int currentFrame);
+	void ResetCommandBufferIndices(unsigned int currentFrame);
 
 	CommandPool(const CommandPool&) = delete;
 	CommandPool& operator=(const CommandPool&) = delete;

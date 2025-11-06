@@ -781,12 +781,12 @@ void Renderer::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
 	EndSingleTimeCommands(commandBuffer);
 }
 
-void Renderer::CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlagBits bufferUsageFlags, VmaMemoryUsage memoryUsageFlags)
+void Renderer::CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags)
 {
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.size = size;
-	bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | bufferUsageFlags;
+	bufferInfo.usage = bufferUsageFlags;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	VmaAllocationCreateInfo allocInfo{};
@@ -797,7 +797,7 @@ void Renderer::CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& 
 }
 
 template <typename T>
-void Renderer::CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, std::vector<T>& bufferData, VkBufferUsageFlagBits usageFlag)
+void Renderer::CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, std::vector<T>& bufferData, VkBufferUsageFlags usageFlag)
 {
 	// Create staging buffer
 	VkBuffer stagingBuffer;
@@ -824,7 +824,7 @@ void Renderer::CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaA
 	}
 
 	// Create vertex buffer in device local memory
-	CreateBuffer(size, buffer, allocation, usageFlag, VMA_MEMORY_USAGE_GPU_ONLY);
+	CreateBuffer(size, buffer, allocation, usageFlag | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
 	CopyBuffer(stagingBuffer, buffer, size);
 
@@ -832,7 +832,7 @@ void Renderer::CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaA
 	vmaDestroyBuffer(m_pDevice->GetAllocator(), stagingBuffer, stagingAllocation);
 }
 
-void Renderer::CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, void* bufferData, VkBufferUsageFlagBits usageFlag)
+void Renderer::CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, void* bufferData, VkBufferUsageFlags usageFlag)
 {
 	// Create staging buffer
 	VkBuffer stagingBuffer;
@@ -859,7 +859,7 @@ void Renderer::CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaA
 	}
 
 	// Create vertex buffer in device local memory
-	CreateBuffer(size, buffer, allocation, usageFlag, VMA_MEMORY_USAGE_GPU_ONLY);
+	CreateBuffer(size, buffer, allocation, usageFlag | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
 	CopyBuffer(stagingBuffer, buffer, size);
 

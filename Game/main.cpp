@@ -12,6 +12,10 @@
 #include <iostream>
 #include <cstdlib>
 
+#ifdef _DEBUG
+#define PRINT_FPS
+#endif
+
 // TODO: Add cross-platform support
 static void SetWorkingDirectory()
 {
@@ -52,11 +56,32 @@ int main() {
 
 	try
 	{
+#ifdef PRINT_FPS
+		float fps = 0;
+		float stopwatch = 0;
+#endif
+
+		float dt = 0;
+		float maxFrameTime = 0.016f;
 		while (!glfwWindowShouldClose(engine.GetWindow()))
 		{
 			glfwPollEvents();
-			engine.Update(timer.GetDeltaTime(Unit::MILLI)/1000.f);
+			dt = timer.GetDeltaTime(Unit::MILLI) / 1000.f;
+			if (dt > maxFrameTime) { dt = maxFrameTime; }
+
+			engine.Update(dt);
 			engine.Render();
+
+#ifdef PRINT_FPS
+			stopwatch += dt;
+			fps++;
+
+			if (stopwatch >= 1.f)
+			{
+				std::cout << "FPS: " << fps << std::endl;
+				fps = stopwatch = 0;
+			}
+#endif
 		}
 	}
 	catch (const std::exception& e)

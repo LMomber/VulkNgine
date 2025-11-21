@@ -5,21 +5,44 @@ float Timer::GetDeltaTime(Unit unit)
 	{
 		std::chrono::duration<long long, std::nano> timePoint = m_timer.now().time_since_epoch();
 		std::chrono::nanoseconds timeDifference = timePoint - m_lastTimePoint;
-		m_lastTimePoint = timePoint;
+
+		float t1 = 0;
+		float t2 = 0;
+		float dif = 0;
 
 		switch (unit)
 		{
 		case NANO:
-			return ReturnType<std::chrono::nanoseconds>(timeDifference);
+			t1 = ReturnType<std::chrono::nanoseconds>(timePoint);
+			t2 = ReturnType<std::chrono::nanoseconds>(m_lastTimePoint);
+			dif = t1 - t2;
+
+			m_lastTimePoint = timePoint;
+			return dif;
 			break;
 		case MICRO:
-			return ReturnType<std::chrono::microseconds>(timeDifference);
+			t1 = ReturnType<std::chrono::microseconds>(timePoint);
+			t2 = ReturnType<std::chrono::microseconds>(m_lastTimePoint);
+			dif = t1 - t2;
+
+			m_lastTimePoint = timePoint;
+			return dif;
 			break;
 		case MILLI:
-			return ReturnType<std::chrono::milliseconds>(timeDifference);
+			t1 = ReturnType<std::chrono::milliseconds>(timePoint);
+			t2 = ReturnType<std::chrono::milliseconds>(m_lastTimePoint);
+			dif = t1 - t2;
+
+			m_lastTimePoint = timePoint;
+			return dif;
 			break;
 		case SECONDS:
-			return ReturnType<std::chrono::seconds>(timeDifference);
+			t1 = ReturnType<std::chrono::seconds>(timePoint);
+			t2 = ReturnType<std::chrono::seconds>(m_lastTimePoint);
+			dif = t1 - t2;
+
+			m_lastTimePoint = timePoint;
+			return dif;
 			break;
 		}
 

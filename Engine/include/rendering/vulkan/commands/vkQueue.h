@@ -18,7 +18,9 @@ public:
 	const CommandBuffer& GetOrCreateCommandBuffer(QueueType type, unsigned int currentFrame);
 	std::vector<CommandBuffer> GetOrCreateCommandBuffers(QueueType type, uint32_t count, unsigned int currentFrame);
 
-	void ResetCommandBuffers(unsigned int currentFrame) const;
+	const CommandBuffer& CreateSingleTimeCommandBuffer(QueueType type, unsigned int currentFrame);
+
+	void ResetCommandPools(unsigned int currentFrame) const;
 	void ResetCommandBufferIndices(unsigned int currentFrame) const;
 
 	Queue(const Queue&) = delete;

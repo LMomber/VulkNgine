@@ -204,39 +204,28 @@ void Device::CreateLogicalDevice(QueueFamilyIndices indices)
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
-	// TODO
-	/*VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
-	descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-	descriptorIndexingFeatures.*/
-
-	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
-	dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
-	dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
-	dynamicRenderingFeatures.pNext = nullptr;
-
 	VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
 	timelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
 	timelineFeatures.timelineSemaphore = VK_TRUE;
-	timelineFeatures.pNext = &dynamicRenderingFeatures;
+	timelineFeatures.pNext = nullptr;
 
-	VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures demoteFeature{};
-	demoteFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES;
-	demoteFeature.shaderDemoteToHelperInvocation = VK_TRUE;
-	demoteFeature.pNext = &timelineFeatures;
+	VkPhysicalDeviceFeatures features{};
+	features.samplerAnisotropy = VK_TRUE;
 
-	VkPhysicalDeviceFeatures2 features2{};
-	features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	features2.features.samplerAnisotropy = VK_TRUE;
-	features2.pNext = &demoteFeature;
+	VkPhysicalDeviceVulkan13Features features13{};
+	features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+	features13.synchronization2 = VK_TRUE;
+	features13.dynamicRendering = VK_TRUE;
+	features13.pNext = &timelineFeatures;
 
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	createInfo.pEnabledFeatures = nullptr;
+	createInfo.pEnabledFeatures = &features;
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-	createInfo.pNext = &features2;
+	createInfo.pNext = &features13;
 
 	if (g_enableValidationLayers)
 	{

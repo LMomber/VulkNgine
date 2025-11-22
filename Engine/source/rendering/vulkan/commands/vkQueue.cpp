@@ -66,9 +66,14 @@ std::vector<CommandBuffer> Queue::GetOrCreateCommandBuffers(QueueType type, uint
 	return m_pCommandPool->GetOrCreateCommandBuffers(type, count, currentFrame);
 }
 
-void Queue::ResetCommandBuffers(unsigned int currentFrame) const
+const CommandBuffer& Queue::CreateSingleTimeCommandBuffer(QueueType type, unsigned int currentFrame)
 {
-	m_pCommandPool->ResetCommandBuffers(currentFrame);
+	return m_pCommandPool->CreateSingleTimeCommandBuffer(type, currentFrame);
+}
+
+void Queue::ResetCommandPools(unsigned int currentFrame) const
+{
+	m_pCommandPool->ResetCommandPools(currentFrame);
 }
 
 void Queue::ResetCommandBufferIndices(unsigned int currentFrame) const

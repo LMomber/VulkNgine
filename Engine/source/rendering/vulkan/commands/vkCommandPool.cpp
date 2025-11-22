@@ -79,12 +79,38 @@ std::vector<CommandBuffer> CommandPool::GetOrCreateCommandBuffers(QueueType type
 	}
 }
 
-void CommandPool::ResetCommandBuffers(unsigned int currentFrame)
+const CommandBuffer& CommandPool::CreateSingleTimeCommandBuffer(QueueType type, unsigned int currentFrame)
+{
+	ASSERT_CURRENT_FRAME(currentFrame);
+
+	VkCommandPool commandPool = GetVkCommandPool(type, currentFrame);
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = 1;
+
+	CommandBuffer commandBuffer;
+	VkCommandBuffer* pCommandBuffer = commandBuffer.GetVkPtr();
+	if (vkAllocateCommandBuffers(m_device, &allocInfo, pCommandBuffer) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate command buffers");
+	}
+
+	return commandBuffer;
+}
+
+void CommandPool::ResetCommandPools(unsigned int currentFrame)
 {
 	ASSERT_CURRENT_FRAME(currentFrame);
 
 	vkResetCommandPool(m_device, m_graphicsCommandPools[currentFrame], 0);
 	vkResetCommandPool(m_device, m_transferCommandPools[currentFrame], 0);
+}
+
+void CommandPool::ResetCommandBuffer(const CommandBuffer& commandBuffer)
+{
+	vkResetCommandBuffer(commandBuffer.GetVkCommandBuffer(), 0);
 }
 
 void CommandPool::ResetCommandBufferIndices(unsigned int currentFrame)

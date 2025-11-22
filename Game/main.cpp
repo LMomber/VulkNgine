@@ -12,9 +12,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#ifdef _DEBUG
 #define PRINT_FPS
-#endif
 
 // TODO: Add cross-platform support
 static void SetWorkingDirectory()

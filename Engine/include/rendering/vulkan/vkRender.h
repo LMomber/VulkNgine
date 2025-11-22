@@ -13,7 +13,6 @@ struct FrameContext
 	void Destroy(std::shared_ptr<Device> device) const;
 
 	VkSemaphore m_imageAvailableSemaphore;
-	VkSemaphore m_renderFinishedSemaphore;
 	uint64_t m_timelineValue;
 };
 
@@ -45,19 +44,15 @@ private:
 
 	void ChooseSharingMode();
 
-	//void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
-	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags ImageUsageFlags, VmaMemoryUsage memoryUsageFlags, VkImage& image, VmaAllocation& imageAllocation) const;
-	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
-	//void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) const;
-	void CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) const;
-	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
-
 	// VMA
 	void CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags);
 
 	template <typename T>
 	void CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, std::vector<T>& bufferData, VkBufferUsageFlags usageFlag);
 	void CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, void* bufferData, VkBufferUsageFlags usageFlag);
+
+	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags ImageUsageFlags, VmaMemoryUsage memoryUsageFlags, VkImage& image, VmaAllocation& imageAllocation) const;
+	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
 	//
 
 	void UpdateMVP(const int currentFrame);
@@ -68,10 +63,6 @@ private:
 	const CommandBuffer& BeginSingleTimeCommands() const;
 	void EndSingleTimeCommands(CommandBuffer commandBuffer) const;
 
-	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
-
-	bool HasStencilComponent(VkFormat format) const;
-
 	std::shared_ptr<Device> m_pDevice;
 
 	VkDescriptorSetLayout m_descriptorSetLayout;
@@ -79,10 +70,8 @@ private:
 	std::shared_ptr<Pipeline> m_pipeline;
 
 	VkBuffer m_vertexBuffer;
-	//VkDeviceMemory m_vertexBufferMemory;
 	VmaAllocation m_vertexAllocation;
 	VkBuffer m_indexBuffer;
-	//VkDeviceMemory m_indexBufferMemory;
 	VmaAllocation m_indexAllocation;
 
 	std::vector<VkBuffer> m_uniformBuffers;
@@ -91,17 +80,18 @@ private:
 
 	VkImage m_textureImage;
 	VmaAllocation m_textureAllocation;
-	//yVkDeviceMemory m_textureImageMemory;
 	VkImageView m_textureImageView;
 	VkSampler m_textureSampler;
 
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;
 
+	VkSemaphore m_globalTimelineSemaphore;
 	uint64_t m_currentTimelineValue = 0;
+	std::vector<VkSemaphore> m_renderFinishedPerImage;
+
 	uint32_t m_currentFrame = 0;
 
-	VkSemaphore m_globalTimelineSemaphore;
 	std::array<FrameContext, MAX_FRAMES_IN_FLIGHT> m_frameContexts{};
 
 	std::vector<uint32_t> m_queueSetIndices;

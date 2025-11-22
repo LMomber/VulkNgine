@@ -40,7 +40,7 @@
 		} while(0)
 #endif
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
+const int MAX_FRAMES_IN_FLIGHT = 3;
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -56,7 +56,7 @@ const std::vector<const char*> deviceExtensions =
 	VK_KHR_PRESENT_WAIT_EXTENSION_NAME,
 	VK_KHR_PRESENT_ID_EXTENSION_NAME,
 	VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-	VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
+	VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
 };
 
 enum class ShaderType

@@ -15,6 +15,7 @@ public:
 	void EndRendering() const;
 
 	VkCommandBuffer* GetVkPtr();
+	const VkCommandBuffer GetVkCommandBuffer() const;
 
 	void SetViewPort(const VkViewport* pViewports, uint32_t firstViewport = 0, uint32_t viewportCount = 1) const;
 	void SetScissor(const VkRect2D* pScissors, uint32_t firstScissor = 0, uint32_t scissorCount = 1) const;
@@ -37,13 +38,17 @@ public:
 		uint32_t dynamicOffsetCount = 0,
 		const uint32_t* pDynamicOffsets = nullptr) const;
 
+	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
+
 	void MemoryBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, VkDependencyFlags flags = 0) const;
 	void BufferMemoryBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, VkDependencyFlags flags = 0) const;
 	void ImageMemoryBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers, VkDependencyFlags flags = 0) const;
 
-	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const;
-	void CopyBufferToImage(VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkBufferImageCopy* pRegions) const;
+	void CopyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) const;
+	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
 private:
+	bool HasStencilComponent(VkFormat format) const;
+
 	VkCommandBuffer m_commandBuffer;
 	VkPipelineBindPoint m_pipelineBindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;
 };

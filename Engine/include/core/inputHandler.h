@@ -3,5 +3,5 @@
 class InputHandler
 {
 public:
-    virtual void Update(float);
+    virtual void Update(double);
 };

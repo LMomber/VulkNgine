@@ -1,14 +1,16 @@
 #include "timer.h"
 
-float Timer::GetDeltaTime(Unit unit)
+#include <iostream>
+
+long long Timer::GetDeltaTime(Unit unit)
 {
 	{
 		std::chrono::duration<long long, std::nano> timePoint = m_timer.now().time_since_epoch();
 		std::chrono::nanoseconds timeDifference = timePoint - m_lastTimePoint;
 
-		float t1 = 0;
-		float t2 = 0;
-		float dif = 0;
+		long long t1 = 0;
+		long long t2 = 0;
+		long long dif = 0;
 
 		switch (unit)
 		{

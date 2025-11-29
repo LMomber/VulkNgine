@@ -24,7 +24,7 @@ void Core::Engine::Initialize()
 		});
 }
 
-void Core::Engine::Update(float deltaTime)
+void Core::Engine::Update(double deltaTime)
 {
 	m_pInput->Update();
 	m_pInputHandler->Update(deltaTime);

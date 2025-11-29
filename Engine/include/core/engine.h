@@ -20,7 +20,7 @@ namespace Core
 	{
 	public:
 		void Initialize();
-		void Update(float);
+		void Update(double);
 		void Render();
 		void ShutDown();
 

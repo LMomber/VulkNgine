@@ -55,29 +55,33 @@ int main() {
 	try
 	{
 #ifdef PRINT_FPS
-		float fps = 0;
-		float stopwatch = 0;
+		int fps = 0;
+		double stopwatch = 0;
 #endif
 
-		float dt = 0;
+		long long dt = 0;
 		float maxFrameTime = 0.016f;
 		while (!glfwWindowShouldClose(engine.GetWindow()))
 		{
 			glfwPollEvents();
-			dt = timer.GetDeltaTime(Unit::MILLI) / 1000.f;
-			if (dt > maxFrameTime) { dt = maxFrameTime; }
+			dt = timer.GetDeltaTime(Unit::MICRO);
 
-			engine.Update(dt);
+			double dt_double = static_cast<double>(dt);
+			dt_double /= 1'000'000.f;
+			if (dt_double > maxFrameTime) { dt_double = maxFrameTime; }
+
+			engine.Update(dt_double);
 			engine.Render();
 
 #ifdef PRINT_FPS
-			stopwatch += dt;
+			stopwatch += dt_double;
 			fps++;
 
 			if (stopwatch >= 1.f)
 			{
 				std::cout << "FPS: " << fps << std::endl;
-				fps = stopwatch = 0;
+				fps = 0;
+				stopwatch = 0.0;
 			}
 #endif
 		}

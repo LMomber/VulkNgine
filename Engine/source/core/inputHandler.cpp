@@ -9,10 +9,10 @@
 
 using namespace Core;
 
-void InputHandler::Update(float deltaTime)
+void InputHandler::Update(double deltaTime)
 {
-    static float constant = 30.f;
-    float speed = constant * deltaTime;
+    static double constant = 30.0;
+    float speed = static_cast<float>(constant * deltaTime);
     float rotationSpeed = speed * 5.f;
 
     entt::entity cameraEntity = Core::engine.GetRegistry().view<Camera>().front();

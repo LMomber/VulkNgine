@@ -26,7 +26,7 @@ struct Transform
 
 	/// <summary>Gets the matrix that transforms from local space to world space.
 	/// Calling this function recomputes the matrix when necessary.</summary>
-	[[nodiscard]] const glm::mat4& World();
+	[[nodiscard]] const glm::mat4& GetWorld();
 
 	void SetTranslation(const glm::vec3& translation)
 	{

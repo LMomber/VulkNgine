@@ -760,7 +760,7 @@ void Renderer::UpdateMVP(const int currentImage)
 	const glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
 
 	MVP ubo{};
-	auto world = glm::rotate(transform.World(), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	auto world = glm::rotate(transform.GetWorld(), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	ubo.model = glm::rotate(world, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
 	ubo.view = glm::lookAtRH(trans, focusPoint, worldUp);
 	ubo.projection = camera.projection;

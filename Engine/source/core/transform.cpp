@@ -2,7 +2,7 @@
 
 using namespace glm;
 
-const glm::mat4& Transform::World()
+const glm::mat4& Transform::GetWorld()
 {
     if (m_worldMatrixDirty)
     {

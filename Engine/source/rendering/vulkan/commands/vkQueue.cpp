@@ -66,7 +66,7 @@ std::vector<CommandBuffer> Queue::GetOrCreateCommandBuffers(QueueType type, uint
 	return m_pCommandPool->GetOrCreateCommandBuffers(type, count, currentFrame);
 }
 
-const CommandBuffer& Queue::CreateSingleTimeCommandBuffer(QueueType type, unsigned int currentFrame)
+CommandBuffer Queue::CreateSingleTimeCommandBuffer(QueueType type, unsigned int currentFrame)
 {
 	return m_pCommandPool->CreateSingleTimeCommandBuffer(type, currentFrame);
 }

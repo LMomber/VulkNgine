@@ -79,7 +79,7 @@ std::vector<CommandBuffer> CommandPool::GetOrCreateCommandBuffers(QueueType type
 	}
 }
 
-const CommandBuffer& CommandPool::CreateSingleTimeCommandBuffer(QueueType type, unsigned int currentFrame)
+CommandBuffer CommandPool::CreateSingleTimeCommandBuffer(QueueType type, unsigned int currentFrame)
 {
 	ASSERT_CURRENT_FRAME(currentFrame);
 

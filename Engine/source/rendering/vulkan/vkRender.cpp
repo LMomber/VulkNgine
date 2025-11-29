@@ -145,8 +145,6 @@ Renderer::~Renderer()
 	vmaDestroyBuffer(m_pDevice->GetAllocator(), m_indexBuffer, m_indexAllocation);
 	vmaDestroyBuffer(m_pDevice->GetAllocator(), m_vertexBuffer, m_vertexAllocation);
 
-	vkDestroySemaphore(vkDevice, m_globalTimelineSemaphore, nullptr);
-
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		m_frameContexts[i].Destroy(m_pDevice);
@@ -170,13 +168,13 @@ void Renderer::Render()
 	VkQueue graphicsQueue = m_pDevice->GetQueue()->GetQueue(QueueType::GRAPHICS);
 	VkQueue presentQueue = m_pDevice->GetQueue()->GetQueue(QueueType::PRESENT);
 	VkSwapchainKHR swapchain = m_pDevice->GetSwapchain()->GetVkSwapChain();
-		
+
 	// 1. Wait on previous frame
 	// Use timeline semaphore as device-host synchronization
 	VkSemaphoreWaitInfo waitInfo{};
 	waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
 	waitInfo.semaphoreCount = 1;
-	waitInfo.pSemaphores = &m_globalTimelineSemaphore;
+	waitInfo.pSemaphores = &frame.m_timelineSemaphore;
 	waitInfo.pValues = &frame.m_timelineValue;
 	waitInfo.flags = 0;
 
@@ -211,8 +209,7 @@ void Renderer::Render()
 	RecordCommandBuffer(commandBuffer, imageIndex);
 
 	// 4. Submit to queue
-	uint64_t signalValue = ++m_currentTimelineValue;
-	frame.m_timelineValue = signalValue;
+	uint64_t signalValue = ++frame.m_timelineValue;
 
 	VkTimelineSemaphoreSubmitInfo timelineInfo{};
 	timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
@@ -220,7 +217,7 @@ void Renderer::Render()
 	timelineInfo.pSignalSemaphoreValues = &signalValue;
 
 	VkSemaphore waitSemaphores[] = { frame.m_imageAvailableSemaphore };
-	VkSemaphore signalSemaphores[] = { m_globalTimelineSemaphore, m_renderFinishedPerImage[imageIndex] };
+	VkSemaphore signalSemaphores[] = { frame.m_timelineSemaphore, m_renderFinishedPerImage[imageIndex] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 	VkSubmitInfo submitInfo{};
@@ -357,7 +354,7 @@ void Renderer::CreateTextureImage()
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	VkBuffer stagingBuffer;
-	VmaAllocation stagingAllocation;
+	VmaAllocation stagingAllocation{};
 	{
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -480,17 +477,6 @@ void Renderer::CreateUniformBuffers()
 
 void Renderer::CreateSyncObjects()
 {
-	VkSemaphoreTypeCreateInfo timelineCreateInfo{};
-	timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-	timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-	timelineCreateInfo.initialValue = 0;
-
-	VkSemaphoreCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	createInfo.pNext = &timelineCreateInfo;
-
-	vkCreateSemaphore(m_pDevice->GetVkDevice(), &createInfo, nullptr, &m_globalTimelineSemaphore);
-
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		m_frameContexts[i].Init(m_pDevice);
@@ -879,7 +865,7 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 }
 
 // Port to command buffer class
-const CommandBuffer& Renderer::BeginSingleTimeCommands() const
+CommandBuffer Renderer::BeginSingleTimeCommands() const
 {
 	const QueueType type = QueueType::GRAPHICS;
 	const auto queue = m_pDevice->GetQueue();
@@ -922,11 +908,26 @@ void FrameContext::Init(std::shared_ptr<Device> device)
 
 	if (vkCreateSemaphore(device->GetVkDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphore) != VK_SUCCESS)
 	{
-		throw std::logic_error("Failed to create semaphores for FrameContext");
+		throw std::logic_error("Failed to create semaphore for FrameContext");
+	}
+
+	VkSemaphoreTypeCreateInfo timelineCreateInfo{};
+	timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+	timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+	timelineCreateInfo.initialValue = 0;
+
+	VkSemaphoreCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	createInfo.pNext = &timelineCreateInfo;
+
+	if (vkCreateSemaphore(device->GetVkDevice(), &createInfo, nullptr, &m_timelineSemaphore) != VK_SUCCESS)
+	{
+		throw std::logic_error("Failed to create timeline semaphore for FrameContext");
 	}
 }
 
 void FrameContext::Destroy(std::shared_ptr<Device> device) const
 {
 	if (m_imageAvailableSemaphore) vkDestroySemaphore(device->GetVkDevice(), m_imageAvailableSemaphore, nullptr);
+	if (m_timelineSemaphore) vkDestroySemaphore(device->GetVkDevice(), m_timelineSemaphore, nullptr);
 }

@@ -5,14 +5,15 @@
 #include "transform.h"
 #include "renderComponents.h"
 
-#undef APIENTRY
-#include <Windows.h>
-
 #include <filesystem>
 #include <iostream>
 #include <cstdlib>
 
 #define PRINT_FPS
+
+#undef APIENTRY
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 
 // TODO: Add cross-platform support
 static void SetWorkingDirectory()

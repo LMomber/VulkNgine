@@ -13,6 +13,7 @@ struct FrameContext
 	void Destroy(std::shared_ptr<Device> device) const;
 
 	VkSemaphore m_imageAvailableSemaphore;
+	VkSemaphore m_timelineSemaphore;
 	uint64_t m_timelineValue;
 };
 
@@ -60,7 +61,7 @@ private:
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 	void RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex) const;
-	const CommandBuffer& BeginSingleTimeCommands() const;
+	CommandBuffer BeginSingleTimeCommands() const;
 	void EndSingleTimeCommands(CommandBuffer commandBuffer) const;
 
 	std::shared_ptr<Device> m_pDevice;
@@ -85,9 +86,6 @@ private:
 
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;
-
-	VkSemaphore m_globalTimelineSemaphore;
-	uint64_t m_currentTimelineValue = 0;
 	std::vector<VkSemaphore> m_renderFinishedPerImage;
 
 	uint32_t m_currentFrame = 0;

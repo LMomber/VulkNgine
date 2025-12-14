@@ -1,16 +1,5 @@
 #include "sceneObject.h"
 
-SceneObject::SceneObject(ObjectType type, RID handle, std::shared_ptr<SceneObject> parent) noexcept
-	: m_type(type), m_handle(handle), m_parent(parent)
-{
-}
-
-void SceneObject::AddChild(ObjectType type, RID handle) noexcept
-{
-	std::shared_ptr<SceneObject> child = std::make_shared<SceneObject>(type, handle, shared_from_this());
-	m_children.emplace_back(child);
-}
-
 RID SceneObject::GetHandle() const noexcept
 {
 	return m_handle;
@@ -21,13 +10,29 @@ ObjectType SceneObject::GetType() const noexcept
 	return m_type;
 }
 
-std::shared_ptr<SceneObject> SceneObject::GetParent() const noexcept
+SceneNode::SceneNode(SceneObject* object, SceneNode* parent) noexcept
+	: m_object(object), m_parent(parent)
+{}
+
+SceneNode* SceneNode::AddChild(SceneObject* object)
+{
+	std::unique_ptr<SceneNode> child = std::make_unique<SceneNode>(object, this); 
+	SceneNode* raw_ptr = child.get(); // Get the raw ptr because child is invalid after move
+	m_children.emplace_back(std::move(child));
+	return raw_ptr;
+}
+
+SceneObject* SceneNode::GetObject() const noexcept
+{
+	return m_object;
+}
+
+SceneNode* SceneNode::GetParent() const noexcept
 {
 	return m_parent;
 }
 
-const std::vector<std::shared_ptr<SceneObject>>& SceneObject::GetChildren() const noexcept
+const std::vector<std::unique_ptr<SceneNode>>& SceneNode::GetChildren() const noexcept
 {
 	return m_children;
 }
-

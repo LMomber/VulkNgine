@@ -10,6 +10,7 @@
 #include <optional>
 #include <set>
 #include <iostream>
+#include <unordered_map>
 
 #include <cassert>
 #include <stdexcept>

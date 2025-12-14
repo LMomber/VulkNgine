@@ -31,6 +31,8 @@
     <ClCompile Include="source\core\fileIO.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\vkRender.cpp" />
+    <ClCompile Include="source\core\sceneObject.cpp" />
+    <ClCompile Include="source\core\rid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core\engine.h">
@@ -69,6 +71,8 @@
     <ClInclude Include="include\core\hash.h" />
     <ClInclude Include="include\core\fileIO.h" />
     <ClInclude Include="external\vma\vk_mem_alloc.h" />
+    <ClInclude Include="include\core\sceneObject.h" />
+    <ClInclude Include="include\core\rid.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

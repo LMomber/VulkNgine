@@ -30,13 +30,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -117,7 +117,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)external;$(ProjectDir)libs\Vulkan\Include;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -136,7 +136,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)external;$(ProjectDir)libs\Vulkan\Include;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,6 +149,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\core\fileIO.cpp" />
+    <ClCompile Include="source\core\rid.cpp" />
+    <ClCompile Include="source\core\sceneObject.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
@@ -176,6 +178,8 @@
     <ClInclude Include="include\core\hash.h" />
     <ClInclude Include="include\core\input.h" />
     <ClInclude Include="include\core\inputHandler.h" />
+    <ClInclude Include="include\core\rid.h" />
+    <ClInclude Include="include\core\sceneObject.h" />
     <ClInclude Include="include\rendering\renderComponents.h" />
     <ClInclude Include="include\core\timer.h" />
     <ClInclude Include="include\core\transform.h" />

@@ -2,6 +2,12 @@
 
 #include "vkCommon.h"
 #include "vkDevice.h"
+#include "vkData.h"
+
+#include "sceneObject.h"
+#include "transform.h"
+
+#include "textureResolver.h"
 
 #pragma warning(push, 0)
 #include <vma/vk_mem_alloc.h>
@@ -34,14 +40,15 @@ private:
 	void CreateDescriptorSetLayout();
 	void CreateGraphicsPipeline();
 	void CreateTextureImage();
-	void CreateTextureImageView();
 	void CreateTextureSampler();
 	void CreateUniformBuffers();
 	void CreateSyncObjects();
 	void CreateDescriptorPool();
 	void CreateDescriptorSets();
 
-	void LoadModel() const;
+	VkFormat GetVkFormat(TextureFormat format) const;
+	void CreateTextureImageNew(const ResolvedTextureSource& srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
+	void DestroyTexture(const Vulkan::Texture& texture);
 
 	void ChooseSharingMode();
 
@@ -70,19 +77,12 @@ private:
 
 	std::shared_ptr<Pipeline> m_pipeline;
 
-	VkBuffer m_vertexBuffer;
-	VmaAllocation m_vertexAllocation;
-	VkBuffer m_indexBuffer;
-	VmaAllocation m_indexAllocation;
-
 	std::vector<VkBuffer> m_uniformBuffers;
 	std::vector<VmaAllocation> m_uniformAllocations;
 	std::vector<void*> m_mappedUniformBuffers;
 
-	VkImage m_textureImage;
-	VmaAllocation m_textureAllocation;
-	VkImageView m_textureImageView;
-	VkSampler m_textureSampler;
+	Vulkan::Texture m_vikingTexture;
+	std::vector<Vulkan::Model> m_modelsToRender{};
 
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;

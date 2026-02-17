@@ -5,7 +5,7 @@
 PhysicalDevice::PhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
 {
 	ASSERT_VK_INSTANCE(instance);
-	assert(surface != VK_NULL_HANDLE && "Surface is either uninitialized or deleted");
+	assert(surface != VK_NULL_HANDLE && "Mesh is either uninitialized or deleted");
 
 	PickPhysicalDevice(instance, surface);
 }

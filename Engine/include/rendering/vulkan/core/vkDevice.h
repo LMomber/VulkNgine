@@ -65,7 +65,7 @@ private:
 
 	VmaAllocator m_allocator;
 
-	std::unique_ptr<Surface> m_pSurface = nullptr;
+	std::unique_ptr<VK::Surface> m_pSurface = nullptr;
 
 	VkInstance m_instance{};
 	VkDevice m_device{};

@@ -48,6 +48,16 @@ void Transform::SetFromMatrix(const glm::mat4& m44)
     SetMatrixDirty();
 }
 
+void Transform::ResetToIdentity()
+{
+    m_translation = glm::vec3(0.0f, 0.0f, 0.0f);
+    m_scale = glm::vec3(1.0f, 1.0f, 1.0f);
+    m_rotation = glm::identity<glm::quat>();
+
+    m_worldMatrix = glm::identity<glm::mat4>();
+    m_worldMatrixDirty = true;
+}
+
 void Transform::SetMatrixDirty()
 {
     m_worldMatrixDirty = true;

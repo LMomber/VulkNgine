@@ -1,5 +1,7 @@
 #include "vkSurface.h"
 
+using namespace VK;
+
 Surface::Surface(const VkInstance& instance, GLFWwindow* window) :
 	m_instance(instance), m_pGlfwWindow(window)
 {

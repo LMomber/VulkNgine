@@ -1,19 +1,6 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include "glfw/include/GLFW/glfw3.h"
-
-#include <vector>
-#include <array>
-#include <memory>
-#include <fstream>
-#include <optional>
-#include <set>
-#include <iostream>
-#include <unordered_map>
-
-#include <cassert>
-#include <stdexcept>
+#include "pch.h"
 
 #define ASSERT_VK_LOGICAL_DEVICE(device) assert(device != VK_NULL_HANDLE && "Vulkan device is either uninitialized or deleted")
 #define ASSERT_VK_PHYSICAL_DEVICE(device) assert(device != VK_NULL_HANDLE && "Vulkan physical device is either uninitialized or deleted")

@@ -48,6 +48,7 @@ struct Transform
 
 	void SetFromMatrix(const glm::mat4& transform);
 
+	void ResetToIdentity();
 private:
 	glm::vec3 m_translation = glm::vec3(0.0f, 0.0f, 0.0f);
 	glm::vec3 m_scale = glm::vec3(1.0f, 1.0f, 1.0f);

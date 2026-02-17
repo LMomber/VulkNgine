@@ -2,15 +2,18 @@
 
 #include "vkCommon.h"
 
-class Surface
+namespace VK
 {
-public:
-	Surface(const VkInstance& instance, GLFWwindow* window);
-	~Surface();
+	class Surface
+	{
+	public:
+		Surface(const VkInstance& instance, GLFWwindow* window);
+		~Surface();
 
-	VkSurfaceKHR GetSurface() const;
-private:
-	VkSurfaceKHR m_surface;
-	VkInstance m_instance;
-	GLFWwindow* m_pGlfwWindow;
-};
+		VkSurfaceKHR GetSurface() const;
+	private:
+		VkSurfaceKHR m_surface;
+		VkInstance m_instance;
+		GLFWwindow* m_pGlfwWindow;
+	};
+}

@@ -1,14 +1,6 @@
 #pragma once
 
-#include "vkCommon.h"
-
-#pragma warning(push)
-#pragma warning(disable : 4267) // Deprecated declarations
-#include <entt/entity/registry.hpp>
-#pragma warning(pop)
-
-#include <memory>
-#include <cassert>
+#include "pch.h"
 
 class Device;
 class Renderer;

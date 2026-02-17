@@ -1,7 +1,9 @@
 #pragma once
 
-#include "vkCommon.h"
-#include "rid.h"
+#include "pch.h"
+
+#include "transform.h"
+#include "assetStorage.h"
 
 // enum class for strong typing
 enum class ObjectType
@@ -11,36 +13,50 @@ enum class ObjectType
 	TYPE_NONE
 };
 
-class SceneObject : public std::enable_shared_from_this<SceneObject>
+class Object : public std::enable_shared_from_this<Object>
 {
 public:
-	SceneObject() = delete;
-	SceneObject(ObjectType type, RID handle) noexcept : m_type(type), m_handle(handle) {
-	}
+	Object() = default;
+	Object(ObjectType type, AssetID id = AssetID()) noexcept;
 
-	RID GetHandle() const noexcept;
+	AssetID GetHandle() const noexcept;
+	void SetHandle(AssetID rid) noexcept;
 	ObjectType GetType() const noexcept;
+	void SetType(ObjectType type) noexcept;
 
 private:
-	// No defaults needed since the default constructor is deleted.
-	ObjectType m_type;
-	RID m_handle;
+	ObjectType m_type = ObjectType::TYPE_NONE;
+	AssetID m_id{};
+	//RID m_handle = RID(0);
 };
 
 // Using raw pointers to avoid reference counting (ref counting == safe but slow).
-class SceneNode : public std::enable_shared_from_this<SceneNode>
+class Node : public std::enable_shared_from_this<Node>
 {
 public:
-	SceneNode(SceneObject* object = nullptr, SceneNode* parent = nullptr) noexcept;
+	Node(const Object& object, Node* parent = nullptr) noexcept;
 
-	SceneNode* AddChild(SceneObject* object = nullptr);
+	Node* AddChild(const Object& object);
 
-	SceneObject* GetObject() const noexcept;
-	SceneNode* GetParent() const noexcept;
-	const std::vector<std::unique_ptr<SceneNode>>& GetChildren() const noexcept;
+	const Object& GetObject() const noexcept;
+	void SetObject(const Object& object) noexcept;
+	Node* GetParent() const noexcept;
+	void SetParent(Node* parent) noexcept;
+	const std::vector<std::unique_ptr<Node>>& GetChildren() const noexcept;
+	Transform& GetTransform() noexcept;
+	void SetTransform(const Transform& transform) noexcept;
+	bool IsRoot() const noexcept;
+	void SetRoot(bool root = true) noexcept;
+
+	Node(const Node&) = delete;
+	Node operator=(const Node&) = delete;
+	Node(Node&&) noexcept = delete;
+	Node& operator=(Node&&) noexcept = delete;
 
 private:
-	SceneObject* m_object = nullptr;
-	SceneNode* m_parent = nullptr;
-	std::vector<std::unique_ptr<SceneNode>> m_children{};
+	Node* m_parent = nullptr;
+	Object m_object;
+	Transform m_transform;
+	bool m_root = false;
+	std::vector<std::unique_ptr<Node>> m_children{};
 };

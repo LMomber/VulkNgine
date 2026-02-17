@@ -28,11 +28,16 @@
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp" />
-    <ClCompile Include="source\core\fileIO.cpp" />
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\vkRender.cpp" />
     <ClCompile Include="source\core\sceneObject.cpp" />
     <ClCompile Include="source\core\rid.cpp" />
+    <ClCompile Include="source\core\model.cpp" />
+    <ClCompile Include="source\core\material.cpp" />
+    <ClCompile Include="source\core\importer.cpp" />
+    <ClCompile Include="source\core\assetStorage.cpp" />
+    <ClCompile Include="source\rendering\textureResolver.cpp" />
+    <ClCompile Include="source\rendering\vulkan\resources\vkData.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core\engine.h">
@@ -69,10 +74,17 @@
     <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorBuilder.h" />
     <ClInclude Include="include\rendering\vulkan\core\vkPipelineCache.h" />
     <ClInclude Include="include\core\hash.h" />
-    <ClInclude Include="include\core\fileIO.h" />
     <ClInclude Include="external\vma\vk_mem_alloc.h" />
     <ClInclude Include="include\core\sceneObject.h" />
     <ClInclude Include="include\core\rid.h" />
+    <ClInclude Include="include\core\model.h" />
+    <ClInclude Include="include\core\material.h" />
+    <ClInclude Include="include\core\importer.h" />
+    <ClInclude Include="include\core\assetStorage.h" />
+    <ClInclude Include="include\core\pch.h" />
+    <ClInclude Include="include\core\common.h" />
+    <ClInclude Include="include\rendering\textureResolver.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkData.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

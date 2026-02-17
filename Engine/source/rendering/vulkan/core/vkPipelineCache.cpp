@@ -1,6 +1,6 @@
 #include "vkPipelineCache.h"
 
-#include "fileIO.h"
+#include "importer.h"
 #include "engine.h"
 #include "vkDevice.h"
 #include "vkPipeline.h"
@@ -16,7 +16,7 @@ VkPipelineShaderStageCreateInfo ShaderCache::GetOrCreateShader(const std::string
 	}
 	else
 	{
-		const auto shaderCode = ReadFile(filename);
+		const auto shaderCode = Importer::ReadShaderFile(filename);
 
 		assert(!shaderCode.empty() && "Shader code vector is empty");
 

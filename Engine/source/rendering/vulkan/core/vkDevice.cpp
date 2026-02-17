@@ -30,7 +30,7 @@ void Device::Initialize()
 	m_pVkWindow = std::make_shared<Window>();
 	CreateInstance();
 	InitDebugMessenger();
-	m_pSurface = std::make_unique<Surface>(m_instance, m_pVkWindow->GetWindow());
+	m_pSurface = std::make_unique<VK::Surface>(m_instance, m_pVkWindow->GetWindow());
 	m_pPhysicalDevice = std::make_unique<PhysicalDevice>(m_instance, m_pSurface->GetSurface());
 
 	QueueFamilyIndices indices = m_pPhysicalDevice->FindQueueFamilies(m_pPhysicalDevice->GetDevice(), GetSurface());

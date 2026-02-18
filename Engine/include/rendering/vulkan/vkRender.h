@@ -85,7 +85,7 @@ private:
 	std::vector<VmaAllocation> m_uniformAllocations;
 	std::vector<void*> m_mappedUniformBuffers;
 
-	std::vector<Vulkan::RenderObject> m_objectsToRender{};
+	std::vector<Vulkan::Model> m_modelsToRender{};
 
 	VkSampler m_linearRepeatAnisoSampler;
 

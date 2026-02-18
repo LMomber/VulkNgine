@@ -72,19 +72,19 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 		throw std::logic_error("this shouldn't be");
 	}
 
-	m_objectsToRender.emplace_back();
+	m_modelsToRender.emplace_back();
 
-	m_objectsToRender[0].m_textures.push_back(CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTextures()[0], VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY));
+	m_modelsToRender[0].m_material.m_textures.push_back(CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTextures()[0], VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY));
 
 	for (const auto& mesh : model.m_meshes)
 	{
-		m_objectsToRender[0].m_model.m_meshes.push_back(CreateGpuMesh(mesh));
+		m_modelsToRender[0].m_meshes.push_back(CreateGpuMesh(mesh));
 	}
 
 	CreateTextureSampler(&m_linearRepeatAnisoSampler, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_TRUE);
 	CreateUniformBuffers();
 	CreateDescriptorPool();
-	CreateDescriptorSets(m_objectsToRender[0].m_textures[0]);
+	CreateDescriptorSets(m_modelsToRender[0].m_material.m_textures[0]);
 	CreateSyncObjects();
 }
 
@@ -821,11 +821,11 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 
 	commandBuffer.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->Get());
 
-	for (uint32_t i = 0; i < m_objectsToRender.size(); i++)
+	for (uint32_t i = 0; i < m_modelsToRender.size(); i++)
 	{
-		for (uint32_t j = 0; j < m_objectsToRender[i].m_model.m_meshes.size(); j++)
+		for (uint32_t j = 0; j < m_modelsToRender[i].m_meshes.size(); j++)
 		{
-			const Vulkan::Mesh* pMesh = m_meshOwner.GetOrNull(m_objectsToRender[i].m_model.m_meshes[j]);
+			const Vulkan::Mesh* pMesh = m_meshOwner.GetOrNull(m_modelsToRender[i].m_meshes[j]);
 			assert(pMesh && "Mesh given by RID is null");
 
 			VkBuffer vertexBuffers[] = { pMesh->m_vertexBuffer };

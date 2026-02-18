@@ -83,20 +83,15 @@ namespace Vulkan
 		VmaAllocation m_indexAllocation;
 	};
 
+	struct Material
+	{
+		std::vector<RID> m_textures{};
+	};
+
 	struct Model
 	{
 		std::vector<RID> m_meshes{};
-	};
-
-	struct RenderObject
-	{
-		Model m_model;
-		std::vector<RID> m_textures;
-	};
-
-	struct Material
-	{
-		std::vector<ResolvedTextureSource> m_textures{};
+		Material m_material;
 	};
 }
 

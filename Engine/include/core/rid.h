@@ -49,7 +49,7 @@ public:
 
 	void InitializeRID(RID rid, const T& value);
 
-	T* GetOrNull(const RID rid);
+	const T* GetOrNull(const RID rid) const;
 	bool Owns(const RID rid) const;
 	void Free(const RID rid);
 	uint32_t GetRIDCount() const;
@@ -83,7 +83,7 @@ inline void RID_Owner<T>::InitializeRID(RID rid, const T& value)
 }
 
 template<typename T>
-inline T* RID_Owner<T>::GetOrNull(const RID rid)
+inline const T* RID_Owner<T>::GetOrNull(const RID rid) const
 {
 	if (Owns(rid))
 	{

@@ -78,23 +78,7 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 
 	for (const auto& mesh : model.m_meshes)
 	{
-		Vulkan::Mesh vkMesh;
-		const auto& verts = mesh.GetVertices();
-		const auto& coords = mesh.GetTexCoords();
-
-		vkMesh.m_vertices.reserve(verts.size());
-		for (uint32_t i = 0; i < verts.size(); i++)
-		{
-			vkMesh.m_vertices.emplace_back(verts[i], glm::vec3{ 0 }, coords[0][i], coords.size() > 1 ? coords[1][i] : glm::vec2{ 0, 0 });
-		}
-		const VkDeviceSize vertexBufferSize = sizeof(vkMesh.m_vertices[0]) * vkMesh.m_vertices.size();
-		CreateBufferWithStaging(vertexBufferSize, vkMesh.m_vertexBuffer, vkMesh.m_vertexAllocation, vkMesh.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
-		vkMesh.m_indices = mesh.GetIndices();
-		const VkDeviceSize indexBufferSize = sizeof(vkMesh.m_indices[0]) * vkMesh.m_indices.size();
-		CreateBufferWithStaging(indexBufferSize, vkMesh.m_indexBuffer, vkMesh.m_indexAllocation, vkMesh.m_indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-
-		m_objectsToRender[0].m_model.m_meshes.push_back(vkMesh);
+		m_objectsToRender[0].m_model.m_meshes.push_back(CreateGpuMesh(mesh));
 	}
 
 	CreateTextureSampler(&m_linearRepeatAnisoSampler, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_TRUE);
@@ -122,14 +106,9 @@ Renderer::~Renderer()
 		vmaDestroyBuffer(m_pDevice->GetAllocator(), m_uniformBuffers[i], m_uniformAllocations[i]);
 	}
 
-	for (int i = 0; i < m_objectsToRender.size(); i++)
-	{
-		for (int j = 0; j < m_objectsToRender[i].m_model.m_meshes.size(); j++)
-		{
-			vmaDestroyBuffer(m_pDevice->GetAllocator(), m_objectsToRender[i].m_model.m_meshes[j].m_vertexBuffer, m_objectsToRender[i].m_model.m_meshes[j].m_vertexAllocation);
-			vmaDestroyBuffer(m_pDevice->GetAllocator(), m_objectsToRender[i].m_model.m_meshes[j].m_indexBuffer, m_objectsToRender[i].m_model.m_meshes[j].m_indexAllocation);
-		}
-	}
+	m_meshOwner.FreeAll([this](Vulkan::Mesh& mesh) {
+		DestroyGpuMesh(mesh);
+		});
 
 	m_textureOwner.FreeAll([this](Vulkan::Texture& tex) {
 		DestroyGpuTexture(tex);
@@ -448,7 +427,7 @@ void Renderer::CreateDescriptorSets(RID texture)
 		throw std::runtime_error("Failed to allocate descriptor sets");
 	}
 
-	Vulkan::Texture* pTexture = m_textureOwner.GetOrNull(texture);
+	const Vulkan::Texture* pTexture = m_textureOwner.GetOrNull(texture);
 	assert(pTexture && "Texture given by RID is null");
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -491,6 +470,40 @@ RID Renderer::CreateGpuTexture(const MaterialTexture& srcTexture, VkFormat forma
 	dstTexture.m_imageView = CreateImageView(dstTexture.m_image, format, aspectFlags);
 
 	return m_textureOwner.CreateRID(dstTexture);
+}
+
+void Renderer::DestroyGpuTexture(const Vulkan::Texture& texture)
+{
+	const auto vkDevice = m_pDevice->GetVkDevice();
+	vkDestroyImageView(vkDevice, texture.m_imageView, nullptr);
+	vmaDestroyImage(m_pDevice->GetAllocator(), texture.m_image, texture.m_allocation);
+}
+
+RID Renderer::CreateGpuMesh(const Mesh& mesh)
+{
+	Vulkan::Mesh vkMesh;
+	const auto& verts = mesh.GetVertices();
+	const auto& coords = mesh.GetTexCoords();
+
+	vkMesh.m_vertices.reserve(verts.size());
+	for (uint32_t i = 0; i < verts.size(); i++)
+	{
+		vkMesh.m_vertices.emplace_back(verts[i], glm::vec3{ 0 }, coords[0][i], coords.size() > 1 ? coords[1][i] : glm::vec2{ 0, 0 });
+	}
+	const VkDeviceSize vertexBufferSize = sizeof(vkMesh.m_vertices[0]) * vkMesh.m_vertices.size();
+	CreateBufferWithStaging(vertexBufferSize, vkMesh.m_vertexBuffer, vkMesh.m_vertexAllocation, vkMesh.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+	vkMesh.m_indices = mesh.GetIndices();
+	const VkDeviceSize indexBufferSize = sizeof(vkMesh.m_indices[0]) * vkMesh.m_indices.size();
+	CreateBufferWithStaging(indexBufferSize, vkMesh.m_indexBuffer, vkMesh.m_indexAllocation, vkMesh.m_indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
+	return m_meshOwner.CreateRID(vkMesh);
+}
+
+void Renderer::DestroyGpuMesh(const Vulkan::Mesh& mesh)
+{
+	vmaDestroyBuffer(m_pDevice->GetAllocator(), mesh.m_vertexBuffer, mesh.m_vertexAllocation);
+	vmaDestroyBuffer(m_pDevice->GetAllocator(), mesh.m_indexBuffer, mesh.m_indexAllocation);
 }
 
 VkFormat Renderer::GetVkFormat(TextureFormat format) const
@@ -567,13 +580,6 @@ void Renderer::CreateTextureImage(const MaterialTexture& srcTexture, Vulkan::Tex
 	EndSingleTimeCommands(commandBuffer);
 
 	vmaDestroyBuffer(m_pDevice->GetAllocator(), stagingBuffer, stagingAllocation);
-}
-
-void Renderer::DestroyGpuTexture(const Vulkan::Texture& texture)
-{
-	const auto vkDevice = m_pDevice->GetVkDevice();
-	vkDestroyImageView(vkDevice, texture.m_imageView, nullptr);
-	vmaDestroyImage(m_pDevice->GetAllocator(), texture.m_image, texture.m_allocation);
 }
 
 void Renderer::ChooseSharingMode()
@@ -819,17 +825,18 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 	{
 		for (uint32_t j = 0; j < m_objectsToRender[i].m_model.m_meshes.size(); j++)
 		{
-			auto& mesh = m_objectsToRender[i].m_model.m_meshes[j];
+			const Vulkan::Mesh* pMesh = m_meshOwner.GetOrNull(m_objectsToRender[i].m_model.m_meshes[j]);
+			assert(pMesh && "Mesh given by RID is null");
 
-			VkBuffer vertexBuffers[] = { mesh.m_vertexBuffer };
+			VkBuffer vertexBuffers[] = { pMesh->m_vertexBuffer };
 			VkDeviceSize offsets[] = { 0 };
 			commandBuffer.BindVertexBuffers(vertexBuffers, offsets);
-			commandBuffer.BindIndexBuffer(mesh.m_indexBuffer, VK_INDEX_TYPE_UINT32);
+			commandBuffer.BindIndexBuffer(pMesh->m_indexBuffer, VK_INDEX_TYPE_UINT32);
 
 			const int descriptorSetIndex = m_currentFrame;
 			commandBuffer.BindDescriptorSets(m_pipeline->GetLayout(), &m_descriptorSets[descriptorSetIndex]);
 
-			commandBuffer.DrawIndexed(static_cast<uint32_t>(mesh.m_indices.size()));
+			commandBuffer.DrawIndexed(static_cast<uint32_t>(pMesh->m_indices.size()));
 		}
 	}
 

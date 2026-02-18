@@ -48,6 +48,9 @@ private:
 	RID CreateGpuTexture(const MaterialTexture& srcTexture, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlagBits usageFlags, VmaMemoryUsage memoryFlags, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
 	void DestroyGpuTexture(const Vulkan::Texture& texture);
 
+	RID CreateGpuMesh(const Mesh& mesh);
+	void DestroyGpuMesh(const Vulkan::Mesh& mesh);
+
 	VkFormat GetVkFormat(TextureFormat format) const;
 	void CreateTextureImage(const MaterialTexture& srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
 

@@ -85,7 +85,7 @@ namespace Vulkan
 
 	struct Model
 	{
-		std::vector<Mesh> m_meshes{};
+		std::vector<RID> m_meshes{};
 	};
 
 	struct RenderObject

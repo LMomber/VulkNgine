@@ -1,22 +1,23 @@
 #include "textureResolver.h"
 
 ResolvedTextureSource TextureResolver::ResolveTexture(const aiScene& scene,
-	const MaterialTexture& texture,
-	const std::filesystem::path& model_dir)
+	const std::string& texturePath,
+	const TextureSemantic semantic,
+	const std::filesystem::path& modelDir)
 {
 	ResolvedTextureSource src;
 
-	if (!texture.m_path.empty() && texture.m_path[0] == '*')
+	if (!texturePath.empty() && texturePath[0] == '*')
 	{
-		const aiTexture* tex = scene.mTextures[std::stoi(texture.m_path.substr(1))];
+		const aiTexture* tex = scene.mTextures[std::stoi(texturePath.substr(1))];
 		src = DecodeEmbeddedTexture(tex);
 	}
 	else
 	{
-		src = DecodeImageFromDisk(model_dir /*/ std::filesystem::path(texture.m_path)*/);
+		src = DecodeImageFromDisk(modelDir /*/ std::filesystem::path(texture.m_path)*/);
 	}
 
-	src.m_format = ChooseTextureFormat(texture.m_semantic);
+	src.m_format = ChooseTextureFormat(semantic);
 	return src;
 }
 
@@ -40,7 +41,8 @@ ResolvedTextureSource TextureResolver::DecodeEmbeddedTexture(const aiTexture* te
 
 		src.m_height = h;
 		src.m_width = w;
-		src.m_pixels.assign(data, data + w * h * channels);
+		src.m_pixels.assign(data, data + w * h * 4);
+		src.m_channels = 4;
 		stbi_image_free(data);
 	}
 
@@ -50,6 +52,7 @@ ResolvedTextureSource TextureResolver::DecodeEmbeddedTexture(const aiTexture* te
 		src.m_width = texture->mWidth;
 		src.m_height = texture->mHeight;
 		src.m_pixels.resize(static_cast<uint64_t>(src.m_width * src.m_height) * 4);
+		src.m_channels = 4;
 
 		memcpy(
 			src.m_pixels.data(),

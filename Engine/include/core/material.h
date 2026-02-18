@@ -4,6 +4,18 @@
 
 //#include "rid.h"
 
+// TODO: Add other linear and sRGB formats
+// TODO: Add BCn formats
+// TODO: Add HDR formats
+enum class TextureFormat : uint8_t
+{
+	// Linear format
+	RGBA8_UNORM,
+
+	// sRGB format
+	SRGBA8
+};
+
 enum class TextureSemantic
 {
 	Albedo,
@@ -17,6 +29,13 @@ struct MaterialTexture
 {
 	TextureSemantic m_semantic = TextureSemantic::Albedo;
 	uint32_t m_uv_Index = 0;
+
+	uint32_t m_width = 0;
+	uint32_t m_height = 0;
+	uint32_t m_channels = 0;
+	std::vector<uint8_t> m_pixels;
+	TextureFormat m_format;
+
 	std::string m_path;
 };
 
@@ -40,28 +59,9 @@ public:
 
 private:
 	void ParseAssimpMaterial(const aiScene& scene, const aiMesh& mesh);
-	void ExtractTexture(aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic);
+	void ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic);
 
 private:
 	MaterialProperty m_properties{};
 	std::vector<MaterialTexture> m_textures{};
 };
-//
-//// Singleton
-//class MaterialStorage
-//{
-//public:
-//	static MaterialStorage& Get();
-//
-//	RID CreateMaterial(const aiScene& scene, const aiMesh& mesh);
-//
-//	MaterialStorage(const MaterialStorage&) = delete;
-//	MaterialStorage operator=(const MaterialStorage&) = delete;
-//	MaterialStorage(MaterialStorage&&) noexcept = delete;
-//	MaterialStorage& operator=(MaterialStorage&&) noexcept = delete;
-//private:
-//	MaterialStorage() = default;
-//	~MaterialStorage() = default;
-//
-//	RID_Owner<Material> m_materialOwner;
-//};

@@ -1,5 +1,7 @@
 #include "material.h"
 
+#include "textureResolver.h"
+
 Material::Material(const aiScene& scene, const aiMesh& mesh)
 {
 	ParseAssimpMaterial(scene, mesh);
@@ -15,18 +17,18 @@ void Material::ParseAssimpMaterial(const aiScene& scene, const aiMesh& mesh)
 		m_properties.m_baseColor = { color.r, color.g, color.b, color.a };
 	}
 
-	ExtractTexture(mat, mesh, aiTextureType_BASE_COLOR, TextureSemantic::Albedo);
-	ExtractTexture(mat, mesh, aiTextureType_DIFFUSE, TextureSemantic::Albedo); // fallback
+	ExtractTexture(scene, mat, mesh, aiTextureType_BASE_COLOR, TextureSemantic::Albedo);
+    ExtractTexture(scene, mat, mesh, aiTextureType_DIFFUSE, TextureSemantic::Albedo); // fallback
 
-	ExtractTexture(mat, mesh, aiTextureType_NORMALS, TextureSemantic::Normal);
-	ExtractTexture(mat, mesh, aiTextureType_HEIGHT, TextureSemantic::Normal); // fallback
+    ExtractTexture(scene, mat, mesh, aiTextureType_NORMALS, TextureSemantic::Normal);
+    ExtractTexture(scene, mat, mesh, aiTextureType_HEIGHT, TextureSemantic::Normal); // fallback
 
-	ExtractTexture(mat, mesh, aiTextureType_EMISSIVE, TextureSemantic::Emissive);
-	ExtractTexture(mat, mesh, aiTextureType_EMISSION_COLOR, TextureSemantic::Emissive);
+    ExtractTexture(scene, mat, mesh, aiTextureType_EMISSIVE, TextureSemantic::Emissive);
+    ExtractTexture(scene, mat, mesh, aiTextureType_EMISSION_COLOR, TextureSemantic::Emissive);
 
-	ExtractTexture(mat, mesh, aiTextureType_METALNESS, TextureSemantic::MetallicRoughness);
+    ExtractTexture(scene, mat, mesh, aiTextureType_METALNESS, TextureSemantic::MetallicRoughness);
 
-	ExtractTexture(mat, mesh, aiTextureType_AMBIENT_OCCLUSION, TextureSemantic::AO);
+    ExtractTexture(scene, mat, mesh, aiTextureType_AMBIENT_OCCLUSION, TextureSemantic::AO);
 
     if (m_textures.empty())
     {
@@ -35,7 +37,7 @@ void Material::ParseAssimpMaterial(const aiScene& scene, const aiMesh& mesh)
 }
 
 // Followed: https://the-asset-importer-lib-documentation.readthedocs.io/en/latest/usage/use_the_lib.html#how-to-map-uv-channels-to-textures-matkey-uvwsrc
-void Material::ExtractTexture(aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic)
+void Material::ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic)
 {
     const uint32_t uv_channelCount = mesh.GetNumUVChannels();
 
@@ -61,21 +63,18 @@ void Material::ExtractTexture(aiMaterial* mat, const aiMesh& mesh, aiTextureType
             uv_index = std::min(uv_index, uv_channelCount - 1);
         }
 
+        // TODO: Not necessary, merge ResolvedTextureSource & MaterialTexture all together.
+        ResolvedTextureSource src = TextureResolver::Get().ResolveTexture(scene, path.C_Str(), m_semantic);
+
         m_textures.push_back(MaterialTexture{
             m_semantic,
             uv_index,
+            src.m_width,
+            src.m_height,
+            src.m_channels,
+            src.m_pixels,
+            src.m_format,
             path.C_Str()
             });
     }
 }
-
-//MaterialStorage& MaterialStorage::Get()
-//{
-//	static MaterialStorage materialStorage;
-//	return materialStorage;
-//}
-//
-//RID MaterialStorage::CreateMaterial(const aiScene& scene, const aiMesh& mesh)
-//{
-//	return m_materialOwner.CreateRID(Material{ scene, mesh });
-//}

@@ -39,16 +39,17 @@ public:
 private:
 	void CreateDescriptorSetLayout();
 	void CreateGraphicsPipeline();
-	void CreateTextureImage();
-	void CreateTextureSampler();
+	void CreateTextureSampler(VkSampler* sampler, VkFilter filter, VkSamplerAddressMode addressMode, VkBool32 useAnisotropy);
 	void CreateUniformBuffers();
 	void CreateSyncObjects();
 	void CreateDescriptorPool();
-	void CreateDescriptorSets();
+	void CreateDescriptorSets(RID texture);
+
+	RID CreateGpuTexture(const MaterialTexture& srcTexture, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlagBits usageFlags, VmaMemoryUsage memoryFlags, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
+	void DestroyGpuTexture(const Vulkan::Texture& texture);
 
 	VkFormat GetVkFormat(TextureFormat format) const;
-	void CreateTextureImageNew(const ResolvedTextureSource& srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
-	void DestroyTexture(const Vulkan::Texture& texture);
+	void CreateTextureImage(const MaterialTexture& srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
 
 	void ChooseSharingMode();
 
@@ -81,8 +82,9 @@ private:
 	std::vector<VmaAllocation> m_uniformAllocations;
 	std::vector<void*> m_mappedUniformBuffers;
 
-	Vulkan::Texture m_vikingTexture;
-	std::vector<Vulkan::Model> m_modelsToRender{};
+	std::vector<Vulkan::RenderObject> m_objectsToRender{};
+
+	VkSampler m_linearRepeatAnisoSampler;
 
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;
@@ -94,4 +96,7 @@ private:
 
 	std::vector<uint32_t> m_queueSetIndices;
 	VkSharingMode m_sharingMode;
+
+	RID_Owner<Vulkan::Texture> m_textureOwner;
+	RID_Owner<Vulkan::Mesh> m_meshOwner;
 };

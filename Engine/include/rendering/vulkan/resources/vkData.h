@@ -2,6 +2,9 @@
 
 #include "vkCommon.h"
 
+#include "rid.h"
+#include "textureResolver.h"
+
 #include "glm/glm.hpp"
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -18,7 +21,6 @@ namespace Vulkan
 		VmaAllocation m_allocation;
 		VkImage m_image;
 		VkImageView m_imageView;
-		VkSampler m_sampler;
 	};
 
 	struct Vertex
@@ -84,6 +86,17 @@ namespace Vulkan
 	struct Model
 	{
 		std::vector<Mesh> m_meshes{};
+	};
+
+	struct RenderObject
+	{
+		Model m_model;
+		std::vector<RID> m_textures;
+	};
+
+	struct Material
+	{
+		std::vector<ResolvedTextureSource> m_textures{};
 	};
 }
 

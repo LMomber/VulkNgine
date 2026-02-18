@@ -6,10 +6,10 @@ AssetStorage& AssetStorage::Get()
     return assetStorage;
 }
 
-MeshID AssetStorage::CreateMesh(const aiScene& aiScene, const aiNode& aiNode)
+ModelID AssetStorage::CreateModel(const aiScene& aiScene, const aiNode& aiNode)
 {
-    MeshID id{ static_cast<uint32_t>(m_meshStorage.size()) };
-    m_meshStorage.emplace_back(aiScene, aiNode);
+    ModelID id{ static_cast<uint32_t>(m_modelStorage.size()) };
+    m_modelStorage.emplace_back(aiScene, aiNode);
     return id;
 }
 
@@ -20,7 +20,7 @@ MaterialID AssetStorage::CreateMaterial(const aiScene& aiScene, const aiMesh& ai
     return id;
 }
 
-AssetID AssetStorage::CreateAssetID(MeshID id)
+AssetID AssetStorage::CreateAssetID(ModelID id)
 {
     AssetID h;
     h.m_type = AssetType::Mesh;
@@ -38,10 +38,10 @@ AssetID AssetStorage::CreateAssetID(MaterialID id)
 
 const Model& AssetStorage::GetMesh(AssetID id) const
 {
-    if (id.m_raw >= m_meshStorage.size())
+    if (id.m_raw >= m_modelStorage.size())
     {
         throw std::logic_error("Mesh ID is larger than storage size.");
     }
 
-    return m_meshStorage[id.m_raw];
+    return m_modelStorage[id.m_raw];
 }

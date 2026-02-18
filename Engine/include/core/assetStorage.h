@@ -20,7 +20,7 @@ struct AssetID
 	union
 	{
 		uint32_t m_raw;
-		MeshID m_mesh;
+		ModelID m_mesh;
 		MaterialID m_material;
 	};
 
@@ -33,15 +33,15 @@ class AssetStorage
 public:
 	static AssetStorage& Get();
 
-	MeshID CreateMesh(const aiScene& aiScene, const aiNode& aiNode);
+	ModelID CreateModel(const aiScene& aiScene, const aiNode& aiNode);
 	MaterialID CreateMaterial(const aiScene& aiScene, const aiMesh& aiMesh);
 
-	AssetID CreateAssetID(MeshID id);
+	AssetID CreateAssetID(ModelID id);
 	AssetID CreateAssetID(MaterialID id); // Not used for now
 
 	const Model& GetMesh(AssetID id) const;
 
 private:
-	std::vector<Model> m_meshStorage{};
+	std::vector<Model> m_modelStorage{};
 	std::vector<Material> m_materialStorage{};
 };

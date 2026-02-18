@@ -29,7 +29,7 @@ void Importer::CopyNodes(const aiScene& scene, const aiNode& node, Node& targetP
 	//If node has meshes, create a new scene object for it
 	if (node.mNumMeshes > 0)
 	{
-		MeshID meshID = AssetStorage::Get().CreateMesh(scene, node);
+		ModelID meshID = AssetStorage::Get().CreateModel(scene, node);
 		Node* pNode = targetParent.AddChild(Object{ ObjectType::TYPE_MESH, AssetStorage::Get().CreateAssetID(meshID)});
 		transform = AssimpMatrixToTransform(node.mTransformation);
 
@@ -54,7 +54,6 @@ void Importer::CopyNodes(const aiScene& scene, const aiNode& node, Node& targetP
 		CopyNodes(scene, *node.mChildren[i], *parent);
 	}
 }
-
 
 std::vector<char> Importer::ReadShaderFile(const std::string& filename)
 {

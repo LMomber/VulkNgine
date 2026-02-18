@@ -35,8 +35,9 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	ChooseSharingMode();
 
 	Node root{ Object(ObjectType::TYPE_ROOT) };
-	const aiScene* pScene = nullptr;
-	const std::string modelDir = "../Engine/models/viking_room.obj";
+	aiScene* pScene = nullptr;
+	const std::string modelDir = "../Engine/models/DamagedHelmet.glb";
+	//const std::string modelDir = "../Engine/models/viking_room.obj";
 	const std::string textureDir = "../Engine/textures/viking_room.png";
 	Importer::ImportScene(modelDir, root, pScene);
 
@@ -70,16 +71,11 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	{
 		throw std::logic_error("this shouldn't be");
 	}
-	if (model.m_meshes[0].GetMaterial().GetTextures().size() > 1)
-	{
-		throw std::logic_error("this shouldn't be 2");
-	}
 
-	ResolvedTextureSource src = TextureResolver::Get().ResolveTexture(*pScene, model.m_meshes[0].GetMaterial().GetTextures()[0], textureDir);
-	CreateTextureImageNew(src, m_vikingTexture, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-	m_vikingTexture.m_imageView = CreateImageView(m_vikingTexture.m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+	m_objectsToRender.emplace_back();
 
-	m_modelsToRender.push_back({});
+	m_objectsToRender[0].m_textures.push_back(CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTextures()[0], VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY));
+
 	for (const auto& mesh : model.m_meshes)
 	{
 		Vulkan::Mesh vkMesh;
@@ -98,13 +94,13 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 		const VkDeviceSize indexBufferSize = sizeof(vkMesh.m_indices[0]) * vkMesh.m_indices.size();
 		CreateBufferWithStaging(indexBufferSize, vkMesh.m_indexBuffer, vkMesh.m_indexAllocation, vkMesh.m_indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
-		m_modelsToRender[0].m_meshes.push_back(vkMesh);
+		m_objectsToRender[0].m_model.m_meshes.push_back(vkMesh);
 	}
 
-	CreateTextureSampler();
+	CreateTextureSampler(&m_linearRepeatAnisoSampler, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_TRUE);
 	CreateUniformBuffers();
 	CreateDescriptorPool();
-	CreateDescriptorSets();
+	CreateDescriptorSets(m_objectsToRender[0].m_textures[0]);
 	CreateSyncObjects();
 }
 
@@ -117,8 +113,6 @@ Renderer::~Renderer()
 	PipelineCache::Reset();
 	ShaderCache::Reset();
 
-	DestroyTexture(m_vikingTexture);
-
 	vkFreeDescriptorSets(vkDevice, m_descriptorPool, static_cast<uint32_t>(m_descriptorSets.size()), m_descriptorSets.data());
 	vkDestroyDescriptorPool(vkDevice, m_descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(vkDevice, m_descriptorSetLayout, nullptr);
@@ -128,14 +122,20 @@ Renderer::~Renderer()
 		vmaDestroyBuffer(m_pDevice->GetAllocator(), m_uniformBuffers[i], m_uniformAllocations[i]);
 	}
 
-	for (int i = 0; i < m_modelsToRender.size(); i++)
+	for (int i = 0; i < m_objectsToRender.size(); i++)
 	{
-		for (int j = 0; j < m_modelsToRender[i].m_meshes.size(); j++)
+		for (int j = 0; j < m_objectsToRender[i].m_model.m_meshes.size(); j++)
 		{
-			vmaDestroyBuffer(m_pDevice->GetAllocator(), m_modelsToRender[i].m_meshes[j].m_vertexBuffer, m_modelsToRender[i].m_meshes[j].m_vertexAllocation);
-			vmaDestroyBuffer(m_pDevice->GetAllocator(), m_modelsToRender[i].m_meshes[j].m_indexBuffer, m_modelsToRender[i].m_meshes[j].m_indexAllocation);
+			vmaDestroyBuffer(m_pDevice->GetAllocator(), m_objectsToRender[i].m_model.m_meshes[j].m_vertexBuffer, m_objectsToRender[i].m_model.m_meshes[j].m_vertexAllocation);
+			vmaDestroyBuffer(m_pDevice->GetAllocator(), m_objectsToRender[i].m_model.m_meshes[j].m_indexBuffer, m_objectsToRender[i].m_model.m_meshes[j].m_indexAllocation);
 		}
 	}
+
+	m_textureOwner.FreeAll([this](Vulkan::Texture& tex) {
+		DestroyGpuTexture(tex);
+		});
+
+	vkDestroySampler(vkDevice, m_linearRepeatAnisoSampler, nullptr);
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
@@ -334,88 +334,18 @@ void Renderer::CreateGraphicsPipeline()
 	m_pipeline = PipelineCache::GetOrCreateGraphicsPipeline(pipelineInfo);
 }
 
-void Renderer::CreateTextureImage()
-{
-	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-	if (!pixels)
-	{
-		throw std::runtime_error("Failed to load texture image");
-	}
-
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-	VkBuffer stagingBuffer;
-	VmaAllocation stagingAllocation{};
-	{
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = imageSize;
-		bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocInfo{};
-		allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-
-		vmaCreateBuffer(m_pDevice->GetAllocator(), &bufferInfo, &allocInfo,
-			&stagingBuffer, &stagingAllocation, nullptr);
-
-		void* data;
-		vmaMapMemory(m_pDevice->GetAllocator(), stagingAllocation, &data);
-		memcpy(data, pixels, static_cast<size_t>(imageSize));
-		vmaUnmapMemory(m_pDevice->GetAllocator(), stagingAllocation);
-	}
-
-	stbi_image_free(pixels);
-
-	{
-		VkImageCreateInfo imageInfo{};
-		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageInfo.extent.width = static_cast<uint32_t>(texWidth);
-		imageInfo.extent.height = static_cast<uint32_t>(texHeight);
-		imageInfo.extent.depth = 1;
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
-		imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocInfo{};
-		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		vmaCreateImage(m_pDevice->GetAllocator(), &imageInfo, &allocInfo,
-			&m_vikingTexture.m_image, &m_vikingTexture.m_allocation, nullptr);
-	}
-
-	CommandBuffer commandBuffer = BeginSingleTimeCommands();
-	commandBuffer.TransitionImageLayout(m_vikingTexture.m_image, VK_FORMAT_R8G8B8A8_SRGB,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	commandBuffer.CopyBufferToImage(stagingBuffer, m_vikingTexture.m_image,
-		static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	commandBuffer.TransitionImageLayout(m_vikingTexture.m_image, VK_FORMAT_R8G8B8A8_SRGB,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	EndSingleTimeCommands(commandBuffer);
-
-
-	vmaDestroyBuffer(m_pDevice->GetAllocator(), stagingBuffer, stagingAllocation);
-}
-
-void Renderer::CreateTextureSampler()
+void Renderer::CreateTextureSampler(VkSampler* sampler, VkFilter filter, VkSamplerAddressMode addressMode, VkBool32 useAnisotropy)
 {
 	auto properties = m_pDevice->GetPhysicalDevice()->GetProperties();
 
 	VkSamplerCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	createInfo.magFilter = VK_FILTER_LINEAR;
-	createInfo.minFilter = VK_FILTER_LINEAR;
-	createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	createInfo.anisotropyEnable = VK_TRUE;
+	createInfo.magFilter = filter;
+	createInfo.minFilter = filter;
+	createInfo.addressModeU = addressMode;
+	createInfo.addressModeV = addressMode;
+	createInfo.addressModeW = addressMode;
+	createInfo.anisotropyEnable = useAnisotropy;
 	createInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
 	createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	createInfo.unnormalizedCoordinates = VK_FALSE;
@@ -426,7 +356,7 @@ void Renderer::CreateTextureSampler()
 	createInfo.minLod = 0.0f;
 	createInfo.maxLod = 0.0f;
 
-	if (vkCreateSampler(m_pDevice->GetVkDevice(), &createInfo, nullptr, &m_vikingTexture.m_sampler) != VK_SUCCESS)
+	if (vkCreateSampler(m_pDevice->GetVkDevice(), &createInfo, nullptr, sampler) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create sampler");
 	}
@@ -503,7 +433,7 @@ void Renderer::CreateDescriptorPool()
 	}
 }
 
-void Renderer::CreateDescriptorSets()
+void Renderer::CreateDescriptorSets(RID texture)
 {
 	std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -518,6 +448,9 @@ void Renderer::CreateDescriptorSets()
 		throw std::runtime_error("Failed to allocate descriptor sets");
 	}
 
+	Vulkan::Texture* pTexture = m_textureOwner.GetOrNull(texture);
+	assert(pTexture && "Texture given by RID is null");
+
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		VkDescriptorBufferInfo bufferInfo{};
@@ -527,8 +460,8 @@ void Renderer::CreateDescriptorSets()
 
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = m_vikingTexture.m_imageView;
-		imageInfo.sampler = m_vikingTexture.m_sampler;
+		imageInfo.imageView = pTexture->m_imageView;
+		imageInfo.sampler = m_linearRepeatAnisoSampler;
 
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -551,6 +484,15 @@ void Renderer::CreateDescriptorSets()
 	}
 }
 
+RID Renderer::CreateGpuTexture(const MaterialTexture& srcTexture, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlagBits usageFlags, VmaMemoryUsage memoryFlags, VkSharingMode sharingMode)
+{
+	Vulkan::Texture dstTexture{};
+	CreateTextureImage(srcTexture, dstTexture, usageFlags, memoryFlags, sharingMode);
+	dstTexture.m_imageView = CreateImageView(dstTexture.m_image, format, aspectFlags);
+
+	return m_textureOwner.CreateRID(dstTexture);
+}
+
 VkFormat Renderer::GetVkFormat(TextureFormat format) const
 {
 	switch (format)
@@ -567,7 +509,7 @@ VkFormat Renderer::GetVkFormat(TextureFormat format) const
 	}
 }
 
-void Renderer::CreateTextureImageNew(const ResolvedTextureSource& srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode)
+void Renderer::CreateTextureImage(const MaterialTexture& srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode)
 {
 	VkDeviceSize imageSize = srcTexture.m_width * srcTexture.m_height * 4;
 
@@ -627,12 +569,10 @@ void Renderer::CreateTextureImageNew(const ResolvedTextureSource& srcTexture, Vu
 	vmaDestroyBuffer(m_pDevice->GetAllocator(), stagingBuffer, stagingAllocation);
 }
 
-void Renderer::DestroyTexture(const Vulkan::Texture& texture)
+void Renderer::DestroyGpuTexture(const Vulkan::Texture& texture)
 {
 	const auto vkDevice = m_pDevice->GetVkDevice();
-	vkDestroySampler(vkDevice, texture.m_sampler, nullptr);
 	vkDestroyImageView(vkDevice, texture.m_imageView, nullptr);
-
 	vmaDestroyImage(m_pDevice->GetAllocator(), texture.m_image, texture.m_allocation);
 }
 
@@ -875,13 +815,13 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 
 	commandBuffer.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->Get());
 
-	for (uint32_t i = 0; i < m_modelsToRender.size(); i++)
+	for (uint32_t i = 0; i < m_objectsToRender.size(); i++)
 	{
-		for (uint32_t j = 0; j < m_modelsToRender[i].m_meshes.size(); j++)
+		for (uint32_t j = 0; j < m_objectsToRender[i].m_model.m_meshes.size(); j++)
 		{
-			auto& mesh = m_modelsToRender[i].m_meshes[j];
+			auto& mesh = m_objectsToRender[i].m_model.m_meshes[j];
 
-			VkBuffer vertexBuffers[] = { mesh.m_vertexBuffer};
+			VkBuffer vertexBuffers[] = { mesh.m_vertexBuffer };
 			VkDeviceSize offsets[] = { 0 };
 			commandBuffer.BindVertexBuffers(vertexBuffers, offsets);
 			commandBuffer.BindIndexBuffer(mesh.m_indexBuffer, VK_INDEX_TYPE_UINT32);

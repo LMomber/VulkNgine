@@ -86,6 +86,9 @@ namespace Vulkan
 	struct Material
 	{
 		std::vector<RID> m_textures{};
+
+		std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> m_descriptorSets;
+		void CreateDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
 	};
 
 	struct Model

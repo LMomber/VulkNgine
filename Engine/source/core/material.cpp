@@ -4,20 +4,15 @@
 
 Material::Material(const aiScene& scene, const aiMesh& mesh)
 {
-	ParseAssimpMaterial(scene, mesh);
-}
+    aiMaterial* mat = scene.mMaterials[mesh.mMaterialIndex];
 
-void Material::ParseAssimpMaterial(const aiScene& scene, const aiMesh& mesh)
-{
-	aiMaterial* mat = scene.mMaterials[mesh.mMaterialIndex];
+    aiColor4D color;
+    if (aiGetMaterialColor(mat, AI_MATKEY_BASE_COLOR, &color) == AI_SUCCESS)
+    {
+        m_properties.m_baseColor = { color.r, color.g, color.b, color.a };
+    }
 
-	aiColor4D color;
-	if (aiGetMaterialColor(mat, AI_MATKEY_BASE_COLOR, &color) == AI_SUCCESS)
-	{
-		m_properties.m_baseColor = { color.r, color.g, color.b, color.a };
-	}
-
-	ExtractTexture(scene, mat, mesh, aiTextureType_BASE_COLOR, TextureSemantic::Albedo);
+    ExtractTexture(scene, mat, mesh, aiTextureType_BASE_COLOR, TextureSemantic::Albedo);
     ExtractTexture(scene, mat, mesh, aiTextureType_DIFFUSE, TextureSemantic::Albedo); // fallback
 
     ExtractTexture(scene, mat, mesh, aiTextureType_NORMALS, TextureSemantic::Normal);

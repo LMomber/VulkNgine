@@ -58,7 +58,6 @@ public:
 	const std::vector<MaterialTexture>& GetTextures() const { return m_textures; }
 
 private:
-	void ParseAssimpMaterial(const aiScene& scene, const aiMesh& mesh);
 	void ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic);
 
 private:

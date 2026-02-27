@@ -44,32 +44,3 @@ public:
 	std::vector<Mesh> m_meshes{};
 private:
 };
-//
-//// Singleton
-//// Mesh data should solely belong to the mesh storage class. Any mesh data used in other systems should be in RID form.
-//class MeshStorage
-//{
-//public:
-//	static MeshStorage& Get();
-//
-//	// NOTE: Should be private an friend of the class that initializes the scenes meshes (importer or scene?)
-//	// NOTE: Return to this once the mesh class is setup
-//	RID CreateMesh(const aiScene& aiScene, const aiNode& aiNode);
-//
-//	/*Mesh* GetMesh(RID rid)
-//	{
-//		return m_meshOwner.GetOrNull(rid);
-//	}*/
-//	//
-//
-//	MeshStorage(const MeshStorage&) = delete;
-//	MeshStorage operator=(const MeshStorage&) = delete;
-//	MeshStorage(MeshStorage&&) noexcept = delete;
-//	MeshStorage& operator=(MeshStorage&&) noexcept = delete;
-//
-//private:
-//	MeshStorage() = default;
-//	~MeshStorage() = default;
-//
-//	RID_Owner<Mesh> m_meshOwner;
-//};

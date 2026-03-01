@@ -8,9 +8,10 @@
 
 #include "vkPhysicalDevice.h"
 #include "vkQueue.h"
-#include "vkCommandBuffer.h"
 #include "vkPipeline.h"
 #include "vkPipelineCache.h"
+
+#include "vkData.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
@@ -65,26 +66,26 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 		throw std::logic_error("No mesh found in the scene");
 	}
 
-	const Model& model = AssetStorage::Get().GetMesh(meshObj->GetHandle());
+	const CPU::Model& model = AssetStorage::Get().GetMesh(meshObj->GetHandle());
 
 	if (model.m_meshes.size() > 1)
 	{
 		throw std::logic_error("this shouldn't be");
 	}
 
-	m_modelsToRender.emplace_back();
+	Vulkan::modelsToRender.emplace_back();
 
-	m_modelsToRender[0].m_material.m_textures.push_back(CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTextures()[0], VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY));
+	Vulkan::modelsToRender[0].m_material.m_albedoTexture = Vulkan::CreateGpuTexture(m_pDevice, model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::Albedo), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
 	for (const auto& mesh : model.m_meshes)
 	{
-		m_modelsToRender[0].m_meshes.push_back(CreateGpuMesh(mesh));
+		Vulkan::modelsToRender[0].m_meshes.push_back(Vulkan::CreateGpuMesh(m_pDevice, mesh));
 	}
 
-	CreateTextureSampler(&m_linearRepeatAnisoSampler, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_TRUE);
+	CreateTextureSampler(&Vulkan::samplers.m_linearRepeatAnisotropic, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_TRUE);
 	CreateUniformBuffers();
 	CreateDescriptorPool();
-	CreateDescriptorSets(m_modelsToRender[0].m_material.m_textures[0]);
+	//CreateDescriptorSets(m_modelsToRender[0].m_material.m_albedoTexture);
 	CreateSyncObjects();
 }
 
@@ -97,7 +98,10 @@ Renderer::~Renderer()
 	PipelineCache::Reset();
 	ShaderCache::Reset();
 
-	vkFreeDescriptorSets(vkDevice, m_descriptorPool, static_cast<uint32_t>(m_descriptorSets.size()), m_descriptorSets.data());
+	for (int i = 0; i < Vulkan::modelsToRender.size(); ++i)
+	{
+		vkFreeDescriptorSets(vkDevice, m_descriptorPool, static_cast<uint32_t>(Vulkan::modelsToRender[i].m_material.m_descriptorSets.size()), Vulkan::modelsToRender[i].m_material.m_descriptorSets.data());
+	}
 	vkDestroyDescriptorPool(vkDevice, m_descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(vkDevice, m_descriptorSetLayout, nullptr);
 
@@ -106,15 +110,15 @@ Renderer::~Renderer()
 		vmaDestroyBuffer(m_pDevice->GetAllocator(), m_uniformBuffers[i], m_uniformAllocations[i]);
 	}
 
-	m_meshOwner.FreeAll([this](Vulkan::Mesh& mesh) {
-		DestroyGpuMesh(mesh);
+	Vulkan::meshOwner.FreeAll([this](Vulkan::Mesh& mesh) {
+		DestroyGpuMesh(m_pDevice, mesh);
 		});
 
-	m_textureOwner.FreeAll([this](Vulkan::Texture& tex) {
-		DestroyGpuTexture(tex);
+	Vulkan::textureOwner.FreeAll([this](Vulkan::Texture& tex) {
+		DestroyGpuTexture(m_pDevice, tex);
 		});
 
-	vkDestroySampler(vkDevice, m_linearRepeatAnisoSampler, nullptr);
+	vkDestroySampler(vkDevice, Vulkan::samplers.m_linearRepeatAnisotropic, nullptr);
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
@@ -129,12 +133,13 @@ Renderer::~Renderer()
 
 void Renderer::Update()
 {
-	UpdateMVP(m_currentFrame);
+	UpdateMVP(m_pDevice->GetCurrentFrame());
 }
 
 void Renderer::Render()
 {
-	FrameContext& frame = m_frameContexts[m_currentFrame];
+	uint32_t currentFrame = m_pDevice->GetCurrentFrame();
+	FrameContext& frame = m_frameContexts[currentFrame];
 	VkDevice device = m_pDevice->GetVkDevice();
 	VkQueue graphicsQueue = m_pDevice->GetQueue()->GetQueue(QueueType::GRAPHICS);
 	VkQueue presentQueue = m_pDevice->GetQueue()->GetQueue(QueueType::PRESENT);
@@ -172,9 +177,9 @@ void Renderer::Render()
 	}
 
 	// Record draw commands
-	m_pDevice->GetQueue()->ResetCommandPools(m_currentFrame);
+	m_pDevice->GetQueue()->ResetCommandPools(currentFrame);
 	CommandBuffer commandBuffer =
-		m_pDevice->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, m_currentFrame);
+		m_pDevice->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, currentFrame);
 	const VkCommandBuffer* pVkCommandBuffer = commandBuffer.GetVkPtr();
 
 	RecordCommandBuffer(commandBuffer, imageIndex);
@@ -229,10 +234,10 @@ void Renderer::Render()
 		throw std::runtime_error("Failed to present swapchain image");
 	}
 
-	m_pDevice->GetQueue()->ResetCommandBufferIndices(m_currentFrame);
+	m_pDevice->GetQueue()->ResetCommandBufferIndices(currentFrame);
 
 	// Advance to next frame
-	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	m_pDevice->AdvanceCurrentFrame();
 }
 
 
@@ -412,176 +417,6 @@ void Renderer::CreateDescriptorPool()
 	}
 }
 
-void Renderer::CreateDescriptorSets(RID texture)
-{
-	std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
-	VkDescriptorSetAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = m_descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-	allocInfo.pSetLayouts = layouts.data();
-
-	m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-	if (vkAllocateDescriptorSets(m_pDevice->GetVkDevice(), &allocInfo, m_descriptorSets.data()) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to allocate descriptor sets");
-	}
-
-	const Vulkan::Texture* pTexture = m_textureOwner.GetOrNull(texture);
-	assert(pTexture && "Texture given by RID is null");
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = m_uniformBuffers[i];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(MVP);
-
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = pTexture->m_imageView;
-		imageInfo.sampler = m_linearRepeatAnisoSampler;
-
-		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[0].dstSet = m_descriptorSets[i];
-		descriptorWrites[0].dstBinding = 0;
-		descriptorWrites[0].dstArrayElement = 0;
-		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrites[0].descriptorCount = 1;
-		descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[1].dstSet = m_descriptorSets[i];
-		descriptorWrites[1].dstBinding = 1;
-		descriptorWrites[1].dstArrayElement = 0;
-		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrites[1].descriptorCount = 1;
-		descriptorWrites[1].pImageInfo = &imageInfo;
-
-		vkUpdateDescriptorSets(m_pDevice->GetVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-	}
-}
-
-RID Renderer::CreateGpuTexture(const MaterialTexture& srcTexture, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlagBits usageFlags, VmaMemoryUsage memoryFlags, VkSharingMode sharingMode)
-{
-	Vulkan::Texture dstTexture{};
-	CreateTextureImage(srcTexture, dstTexture, usageFlags, memoryFlags, sharingMode);
-	dstTexture.m_imageView = CreateImageView(dstTexture.m_image, format, aspectFlags);
-
-	return m_textureOwner.CreateRID(dstTexture);
-}
-
-void Renderer::DestroyGpuTexture(const Vulkan::Texture& texture)
-{
-	const auto vkDevice = m_pDevice->GetVkDevice();
-	vkDestroyImageView(vkDevice, texture.m_imageView, nullptr);
-	vmaDestroyImage(m_pDevice->GetAllocator(), texture.m_image, texture.m_allocation);
-}
-
-RID Renderer::CreateGpuMesh(const Mesh& mesh)
-{
-	Vulkan::Mesh vkMesh;
-	const auto& verts = mesh.GetVertices();
-	const auto& coords = mesh.GetTexCoords();
-
-	vkMesh.m_vertices.reserve(verts.size());
-	for (uint32_t i = 0; i < verts.size(); i++)
-	{
-		vkMesh.m_vertices.emplace_back(verts[i], glm::vec3{ 0 }, coords[0][i], coords.size() > 1 ? coords[1][i] : glm::vec2{ 0, 0 });
-	}
-	const VkDeviceSize vertexBufferSize = sizeof(vkMesh.m_vertices[0]) * vkMesh.m_vertices.size();
-	CreateBufferWithStaging(vertexBufferSize, vkMesh.m_vertexBuffer, vkMesh.m_vertexAllocation, vkMesh.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
-	vkMesh.m_indices = mesh.GetIndices();
-	const VkDeviceSize indexBufferSize = sizeof(vkMesh.m_indices[0]) * vkMesh.m_indices.size();
-	CreateBufferWithStaging(indexBufferSize, vkMesh.m_indexBuffer, vkMesh.m_indexAllocation, vkMesh.m_indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-
-	return m_meshOwner.CreateRID(vkMesh);
-}
-
-void Renderer::DestroyGpuMesh(const Vulkan::Mesh& mesh)
-{
-	vmaDestroyBuffer(m_pDevice->GetAllocator(), mesh.m_vertexBuffer, mesh.m_vertexAllocation);
-	vmaDestroyBuffer(m_pDevice->GetAllocator(), mesh.m_indexBuffer, mesh.m_indexAllocation);
-}
-
-VkFormat Renderer::GetVkFormat(TextureFormat format) const
-{
-	switch (format)
-	{
-	case TextureFormat::RGBA8_UNORM:
-		return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
-		break;
-	case TextureFormat::SRGBA8:
-		return VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
-		break;
-	default:
-		throw std::logic_error("Non-specified format used.");
-		break;
-	}
-}
-
-void Renderer::CreateTextureImage(const MaterialTexture& srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode)
-{
-	VkDeviceSize imageSize = srcTexture.m_width * srcTexture.m_height * 4;
-
-	VkBuffer stagingBuffer;
-	VmaAllocation stagingAllocation{};
-	{
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = imageSize;
-		bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocInfo{};
-		allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-
-		vmaCreateBuffer(m_pDevice->GetAllocator(), &bufferInfo, &allocInfo,
-			&stagingBuffer, &stagingAllocation, nullptr);
-
-		void* data;
-		vmaMapMemory(m_pDevice->GetAllocator(), stagingAllocation, &data);
-		memcpy(data, srcTexture.m_pixels.data(), srcTexture.m_pixels.size());
-		vmaUnmapMemory(m_pDevice->GetAllocator(), stagingAllocation);
-	}
-
-	{
-		VkImageCreateInfo imageInfo{};
-		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageInfo.extent.width = static_cast<uint32_t>(srcTexture.m_width);
-		imageInfo.extent.height = static_cast<uint32_t>(srcTexture.m_height);
-		imageInfo.extent.depth = 1;
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
-		imageInfo.format = GetVkFormat(srcTexture.m_format);;
-		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | flags;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageInfo.sharingMode = sharingMode;
-
-		VmaAllocationCreateInfo allocInfo{};
-		allocInfo.usage = memoryFlag;
-
-		vmaCreateImage(m_pDevice->GetAllocator(), &imageInfo, &allocInfo,
-			&dstTexture.m_image, &dstTexture.m_allocation, nullptr);
-	}
-
-	CommandBuffer commandBuffer = BeginSingleTimeCommands();
-	commandBuffer.TransitionImageLayout(dstTexture.m_image, VK_FORMAT_R8G8B8A8_SRGB,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	commandBuffer.CopyBufferToImage(stagingBuffer, dstTexture.m_image,
-		static_cast<uint32_t>(srcTexture.m_width), static_cast<uint32_t>(srcTexture.m_height));
-	commandBuffer.TransitionImageLayout(dstTexture.m_image, VK_FORMAT_R8G8B8A8_SRGB,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	EndSingleTimeCommands(commandBuffer);
-
-	vmaDestroyBuffer(m_pDevice->GetAllocator(), stagingBuffer, stagingAllocation);
-}
-
 void Renderer::ChooseSharingMode()
 {
 	QueueFamilyIndices queueFamilyIndices = m_pDevice->GetPhysicalDevice()->FindQueueFamilies(m_pDevice->GetPhysicalDevice()->GetDevice(), m_pDevice->GetSurface());
@@ -598,119 +433,6 @@ void Renderer::ChooseSharingMode()
 	m_queueSetIndices = uniqueQueueFamilyIndices;
 
 	m_sharingMode = m_queueSetIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-}
-
-void Renderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags ImageUsageFlags, VmaMemoryUsage memoryUsageFlags, VkImage& image, VmaAllocation& imageAllocation) const
-{
-	VkImageCreateInfo imageInfo{};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.extent.width = width;
-	imageInfo.extent.height = height;
-	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = 1;
-	imageInfo.arrayLayers = 1;
-	imageInfo.format = format;
-	imageInfo.tiling = tiling;
-	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | ImageUsageFlags;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	VmaAllocationCreateInfo allocInfo{};
-	allocInfo.usage = memoryUsageFlags;
-
-	vmaCreateImage(m_pDevice->GetAllocator(), &imageInfo, &allocInfo,
-		&image, &imageAllocation, nullptr);
-}
-
-VkImageView Renderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const
-{
-	VkImageView imageView;
-
-	VkImageViewCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	createInfo.image = image;
-	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.format = format;
-	createInfo.subresourceRange.aspectMask = aspectFlags;
-	createInfo.subresourceRange.baseMipLevel = 0;
-	createInfo.subresourceRange.levelCount = 1;
-	createInfo.subresourceRange.baseArrayLayer = 0;
-	createInfo.subresourceRange.layerCount = 1;
-
-	if (vkCreateImageView(m_pDevice->GetVkDevice(), &createInfo, nullptr, &imageView) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create image view");
-	}
-
-	return imageView;
-}
-
-void Renderer::CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags)
-{
-	VkBufferCreateInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = size;
-	bufferInfo.usage = bufferUsageFlags;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	VmaAllocationCreateInfo allocInfo{};
-	allocInfo.usage = memoryUsageFlags;
-
-	vmaCreateBuffer(m_pDevice->GetAllocator(), &bufferInfo, &allocInfo,
-		&buffer, &allocation, nullptr);
-}
-
-template <typename T>
-void Renderer::CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, std::vector<T>& bufferData, VkBufferUsageFlags usageFlag)
-{
-	// Create staging buffer
-	VkBuffer stagingBuffer;
-	VmaAllocation stagingAllocation;
-	{
-		CreateBuffer(size, stagingBuffer, stagingAllocation, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-
-		void* data;
-		vmaMapMemory(m_pDevice->GetAllocator(), stagingAllocation, &data);
-		memcpy(data, bufferData.data(), static_cast<size_t>(size));
-		vmaUnmapMemory(m_pDevice->GetAllocator(), stagingAllocation);
-	}
-
-	// Create vertex buffer in device local memory
-	CreateBuffer(size, buffer, allocation, usageFlag | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-
-	CommandBuffer commandBuffer = BeginSingleTimeCommands();
-	commandBuffer.CopyBuffer(stagingBuffer, buffer, size);
-	EndSingleTimeCommands(commandBuffer);
-
-	// Cleanup staging
-	vmaDestroyBuffer(m_pDevice->GetAllocator(), stagingBuffer, stagingAllocation);
-}
-
-void Renderer::CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, void* bufferData, VkBufferUsageFlags usageFlag)
-{
-	// Create staging buffer
-	VkBuffer stagingBuffer;
-	VmaAllocation stagingAllocation;
-	{
-		CreateBuffer(size, stagingBuffer, stagingAllocation, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-
-		void* data;
-		vmaMapMemory(m_pDevice->GetAllocator(), stagingAllocation, &data);
-		memcpy(data, bufferData, static_cast<size_t>(size));
-		vmaUnmapMemory(m_pDevice->GetAllocator(), stagingAllocation);
-	}
-
-	// Create vertex buffer in device local memory
-	CreateBuffer(size, buffer, allocation, usageFlag | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-
-	CommandBuffer commandBuffer = BeginSingleTimeCommands();
-	commandBuffer.CopyBuffer(stagingBuffer, buffer, size);
-	EndSingleTimeCommands(commandBuffer);
-
-	// Cleanup staging
-	vmaDestroyBuffer(m_pDevice->GetAllocator(), stagingBuffer, stagingAllocation);
 }
 
 void Renderer::UpdateMVP(const int currentImage)
@@ -821,11 +543,11 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 
 	commandBuffer.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->Get());
 
-	for (uint32_t i = 0; i < m_modelsToRender.size(); i++)
+	for (uint32_t i = 0; i < Vulkan::modelsToRender.size(); i++)
 	{
-		for (uint32_t j = 0; j < m_modelsToRender[i].m_meshes.size(); j++)
+		for (uint32_t j = 0; j < Vulkan::modelsToRender[i].m_meshes.size(); j++)
 		{
-			const Vulkan::Mesh* pMesh = m_meshOwner.GetOrNull(m_modelsToRender[i].m_meshes[j]);
+			const Vulkan::Mesh* pMesh = Vulkan::meshOwner.GetOrNull(Vulkan::modelsToRender[i].m_meshes[j]);
 			assert(pMesh && "Mesh given by RID is null");
 
 			VkBuffer vertexBuffers[] = { pMesh->m_vertexBuffer };
@@ -833,8 +555,8 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 			commandBuffer.BindVertexBuffers(vertexBuffers, offsets);
 			commandBuffer.BindIndexBuffer(pMesh->m_indexBuffer, VK_INDEX_TYPE_UINT32);
 
-			const int descriptorSetIndex = m_currentFrame;
-			commandBuffer.BindDescriptorSets(m_pipeline->GetLayout(), &m_descriptorSets[descriptorSetIndex]);
+			const int descriptorSetIndex = m_pDevice->GetCurrentFrame();
+			commandBuffer.BindDescriptorSets(m_pipeline->GetLayout(), &Vulkan::modelsToRender[i].m_material.m_descriptorSets[descriptorSetIndex]);
 
 			commandBuffer.DrawIndexed(static_cast<uint32_t>(pMesh->m_indices.size()));
 		}
@@ -846,43 +568,6 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 	commandBuffer.TransitionImageLayout(swapchainImage, imageFormat, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	commandBuffer.EndCommandBuffer();
-}
-
-// Port to command buffer class
-CommandBuffer Renderer::BeginSingleTimeCommands() const
-{
-	const QueueType type = QueueType::GRAPHICS;
-	const auto queue = m_pDevice->GetQueue();
-
-	const auto& commandBuffer = queue->CreateSingleTimeCommandBuffer(type, m_currentFrame);
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	commandBuffer.BeginCommandBuffer(&beginInfo);
-
-	return commandBuffer;
-}
-
-// Port to command buffer class
-void Renderer::EndSingleTimeCommands(CommandBuffer commandBuffer) const
-{
-	commandBuffer.EndCommandBuffer();
-
-	const QueueType type = QueueType::GRAPHICS;
-
-	const auto vkCommandBuffer = commandBuffer.GetVkPtr();
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = vkCommandBuffer;
-
-	auto queue = m_pDevice->GetQueue();
-
-	vkQueueSubmit(queue->GetQueue(type), 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(queue->GetQueue(type));
 }
 
 void FrameContext::Init(std::shared_ptr<Device> device)

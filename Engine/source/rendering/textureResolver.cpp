@@ -2,7 +2,7 @@
 
 ResolvedTextureSource TextureResolver::ResolveTexture(const aiScene& scene,
 	const std::string& texturePath,
-	const TextureSemantic semantic,
+	const CPU::TextureSemantic semantic,
 	const std::filesystem::path& modelDir)
 {
 	ResolvedTextureSource src;
@@ -85,26 +85,26 @@ ResolvedTextureSource TextureResolver::DecodeImageFromDisk(std::filesystem::path
 	return src;
 }
 
-TextureFormat TextureResolver::ChooseTextureFormat(TextureSemantic m_semantic)
+CPU::TextureFormat TextureResolver::ChooseTextureFormat(CPU::TextureSemantic m_semantic)
 {
 	switch (m_semantic)
 	{
-	case TextureSemantic::Albedo:
-	case TextureSemantic::Emissive:
+	case CPU::TextureSemantic::Albedo:
+	case CPU::TextureSemantic::Emissive:
 	{
-		return TextureFormat::SRGBA8;
+		return CPU::TextureFormat::SRGBA8;
 	}
 
-	case TextureSemantic::Normal:
-	case TextureSemantic::MetallicRoughness:
-	case TextureSemantic::AO:
+	case CPU::TextureSemantic::Normal:
+	case CPU::TextureSemantic::MetallicRoughness:
+	case CPU::TextureSemantic::AO:
 	{
-		return TextureFormat::RGBA8_UNORM;
+		return CPU::TextureFormat::RGBA8_UNORM;
 	}
 
 	default:
 	{
-		return TextureFormat::RGBA8_UNORM;
+		return CPU::TextureFormat::RGBA8_UNORM;
 	}
 	}
 }

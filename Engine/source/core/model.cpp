@@ -3,6 +3,8 @@
 
 #include "assetStorage.h"
 
+using namespace CPU;
+
 static glm::vec3 ToGlmVec3(const aiVector3t<float>& v)
 {
 	return glm::vec3(v.x, v.y, v.z);

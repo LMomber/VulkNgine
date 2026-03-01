@@ -187,6 +187,16 @@ const VmaAllocator& Device::GetAllocator() const
 	return m_allocator;
 }
 
+uint32_t Device::GetCurrentFrame() const
+{
+	return m_currentFrame;
+}
+
+void Device::AdvanceCurrentFrame()
+{
+	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
 void Device::CreateLogicalDevice(QueueFamilyIndices indices)
 {
 
@@ -383,4 +393,39 @@ void Device::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT
 	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo.pfnUserCallback = DebugCallback;
 	createInfo.pUserData = nullptr; // Optional
+}
+
+CommandBuffer Device::BeginSingleTimeCommands(unsigned int currentFrame) const
+{
+	const QueueType type = QueueType::GRAPHICS;
+	const auto queue = GetQueue();
+
+	const auto& commandBuffer = queue->CreateSingleTimeCommandBuffer(type, currentFrame);
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	commandBuffer.BeginCommandBuffer(&beginInfo);
+
+	return commandBuffer;
+}
+
+void Device::EndSingleTimeCommands(CommandBuffer commandBuffer) const
+{
+	commandBuffer.EndCommandBuffer();
+
+	const QueueType type = QueueType::GRAPHICS;
+
+	const auto vkCommandBuffer = commandBuffer.GetVkPtr();
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = vkCommandBuffer;
+
+	auto queue = GetQueue();
+
+	vkQueueSubmit(queue->GetQueue(type), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(queue->GetQueue(type));
 }

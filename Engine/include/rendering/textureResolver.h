@@ -8,7 +8,7 @@ struct ResolvedTextureSource
 	uint32_t m_width;
 	uint32_t m_height;
 	uint8_t m_channels;
-	TextureFormat m_format;
+	CPU::TextureFormat m_format;
 };
 
 class TextureResolver
@@ -22,10 +22,10 @@ public:
 
 	static ResolvedTextureSource ResolveTexture(const aiScene& scene,
 		const std::string& texturePath,
-		const TextureSemantic semantic,
+		const CPU::TextureSemantic semantic,
 		const std::filesystem::path& model_dir = "0");
 private:
 	static ResolvedTextureSource DecodeEmbeddedTexture(const aiTexture* texture);
 	static ResolvedTextureSource DecodeImageFromDisk(std::filesystem::path path);
-	static TextureFormat ChooseTextureFormat(TextureSemantic m_semantic);
+	static CPU::TextureFormat ChooseTextureFormat(CPU::TextureSemantic m_semantic);
 };

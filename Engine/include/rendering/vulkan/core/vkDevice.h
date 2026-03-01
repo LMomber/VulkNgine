@@ -4,6 +4,7 @@
 #include "vkWindow.h"
 #include "vkSurface.h"
 #include "vkSwapchain.h"
+#include "vkCommandBuffer.h"
 
 struct VmaAllocator_T;
 typedef VmaAllocator_T* VmaAllocator;
@@ -30,6 +31,12 @@ public:
 	std::shared_ptr<Queue> GetQueue() const;
 
 	const VmaAllocator& GetAllocator() const;
+
+	uint32_t GetCurrentFrame() const;
+	void AdvanceCurrentFrame();
+
+	CommandBuffer BeginSingleTimeCommands(unsigned int currentFrame) const;
+	void EndSingleTimeCommands(CommandBuffer commandBuffer) const;
 
 	Device(const Device&) = delete;
 	Device& operator=(const Device&) = delete;
@@ -71,4 +78,6 @@ private:
 	VkDevice m_device{};
 
 	VkDebugUtilsMessengerEXT m_debugMessenger{};
+
+	uint32_t m_currentFrame = 0;
 };

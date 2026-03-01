@@ -39,9 +39,9 @@ public:
 	AssetID CreateAssetID(ModelID id);
 	AssetID CreateAssetID(MaterialID id); // Not used for now
 
-	const Model& GetMesh(AssetID id) const;
+	const CPU::Model& GetMesh(AssetID id) const;
 
 private:
-	std::vector<Model> m_modelStorage{};
-	std::vector<Material> m_materialStorage{};
+	std::vector<CPU::Model> m_modelStorage{};
+	std::vector<CPU::Material> m_materialStorage{};
 };

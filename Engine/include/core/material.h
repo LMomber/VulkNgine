@@ -2,65 +2,76 @@
 
 #include "pch.h"
 
-//#include "rid.h"
-
-// TODO: Add other linear and sRGB formats
-// TODO: Add BCn formats
-// TODO: Add HDR formats
-enum class TextureFormat : uint8_t
+namespace CPU
 {
-	// Linear format
-	RGBA8_UNORM,
+	// TODO: Add other linear and sRGB formats
+	// TODO: Add BCn formats
+	// TODO: Add HDR formats
+	enum class TextureFormat : uint8_t
+	{
+		// Linear format
+		RGBA8_UNORM,
+		RGB8_UNORM,
+		RG8_UNORM,
+		R8_UNORM,
 
-	// sRGB format
-	SRGBA8
-};
+		// sRGB format
+		SRGBA8
+	};
 
-enum class TextureSemantic
-{
-	Albedo,
-	Normal,
-	Emissive,
-	MetallicRoughness,
-	AO
-};
+	enum class TextureSemantic
+	{
+		Albedo,
+		Normal,
+		Emissive,
+		MetallicRoughness,
+		AO
+	};
 
-struct MaterialTexture
-{
-	TextureSemantic m_semantic = TextureSemantic::Albedo;
-	uint32_t m_uv_Index = 0;
+	struct MaterialTexture
+	{
+		MaterialTexture(TextureSemantic semantic, uint32_t uvIndex, uint32_t width, uint32_t height, uint32_t channels, const std::vector<uint8_t>& pixels, TextureFormat format, const std::string& path);
 
-	uint32_t m_width = 0;
-	uint32_t m_height = 0;
-	uint32_t m_channels = 0;
-	std::vector<uint8_t> m_pixels;
-	TextureFormat m_format;
+		TextureSemantic m_semantic = TextureSemantic::Albedo;
+		uint32_t m_uv_Index = 0;
 
-	std::string m_path;
-};
+		uint32_t m_width = 0;
+		uint32_t m_height = 0;
+		uint32_t m_channels = 0;
+		std::vector<uint8_t> m_pixels;
+		TextureFormat m_format;
 
-struct MaterialProperty
-{
-	glm::vec4 m_baseColor = glm::vec4(1.0f);
-	float m_roughness = 1.0f;
-	float m_metallic = 0.0f;
-	float m_normalScale = 1.0f;
-	bool m_alphaBlend = false;
-};
+		std::string m_path;
+	};
 
-class Material
-{
-public:
-	Material() = default;
-	Material(const aiScene& scene, const aiMesh& mesh);
+	struct MaterialProperty
+	{
+		glm::vec4 m_baseColor = glm::vec4(1.0f);
+		float m_roughness = 1.0f;
+		float m_metallic = 0.0f;
+		float m_normalScale = 1.0f;
+		bool m_alphaBlend = false;
+	};
 
-	const MaterialProperty& GetProperties() const { return m_properties; }
-	const std::vector<MaterialTexture>& GetTextures() const { return m_textures; }
+	class Material
+	{
+	public:
+		Material();
+		Material(const aiScene& scene, const aiMesh& mesh);
 
-private:
-	void ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic);
+		const MaterialProperty& GetProperties() const { return m_properties; }
+		const std::shared_ptr<MaterialTexture> GetTexture(TextureSemantic semantic) const;
 
-private:
-	MaterialProperty m_properties{};
-	std::vector<MaterialTexture> m_textures{};
-};
+	private:
+		void ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic);
+
+	private:
+		MaterialProperty m_properties{};
+
+		std::shared_ptr<MaterialTexture> m_albedoTexture = nullptr;
+		std::shared_ptr<MaterialTexture> m_normalTexture = nullptr;
+		std::shared_ptr<MaterialTexture> m_metallicRoughnessTexture = nullptr;
+		std::shared_ptr<MaterialTexture> m_occlusionTexture = nullptr;
+		std::shared_ptr<MaterialTexture> m_emissiveTexture = nullptr;
+	};
+}

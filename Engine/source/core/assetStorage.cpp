@@ -36,7 +36,7 @@ AssetID AssetStorage::CreateAssetID(MaterialID id)
     return h;
 }
 
-const Model& AssetStorage::GetMesh(AssetID id) const
+const CPU::Model& AssetStorage::GetMesh(AssetID id) const
 {
     if (id.m_raw >= m_modelStorage.size())
     {

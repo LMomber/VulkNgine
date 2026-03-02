@@ -2,8 +2,11 @@
 
 #include "vkCommon.h"
 
+#include "vkDevice.h"
+
+#include "model.h"
+
 #include "rid.h"
-#include "textureResolver.h"
 
 #include "glm/glm.hpp"
 
@@ -85,10 +88,14 @@ namespace Vulkan
 
 	struct Material
 	{
-		std::vector<RID> m_textures{};
+		RID m_albedoTexture{};
+		RID m_normalTexture{};
+		RID m_metallicRoughnessTexture{};
+		RID m_occlusionTexture{};
+		RID m_emissiveTexture{};
 
-		std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> m_descriptorSets;
-		void CreateDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
+		std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> m_descriptorSets{};
+		void CreateDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
 	};
 
 	struct Model
@@ -96,6 +103,39 @@ namespace Vulkan
 		std::vector<RID> m_meshes{};
 		Material m_material;
 	};
+
+	RID CreateGpuTexture(std::shared_ptr<Device> device, const std::shared_ptr<CPU::MaterialTexture> srcTexture, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlagBits usageFlags, VmaMemoryUsage memoryFlags, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE);
+	void DestroyGpuTexture(std::shared_ptr<Device> device, const Texture& texture);
+
+	RID CreateGpuMesh(std::shared_ptr<Device> device, const CPU::Mesh& mesh);
+	void DestroyGpuMesh(std::shared_ptr<Device> device, const Mesh& mesh);
+
+	// VMA
+	void CreateBuffer(std::shared_ptr<Device> device, VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags);
+
+	template <typename T>
+	void CreateBufferWithStaging(std::shared_ptr<Device> device, VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, std::vector<T>& bufferData, VkBufferUsageFlags usageFlag);
+	void CreateBufferWithStaging(std::shared_ptr<Device> device, VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, void* bufferData, VkBufferUsageFlags usageFlag);
+
+	void CreateImage(std::shared_ptr<Device> device, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags ImageUsageFlags, VmaMemoryUsage memoryUsageFlags, VkImage& image, VmaAllocation& imageAllocation);
+	VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+	//
+
+	void CreateTextureImage(std::shared_ptr<Device> device, const std::shared_ptr<CPU::MaterialTexture> srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode);
+
+	VkFormat GetVkFormat(CPU::TextureFormat format);
+
+	static struct Samplers
+	{
+		VkSampler m_linearRepeatAnisotropic;
+	} samplers;
+
+	static Material fallbackMaterial;
+
+	static std::vector<Model> modelsToRender{};
+
+	static RID_Owner<Texture> textureOwner;
+	static RID_Owner<Mesh> meshOwner;
 }
 
 // From Boost

@@ -114,6 +114,31 @@ const std::shared_ptr<MaterialTexture> Material::GetTexture(TextureSemantic sema
 	}
 }
 
+void CPU::Material::SetTexture(std::shared_ptr<CPU::MaterialTexture> texture, TextureSemantic semantic)
+{
+	switch (semantic)
+	{
+	case TextureSemantic::Albedo:
+		m_albedoTexture = texture;
+		break;
+	case TextureSemantic::Normal:
+		m_normalTexture = texture;
+		break;
+	case TextureSemantic::MetallicRoughness:
+		m_metallicRoughnessTexture = texture;
+		break;
+	case TextureSemantic::AO:
+		m_occlusionTexture = texture;
+		break;
+	case TextureSemantic::Emissive:
+		m_emissiveTexture = texture;
+		break;
+	default:
+		throw std::runtime_error("Texture type not supported by MaterialTexture.");
+		break;
+	}
+}
+
 // Followed: https://the-asset-importer-lib-documentation.readthedocs.io/en/latest/usage/use_the_lib.html#how-to-map-uv-channels-to-textures-matkey-uvwsrc
 void Material::ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic)
 {

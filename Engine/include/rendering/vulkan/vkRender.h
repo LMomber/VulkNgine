@@ -3,6 +3,8 @@
 #include "vkCommon.h"
 #include "vkDevice.h"
 
+#include "vkData.h"
+
 #pragma warning(push, 0)
 #include <vma/vk_mem_alloc.h>
 #pragma warning(pop)
@@ -31,12 +33,12 @@ public:
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 private:
-	void CreateDescriptorSetLayout();
+	void CreateMaterialDescriptorSetLayout();
 	void CreateGraphicsPipeline();
-	void CreateTextureSampler(VkSampler* sampler, VkFilter filter, VkSamplerAddressMode addressMode, VkBool32 useAnisotropy);
 	void CreateUniformBuffers();
 	void CreateSyncObjects();
 	void CreateDescriptorPool();
+	void CreateFallbackMaterial();
 
 	void ChooseSharingMode();
 
@@ -48,13 +50,18 @@ private:
 
 	std::shared_ptr<Device> m_pDevice;
 
-	VkDescriptorSetLayout m_descriptorSetLayout;
+	Vulkan::Material fallbackMaterial;
+	std::vector<Vulkan::Model> modelsToRender;
+
+	VkDescriptorSetLayout m_uboDescriptorSetLayout;
+	VkDescriptorSetLayout m_materialDescriptorSetLayout;
+	std::vector<VkDescriptorSet> m_uboDescriptorSets;
 
 	std::shared_ptr<Pipeline> m_pipeline;
 
-	std::vector<VkBuffer> m_uniformBuffers;
-	std::vector<VmaAllocation> m_uniformAllocations;
-	std::vector<void*> m_mappedUniformBuffers;
+	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> m_uniformBuffers;
+	std::array<VmaAllocation, MAX_FRAMES_IN_FLIGHT> m_uniformAllocations;
+	std::array<void*, MAX_FRAMES_IN_FLIGHT> m_mappedUniformBuffers;
 
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkSemaphore> m_renderFinishedPerImage;

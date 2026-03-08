@@ -109,7 +109,7 @@ inline void RID_Owner<T>::Free(const RID rid)
 {
 	if (rid.IsNull() || (m_rids.find(rid) == m_rids.end()))
 	{
-		return false;
+		std::runtime_error("Tried cleaning up a non-existend RID.");
 	}
 
 	m_rids.erase(rid);
@@ -118,5 +118,5 @@ inline void RID_Owner<T>::Free(const RID rid)
 template<typename T>
 inline uint32_t RID_Owner<T>::GetRIDCount() const
 {
-	return m_currentBase - 1;
+	return static_cast<uint32_t>(m_rids.size());
 }

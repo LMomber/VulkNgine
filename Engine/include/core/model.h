@@ -9,7 +9,6 @@
 
 namespace CPU
 {
-
 	struct Mesh
 	{
 	public:

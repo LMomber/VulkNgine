@@ -111,7 +111,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Engine\external;$(ProjectDir)..\Engine\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;$(ProjectDir)..\Engine\include\core;$(ProjectDir)..\Engine\include\rendering;$(ProjectDir)..\Engine\include\rendering\vulkan;$(ProjectDir)..\Engine\include\rendering\vulkan\commands;$(ProjectDir)..\Engine\include\rendering\vulkan\core;$(ProjectDir)..\Engine\include\rendering\vulkan\descriptors;$(ProjectDir)..\Engine\include\rendering\vulkan\memory;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Engine\external;$(ProjectDir)..\Engine\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;$(ProjectDir)..\Engine\include\core;$(ProjectDir)..\Engine\include\rendering;$(ProjectDir)..\Engine\include\rendering\vulkan;$(ProjectDir)..\Engine\include\rendering\vulkan\commands;$(ProjectDir)..\Engine\include\rendering\vulkan\core;$(ProjectDir)..\Engine\include\rendering\vulkan\descriptors;$(ProjectDir)..\Engine\include\rendering\vulkan\memory;$(ProjectDir)..\Engine\include\rendering\vulkan\resources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
@@ -130,7 +130,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Engine\external;$(ProjectDir)..\Engine\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;$(ProjectDir)..\Engine\include\core;$(ProjectDir)..\Engine\include\rendering;$(ProjectDir)..\Engine\include\rendering\vulkan;$(ProjectDir)..\Engine\include\rendering\vulkan\commands;$(ProjectDir)..\Engine\include\rendering\vulkan\core;$(ProjectDir)..\Engine\include\rendering\vulkan\descriptors;$(ProjectDir)..\Engine\include\rendering\vulkan\memory;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Engine\external;$(ProjectDir)..\Engine\libs\Vulkan\Include;$(ProjectDir)..\Engine\include;$(ProjectDir)..\Engine\include\core;$(ProjectDir)..\Engine\include\rendering;$(ProjectDir)..\Engine\include\rendering\vulkan;$(ProjectDir)..\Engine\include\rendering\vulkan\commands;$(ProjectDir)..\Engine\include\rendering\vulkan\core;$(ProjectDir)..\Engine\include\rendering\vulkan\descriptors;$(ProjectDir)..\Engine\include\rendering\vulkan\memory;$(ProjectDir)..\Engine\include\rendering\vulkan\resources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>

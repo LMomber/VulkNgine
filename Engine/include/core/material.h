@@ -61,6 +61,7 @@ namespace CPU
 
 		const MaterialProperty& GetProperties() const { return m_properties; }
 		const std::shared_ptr<MaterialTexture> GetTexture(TextureSemantic semantic) const;
+		void SetTexture(std::shared_ptr<MaterialTexture> texture, TextureSemantic semantic);
 
 	private:
 		void ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic);

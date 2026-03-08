@@ -173,6 +173,7 @@
     <ClCompile Include="source\rendering\vulkan\core\vkDevice.cpp" />
     <ClCompile Include="source\rendering\vulkan\core\vkSwapchain.cpp" />
     <ClCompile Include="source\rendering\vulkan\resources\vkData.cpp" />
+    <ClCompile Include="source\rendering\vulkan\resources\vkResourceManager.cpp" />
     <ClCompile Include="source\rendering\vulkan\vkRender.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -200,6 +201,9 @@
     <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorAllocator.h" />
     <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorLayoutCache.h" />
     <ClInclude Include="include\rendering\vulkan\resources\vkData.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkMesh.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkResourceManager.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkTexture.h" />
     <ClInclude Include="include\rendering\vulkan\vkCommon.h" />
     <ClInclude Include="include\rendering\vulkan\core\vkDevice.h" />
     <ClInclude Include="include\rendering\vulkan\core\vkPhysicalDevice.h" />

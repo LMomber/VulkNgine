@@ -37,6 +37,7 @@
     <ClCompile Include="source\core\assetStorage.cpp" />
     <ClCompile Include="source\rendering\textureResolver.cpp" />
     <ClCompile Include="source\rendering\vulkan\resources\vkData.cpp" />
+    <ClCompile Include="source\rendering\vulkan\resources\vkResourceManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\core\engine.h">
@@ -84,6 +85,9 @@
     <ClInclude Include="include\core\common.h" />
     <ClInclude Include="include\rendering\textureResolver.h" />
     <ClInclude Include="include\rendering\vulkan\resources\vkData.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkResourceManager.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkTexture.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkMesh.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

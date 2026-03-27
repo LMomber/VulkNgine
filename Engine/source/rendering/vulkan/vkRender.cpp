@@ -581,10 +581,13 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 	const auto& extent = swapchain->GetExtent();
 	const auto& imageViews = swapchain->GetImageViews();
 	const auto imageFormat = swapchain->GetImageFormat();
+	const auto depthFormat = swapchain->GetDepthFormat();
 	VkImage swapchainImage = swapchain->GetImages()[imageIndex];
+	VkImage depthImage = swapchain->GetDepthImages()[imageIndex];
 
 	// 1. Transition swapchain image to COLOR_ATTACHMENT_OPTIMAL
 	commandBuffer.TransitionImageLayout(swapchainImage, imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	commandBuffer.TransitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	// 2. Begin dynamic rendering
 	VkRenderingAttachmentInfo colorAttachment{};
@@ -597,7 +600,7 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 
 	VkRenderingAttachmentInfo depthAttachment{};
 	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	depthAttachment.imageView = swapchain->GetDepthView();
+	depthAttachment.imageView = swapchain->GetDepthViews()[imageIndex];
 	depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

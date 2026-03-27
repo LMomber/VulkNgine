@@ -18,7 +18,9 @@ public:
 
 	const std::vector<VkImage>& GetImages() const { return m_images; }
 	const std::vector<VkImageView>& GetImageViews() const { return m_imageViews; }
-	const VkImageView& GetDepthView() const { return m_depthImageView; }
+	const std::array<VkImage, 3>& GetDepthImages() const { return m_depthImages; }
+	const std::array<VkImageView, 3>& GetDepthViews() const { return m_depthImageViews; }
+	const VkFormat GetDepthFormat() const{ return m_depthFormat; }
 	const VkFormat GetImageFormat() const{ return m_imageFormat; }
 
 private:
@@ -44,7 +46,8 @@ private:
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_imageViews;
 
-	VkImage m_depthImage;
-	VkDeviceMemory m_depthImageMemory;
-	VkImageView m_depthImageView;
+	VkFormat m_depthFormat;
+	std::array<VkImage, 3> m_depthImages;
+	std::array<VkDeviceMemory, 3> m_depthImageMemory;
+	std::array<VkImageView, 3> m_depthImageViews;
 };

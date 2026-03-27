@@ -134,7 +134,7 @@ void Swapchain::CreateImageViews()
 // TODO: Put image creations & image view creation in functions
 void Swapchain::CreateDepthResources()
 {
-	VkFormat depthFormat = m_pPhysicalDevice->FindSupportedFormat( VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	m_depthFormat = m_pPhysicalDevice->FindSupportedFormat( VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -144,7 +144,7 @@ void Swapchain::CreateDepthResources()
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = 1;
 	imageInfo.arrayLayers = 1;
-	imageInfo.format = depthFormat;
+	imageInfo.format = m_depthFormat;
 	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -152,48 +152,54 @@ void Swapchain::CreateDepthResources()
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.flags = 0;
 
-	if (vkCreateImage(m_device, &imageInfo, nullptr, &m_depthImage) != VK_SUCCESS)
+	for (uint8_t i = 0; i < 3; i++)
 	{
-		throw std::runtime_error("Failed to create image");
-	}
+		if (vkCreateImage(m_device, &imageInfo, nullptr, &m_depthImages[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create image");
+		}
 
-	VkMemoryRequirements memoryRequirements;
-	vkGetImageMemoryRequirements(m_device, m_depthImage, &memoryRequirements);
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(m_device, m_depthImages[i], &memoryRequirements);
 
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memoryRequirements.size;
-	allocInfo.memoryTypeIndex = m_pPhysicalDevice->FindMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memoryRequirements.size;
+		allocInfo.memoryTypeIndex = m_pPhysicalDevice->FindMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	if (vkAllocateMemory(m_device, &allocInfo, nullptr, &m_depthImageMemory) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to allocate image memory");
-	}
+		if (vkAllocateMemory(m_device, &allocInfo, nullptr, &m_depthImageMemory[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate image memory");
+		}
 
-	vkBindImageMemory(m_device, m_depthImage, m_depthImageMemory, 0);
+		vkBindImageMemory(m_device, m_depthImages[i], m_depthImageMemory[i], 0);
 
-	VkImageViewCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	createInfo.image = m_depthImage;
-	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.format = depthFormat;
-	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-	createInfo.subresourceRange.baseMipLevel = 0;
-	createInfo.subresourceRange.levelCount = 1;
-	createInfo.subresourceRange.baseArrayLayer = 0;
-	createInfo.subresourceRange.layerCount = 1;
+		VkImageViewCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.image = m_depthImages[i];
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format = m_depthFormat;
+		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		createInfo.subresourceRange.baseMipLevel = 0;
+		createInfo.subresourceRange.levelCount = 1;
+		createInfo.subresourceRange.baseArrayLayer = 0;
+		createInfo.subresourceRange.layerCount = 1;
 
-	if (vkCreateImageView(m_device, &createInfo, nullptr, &m_depthImageView) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create image view");
+		if (vkCreateImageView(m_device, &createInfo, nullptr, &m_depthImageViews[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create image view");
+		}
 	}
 }
 
 void Swapchain::CleanUp()
 {
-	vkDestroyImageView(m_device, m_depthImageView, nullptr);
-	vkDestroyImage(m_device, m_depthImage, nullptr);
-	vkFreeMemory(m_device, m_depthImageMemory, nullptr);
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		vkDestroyImageView(m_device, m_depthImageViews[i], nullptr);
+		vkDestroyImage(m_device, m_depthImages[i], nullptr);
+		vkFreeMemory(m_device, m_depthImageMemory[i], nullptr);
+	}
 
 	for (const auto& imageView : m_imageViews)
 	{

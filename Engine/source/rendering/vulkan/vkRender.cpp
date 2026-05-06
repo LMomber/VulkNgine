@@ -38,7 +38,7 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 
 	CreateMaterialDescriptorSetLayout();
 	CreateFallbackMaterial();
-	
+
 	Node root{ Object(ObjectType::TYPE_ROOT) };
 	aiScene* pScene = nullptr;
 	const std::string modelDir = "../Engine/models/DamagedHelmet.glb";
@@ -80,6 +80,10 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	modelsToRender.emplace_back();
 
 	modelsToRender[0].m_material.m_albedoTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::Albedo), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+	modelsToRender[0].m_material.m_normalTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::Normal), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+	modelsToRender[0].m_material.m_metallicRoughnessTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::MetallicRoughness), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+	modelsToRender[0].m_material.m_occlusionTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::AO), VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+	modelsToRender[0].m_material.m_emissiveTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::Emissive), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 	modelsToRender[0].m_material.CreateDescriptorSet(m_pDevice->GetVkDevice(), m_materialDescriptorSetLayout, m_pDevice->GetSampler(SamplerType::LinearRepeatAnisotropic), m_descriptorPool, fallbackMaterial);
 
 	for (const auto& mesh : model.m_meshes)
@@ -245,17 +249,52 @@ void Renderer::Render()
 
 void Renderer::CreateMaterialDescriptorSetLayout()
 {
-	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.binding = 0;
-	samplerLayoutBinding.descriptorCount = 5;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	VkDescriptorSetLayoutBinding albedoLayoutBinding{};
+	albedoLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	albedoLayoutBinding.binding = 0;
+	albedoLayoutBinding.descriptorCount = 1;
+	albedoLayoutBinding.pImmutableSamplers = nullptr;
+	albedoLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutBinding normalLayoutBinding{};
+	normalLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	normalLayoutBinding.binding = 1;
+	normalLayoutBinding.descriptorCount = 1;
+	normalLayoutBinding.pImmutableSamplers = nullptr;
+	normalLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutBinding metallicRougnessLayoutBinding{};
+	metallicRougnessLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	metallicRougnessLayoutBinding.binding = 2;
+	metallicRougnessLayoutBinding.descriptorCount = 1;
+	metallicRougnessLayoutBinding.pImmutableSamplers = nullptr;
+	metallicRougnessLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutBinding occlusionLayoutBinding{};
+	occlusionLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	occlusionLayoutBinding.binding = 3;
+	occlusionLayoutBinding.descriptorCount = 1;
+	occlusionLayoutBinding.pImmutableSamplers = nullptr;
+	occlusionLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutBinding emissiveLayoutBinding{};
+	emissiveLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	emissiveLayoutBinding.binding = 4;
+	emissiveLayoutBinding.descriptorCount = 1;
+	emissiveLayoutBinding.pImmutableSamplers = nullptr;
+	emissiveLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	std::array<VkDescriptorSetLayoutBinding, 5> bindings = { 
+		albedoLayoutBinding, 
+		normalLayoutBinding, 
+		metallicRougnessLayoutBinding, 
+		occlusionLayoutBinding, 
+		emissiveLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &samplerLayoutBinding;
+	layoutInfo.bindingCount = 5;
+	layoutInfo.pBindings = bindings.data();
 
 	if (vkCreateDescriptorSetLayout(m_pDevice->GetVkDevice(), &layoutInfo, nullptr, &m_materialDescriptorSetLayout) != VK_SUCCESS)
 	{
@@ -457,17 +496,6 @@ void Renderer::CreateFallbackMaterial()
 		std::string()
 	);
 
-	auto ambientOcclusion = std::make_shared<CPU::MaterialTexture>(
-		CPU::TextureSemantic::AO,
-		0,
-		1,
-		1,
-		1,
-		std::vector<uint8_t>{255, 255, 255, 255},
-		CPU::TextureFormat::R8_UNORM,
-		std::string()
-	);
-
 	auto roughnessMetallic = std::make_shared<CPU::MaterialTexture>(
 		CPU::TextureSemantic::MetallicRoughness,
 		0,
@@ -476,6 +504,17 @@ void Renderer::CreateFallbackMaterial()
 		2,
 		std::vector<uint8_t>{255, 0, 0, 255},
 		CPU::TextureFormat::RG8_UNORM,
+		std::string()
+	);
+
+	auto ambientOcclusion = std::make_shared<CPU::MaterialTexture>(
+		CPU::TextureSemantic::AO,
+		0,
+		1,
+		1,
+		1,
+		std::vector<uint8_t>{255, 255, 255, 255},
+		CPU::TextureFormat::R8_UNORM,
 		std::string()
 	);
 
@@ -493,14 +532,14 @@ void Renderer::CreateFallbackMaterial()
 	CPU::Material cpuMat;
 	cpuMat.SetTexture(albedo, CPU::TextureSemantic::Albedo);
 	cpuMat.SetTexture(normal, CPU::TextureSemantic::Normal);
-	cpuMat.SetTexture(ambientOcclusion, CPU::TextureSemantic::AO);
 	cpuMat.SetTexture(roughnessMetallic, CPU::TextureSemantic::MetallicRoughness);
+	cpuMat.SetTexture(ambientOcclusion, CPU::TextureSemantic::AO);
 	cpuMat.SetTexture(emissive, CPU::TextureSemantic::Emissive);
 
 	fallbackMaterial.m_albedoTexture = m_pDevice->CreateGpuTexture(cpuMat.GetTexture(CPU::TextureSemantic::Albedo), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 	fallbackMaterial.m_normalTexture = m_pDevice->CreateGpuTexture(cpuMat.GetTexture(CPU::TextureSemantic::Normal), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-	fallbackMaterial.m_occlusionTexture = m_pDevice->CreateGpuTexture(cpuMat.GetTexture(CPU::TextureSemantic::AO), VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 	fallbackMaterial.m_metallicRoughnessTexture = m_pDevice->CreateGpuTexture(cpuMat.GetTexture(CPU::TextureSemantic::MetallicRoughness), VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+	fallbackMaterial.m_occlusionTexture = m_pDevice->CreateGpuTexture(cpuMat.GetTexture(CPU::TextureSemantic::AO), VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 	fallbackMaterial.m_emissiveTexture = m_pDevice->CreateGpuTexture(cpuMat.GetTexture(CPU::TextureSemantic::Emissive), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
 }

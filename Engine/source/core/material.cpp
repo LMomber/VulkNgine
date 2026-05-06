@@ -81,12 +81,12 @@ Material::Material(const aiScene& scene, const aiMesh& mesh)
 	ExtractTexture(scene, mat, mesh, aiTextureType_NORMALS, TextureSemantic::Normal);
 	ExtractTexture(scene, mat, mesh, aiTextureType_HEIGHT, TextureSemantic::Normal); // fallback
 
-	ExtractTexture(scene, mat, mesh, aiTextureType_EMISSIVE, TextureSemantic::Emissive);
-	ExtractTexture(scene, mat, mesh, aiTextureType_EMISSION_COLOR, TextureSemantic::Emissive);
-
 	ExtractTexture(scene, mat, mesh, aiTextureType_METALNESS, TextureSemantic::MetallicRoughness);
 
 	ExtractTexture(scene, mat, mesh, aiTextureType_AMBIENT_OCCLUSION, TextureSemantic::AO);
+
+	ExtractTexture(scene, mat, mesh, aiTextureType_EMISSIVE, TextureSemantic::Emissive);
+	ExtractTexture(scene, mat, mesh, aiTextureType_EMISSION_COLOR, TextureSemantic::Emissive);
 }
 
 const std::shared_ptr<MaterialTexture> Material::GetTexture(TextureSemantic semantic) const

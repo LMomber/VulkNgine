@@ -96,17 +96,6 @@ const Material& Mesh::GetMaterial() const
 {
 	return m_material;
 }
-//
-//MeshStorage& MeshStorage::Get()
-//{
-//	static MeshStorage instance;
-//	return instance;
-//}
-//
-//RID MeshStorage::CreateMesh(const aiScene& aiScene, const aiNode& aiNode)
-//{
-//	return m_meshOwner.CreateRID({ aiScene, aiNode });
-//}
 
 Model::Model(const aiScene& aiScene, const aiNode& aiNode)
 {

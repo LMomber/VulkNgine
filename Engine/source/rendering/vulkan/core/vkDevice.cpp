@@ -451,6 +451,11 @@ void Device::EndSingleTimeCommands(CommandBuffer commandBuffer) const
 
 RID Device::CreateGpuTexture(const std::shared_ptr<CPU::MaterialTexture> srcTexture, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlagBits usageFlags, VmaMemoryUsage memoryFlags, VkSharingMode sharingMode) const
 {
+	if (!srcTexture)
+	{
+		return RID();
+	}
+
 	Vulkan::Texture dstTexture{};
 	CreateTextureImage(srcTexture, dstTexture, usageFlags, memoryFlags, sharingMode);
 	dstTexture.m_imageView = CreateImageView(dstTexture.m_image, format, aspectFlags);

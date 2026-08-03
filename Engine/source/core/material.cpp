@@ -64,7 +64,7 @@ Material::Material()
 	);
 }
 
-Material::Material(const aiScene& scene, const aiMesh& mesh)
+Material::Material(const std::string& filePath, const aiScene& scene, const aiMesh& mesh)
 {
 	aiMaterial* mat = scene.mMaterials[mesh.mMaterialIndex];
 
@@ -75,18 +75,18 @@ Material::Material(const aiScene& scene, const aiMesh& mesh)
 	}
 
 	// Not sure about the fallback handling. Right now diffuse & height always overwrite base color & normals.
-	ExtractTexture(scene, mat, mesh, aiTextureType_BASE_COLOR, TextureSemantic::Albedo);
-	ExtractTexture(scene, mat, mesh, aiTextureType_DIFFUSE, TextureSemantic::Albedo); // fallback
+	ExtractTexture(filePath, scene, mat, mesh, aiTextureType_BASE_COLOR, TextureSemantic::Albedo);
+	ExtractTexture(filePath, scene, mat, mesh, aiTextureType_DIFFUSE, TextureSemantic::Albedo); // fallback
 
-	ExtractTexture(scene, mat, mesh, aiTextureType_NORMALS, TextureSemantic::Normal);
-	ExtractTexture(scene, mat, mesh, aiTextureType_HEIGHT, TextureSemantic::Normal); // fallback
+	ExtractTexture(filePath, scene, mat, mesh, aiTextureType_NORMALS, TextureSemantic::Normal);
+	ExtractTexture(filePath, scene, mat, mesh, aiTextureType_HEIGHT, TextureSemantic::Normal); // fallback
 
-	ExtractTexture(scene, mat, mesh, aiTextureType_METALNESS, TextureSemantic::MetallicRoughness);
+	ExtractTexture(filePath, scene, mat, mesh, aiTextureType_METALNESS, TextureSemantic::MetallicRoughness);
 
-	ExtractTexture(scene, mat, mesh, aiTextureType_AMBIENT_OCCLUSION, TextureSemantic::AO);
+	ExtractTexture(filePath, scene, mat, mesh, aiTextureType_AMBIENT_OCCLUSION, TextureSemantic::AO);
 
-	ExtractTexture(scene, mat, mesh, aiTextureType_EMISSIVE, TextureSemantic::Emissive);
-	ExtractTexture(scene, mat, mesh, aiTextureType_EMISSION_COLOR, TextureSemantic::Emissive);
+	ExtractTexture(filePath, scene, mat, mesh, aiTextureType_EMISSIVE, TextureSemantic::Emissive);
+	ExtractTexture(filePath, scene, mat, mesh, aiTextureType_EMISSION_COLOR, TextureSemantic::Emissive);
 }
 
 const std::shared_ptr<MaterialTexture> Material::GetTexture(TextureSemantic semantic) const
@@ -140,7 +140,7 @@ void CPU::Material::SetTexture(std::shared_ptr<CPU::MaterialTexture> texture, Te
 }
 
 // Followed: https://the-asset-importer-lib-documentation.readthedocs.io/en/latest/usage/use_the_lib.html#how-to-map-uv-channels-to-textures-matkey-uvwsrc
-void Material::ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic)
+void Material::ExtractTexture(const std::string& filePath, const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic)
 {
 	const uint32_t uv_channelCount = mesh.GetNumUVChannels();
 
@@ -167,7 +167,7 @@ void Material::ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMes
 		}
 
 		// TODO: Not necessary, merge ResolvedTextureSource & MaterialTexture all together.
-		ResolvedTextureSource src = TextureResolver::Get().ResolveTexture(scene, path.C_Str(), m_semantic);
+		ResolvedTextureSource src = TextureResolver::Get().ResolveTexture(scene, path.C_Str(), m_semantic, filePath);
 
 		std::shared_ptr<MaterialTexture> materialTexture = std::make_shared<MaterialTexture>(
 			m_semantic,

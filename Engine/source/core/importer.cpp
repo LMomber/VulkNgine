@@ -20,7 +20,7 @@ static Transform AssimpMatrixToTransform(const aiMatrix4x4& mat)
 	return transform;
 }
 
-void Importer::CopyNodes(const aiScene& scene, const aiNode& node, Node& targetParent)
+void Importer::CopyNodes(const std::string& filePath, const aiScene& scene, const aiNode& node, Node& targetParent)
 {
 	// Empty node
 	Node* parent = &targetParent;
@@ -29,7 +29,7 @@ void Importer::CopyNodes(const aiScene& scene, const aiNode& node, Node& targetP
 	//If node has meshes, create a new scene object for it
 	if (node.mNumMeshes > 0)
 	{
-		ModelID meshID = AssetStorage::Get().CreateModel(scene, node);
+		ModelID meshID = AssetStorage::Get().CreateModel(filePath, scene, node);
 		Node* pNode = targetParent.AddChild(Object{ ObjectType::TYPE_MESH, AssetStorage::Get().CreateAssetID(meshID)});
 		transform = AssimpMatrixToTransform(node.mTransformation);
 
@@ -51,7 +51,7 @@ void Importer::CopyNodes(const aiScene& scene, const aiNode& node, Node& targetP
 	// continue for all child nodes
 	for (unsigned int i = 0; i < node.mNumChildren; i++)
 	{
-		CopyNodes(scene, *node.mChildren[i], *parent);
+		CopyNodes(filePath, scene, *node.mChildren[i], *parent);
 	}
 }
 
@@ -76,7 +76,7 @@ std::vector<char> Importer::ReadShaderFile(const std::string& filename)
 }
 
 // Customized function from: https://the-asset-importer-lib-documentation.readthedocs.io/en/latest/usage/use_the_lib.html
-void Importer::ImportScene(const std::string& pFile, Node& root, const aiScene* pScene)
+void Importer::ImportScene(const std::string& filePath, Node& root, const aiScene* pScene)
 {
 	// Create an instance of the Importer class
 	Assimp::Importer importer;
@@ -94,7 +94,7 @@ void Importer::ImportScene(const std::string& pFile, Node& root, const aiScene* 
 	// And have it read the given file with some example postprocessing
 	// Usually - if speed is not the most important aspect for you - you'll
 	// probably to request more postprocessing than we do in this example.
-	pScene = importer.ReadFile(pFile, importFlags);
+	pScene = importer.ReadFile(filePath, importFlags);
 
 	// If the import failed, report it
 	if (nullptr == pScene)
@@ -105,6 +105,6 @@ void Importer::ImportScene(const std::string& pFile, Node& root, const aiScene* 
 	root.SetRoot();
 	aiNode* pAssimpNode = pScene->mRootNode;
 	root.GetTransform().SetFromMatrix(AssimpMatrixToTransform(pAssimpNode->mTransformation).GetWorld() * root.GetTransform().GetWorld());
-	CopyNodes(*pScene, *pAssimpNode, root);
+	CopyNodes(filePath, *pScene, *pAssimpNode, root);
 	//DoThepSceneProcessing(ppScene);
 }

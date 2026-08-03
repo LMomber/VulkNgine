@@ -57,14 +57,14 @@ namespace CPU
 	{
 	public:
 		Material();
-		Material(const aiScene& scene, const aiMesh& mesh);
+		Material(const std::string& filePath, const aiScene& scene, const aiMesh& mesh);
 
 		const MaterialProperty& GetProperties() const { return m_properties; }
 		const std::shared_ptr<MaterialTexture> GetTexture(TextureSemantic semantic) const;
 		void SetTexture(std::shared_ptr<MaterialTexture> texture, TextureSemantic semantic);
 
 	private:
-		void ExtractTexture(const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic);
+		void ExtractTexture(const std::string& pFile, const aiScene& scene, aiMaterial* mat, const aiMesh& mesh, aiTextureType type, TextureSemantic m_semantic);
 
 	private:
 		MaterialProperty m_properties{};

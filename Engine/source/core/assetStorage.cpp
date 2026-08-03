@@ -6,17 +6,17 @@ AssetStorage& AssetStorage::Get()
     return assetStorage;
 }
 
-ModelID AssetStorage::CreateModel(const aiScene& aiScene, const aiNode& aiNode)
+ModelID AssetStorage::CreateModel(const std::string& filePath, const aiScene& aiScene, const aiNode& aiNode)
 {
     ModelID id{ static_cast<uint32_t>(m_modelStorage.size()) };
-    m_modelStorage.emplace_back(aiScene, aiNode);
+    m_modelStorage.emplace_back(filePath, aiScene, aiNode);
     return id;
 }
 
-MaterialID AssetStorage::CreateMaterial(const aiScene& aiScene, const aiMesh& aiMesh)
+MaterialID AssetStorage::CreateMaterial(const std::string& filePath, const aiScene& aiScene, const aiMesh& aiMesh)
 {
     MaterialID id{ static_cast<uint32_t>(m_materialStorage.size()) };
-    m_materialStorage.emplace_back(aiScene, aiMesh);
+    m_materialStorage.emplace_back(filePath, aiScene, aiMesh);
     return id;
 }
 

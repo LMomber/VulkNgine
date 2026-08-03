@@ -23,7 +23,7 @@ public:
 	static ResolvedTextureSource ResolveTexture(const aiScene& scene,
 		const std::string& texturePath,
 		const CPU::TextureSemantic semantic,
-		const std::filesystem::path& model_dir = "0");
+		const std::string& filePath);
 private:
 	static ResolvedTextureSource DecodeEmbeddedTexture(const aiTexture* texture);
 	static ResolvedTextureSource DecodeImageFromDisk(std::filesystem::path path);

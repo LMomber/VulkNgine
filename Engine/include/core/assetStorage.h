@@ -33,8 +33,8 @@ class AssetStorage
 public:
 	static AssetStorage& Get();
 
-	ModelID CreateModel(const aiScene& aiScene, const aiNode& aiNode);
-	MaterialID CreateMaterial(const aiScene& aiScene, const aiMesh& aiMesh);
+	ModelID CreateModel(const std::string& filePath, const aiScene& aiScene, const aiNode& aiNode);
+	MaterialID CreateMaterial(const std::string& filePath, const aiScene& aiScene, const aiMesh& aiMesh);
 
 	AssetID CreateAssetID(ModelID id);
 	AssetID CreateAssetID(MaterialID id); // Not used for now

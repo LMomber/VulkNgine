@@ -16,11 +16,11 @@ static glm::vec2 ToGlmVec2(const aiVector3t<float>& v)
 	return glm::vec2(v.x, v.y);
 }
 
-Mesh::Mesh(const aiScene& aiScene, const aiMesh& aiMesh)
+Mesh::Mesh(const std::string& filePath, const aiScene& aiScene, const aiMesh& aiMesh)
 {
 	m_numVertices = aiMesh.mNumVertices;
 	m_numFaces = aiMesh.mNumFaces;
-	m_material = Material(aiScene, aiMesh);
+	m_material = Material(filePath, aiScene, aiMesh);
 
 	m_vertices.reserve(m_numVertices);
 	m_normals.reserve(m_numVertices);
@@ -112,12 +112,12 @@ const Material& Mesh::GetMaterial() const
 	return m_material;
 }
 
-Model::Model(const aiScene& aiScene, const aiNode& aiNode)
+Model::Model(const std::string& filePath, const aiScene& aiScene, const aiNode& aiNode)
 {
 	assert(aiNode.mNumMeshes > 0);
 
 	for (uint16_t i = 0; i < aiNode.mNumMeshes; i++)
 	{
-		m_meshes.emplace_back(aiScene, *aiScene.mMeshes[aiNode.mMeshes[i]]);
+		m_meshes.emplace_back(filePath, aiScene, *aiScene.mMeshes[aiNode.mMeshes[i]]);
 	}
 }

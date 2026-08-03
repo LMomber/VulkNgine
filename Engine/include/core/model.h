@@ -13,7 +13,7 @@ namespace CPU
 	{
 	public:
 		Mesh() = delete;
-		Mesh(const aiScene& aiScene, const aiMesh& aiMesh);
+		Mesh(const std::string& filePath, const aiScene& aiScene, const aiMesh& aiMesh);
 
 		const std::vector<glm::vec3>& GetVertices() const;
 		const std::vector<glm::vec3>& GetNormals() const;
@@ -41,7 +41,7 @@ namespace CPU
 	{
 	public:
 		Model() = default;
-		Model(const aiScene& aiScene, const aiNode& aiNode);
+		Model(const std::string& filePath, const aiScene& aiScene, const aiNode& aiNode);
 
 		std::vector<Mesh> m_meshes{};
 	private:

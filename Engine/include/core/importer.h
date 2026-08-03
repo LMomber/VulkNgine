@@ -21,5 +21,5 @@ public:
 	Importer& operator=(Importer&&) noexcept = delete;
 
 private:
-	static void CopyNodes(const aiScene& scene, const aiNode& node, Node& targetParent);
+	static void CopyNodes(const std::string& pFile, const aiScene& scene, const aiNode& node, Node& targetParent);
 };

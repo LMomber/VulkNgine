@@ -97,11 +97,11 @@ void main()
 	F0 = mix(F0, vec3(albedo), metallic);
 
 	const vec3 n = normalize(normal);
-	const vec3 v = normalize(camera.position.xyz - worldPos); // If it doesn't work, invert OutDir
+	const vec3 v = normalize(camera.position.xyz - worldPos);
 	const vec3 p = worldPos;
 	const float r = max(roughness, 0.04);
 
-	const vec3 diffuse = albedo * oneOverPi /*+ (vec3(0.03) * albedo)*/;
+	const vec3 diffuse = albedo * oneOverPi;
 
 	vec3 Lo = vec3(0.0);
 
@@ -129,11 +129,10 @@ void main()
 		const vec3 refractance = kD * diffuse;
 
 		const float NdotL = max(dot(n, L), 0.0);
-		//Lo = vec3(D);
 		Lo += (refractance + reflectance) * radiance * NdotL;
 	}
 
-	//Lo += vec3(0.03) * albedo * ao;
+	//Lo += vec3(0.1) * albedo * ao;
 
 //	// Tone mapping 
 //	Lo = Lo / (Lo + vec3(1.0));

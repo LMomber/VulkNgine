@@ -22,7 +22,7 @@ namespace Vulkan
 
 	struct Model
 	{
-		std::vector<RID> m_meshes{};
+		RID m_mesh{};
 		Material m_material;
 	};
 }

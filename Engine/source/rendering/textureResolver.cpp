@@ -1,20 +1,21 @@
 #include "textureResolver.h"
 
 ResolvedTextureSource TextureResolver::ResolveTexture(const aiScene& scene,
-	const std::string& texturePath,
+	const std::string& textureName,
 	const CPU::TextureSemantic semantic,
-	const std::filesystem::path& modelDir)
+	const std::string& filePath)
 {
 	ResolvedTextureSource src;
 
-	if (!texturePath.empty() && texturePath[0] == '*')
+	if (!textureName.empty() && textureName[0] == '*')
 	{
-		const aiTexture* tex = scene.mTextures[std::stoi(texturePath.substr(1))];
+		const aiTexture* tex = scene.mTextures[std::stoi(textureName.substr(1))];
 		src = DecodeEmbeddedTexture(tex);
 	}
 	else
 	{
-		src = DecodeImageFromDisk(modelDir /*/ std::filesystem::path(texture.m_path)*/);
+		std::string directory = std::filesystem::path(filePath).parent_path().string() + "/";
+		src = DecodeImageFromDisk(directory + textureName);
 	}
 
 	src.m_format = ChooseTextureFormat(semantic);
@@ -74,6 +75,11 @@ ResolvedTextureSource TextureResolver::DecodeImageFromDisk(std::filesystem::path
 		&channels,
 		STBI_rgb_alpha
 	);
+
+	if (data == NULL)
+	{
+		throw std::runtime_error("The image did not load correctly.");
+	}
 
 	ResolvedTextureSource src;
 	src.m_height = h;

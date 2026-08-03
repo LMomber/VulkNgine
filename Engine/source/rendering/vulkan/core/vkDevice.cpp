@@ -508,12 +508,14 @@ RID Device::CreateGpuMesh(const CPU::Mesh& mesh) const
 {
 	Vulkan::Mesh vkMesh;
 	const auto& verts = mesh.GetVertices();
+	const auto& normals = mesh.GetNormals();
+	const auto& tangents = mesh.GetTangents();
 	const auto& coords = mesh.GetTexCoords();
 
 	vkMesh.m_vertices.reserve(verts.size());
 	for (uint32_t i = 0; i < verts.size(); i++)
 	{
-		vkMesh.m_vertices.emplace_back(verts[i], glm::vec3{ 0 }, coords[0][i], coords.size() > 1 ? coords[1][i] : glm::vec2{ 0, 0 });
+		vkMesh.m_vertices.emplace_back(verts[i], normals[i], glm::vec3(tangents[i]), coords[0][i], coords.size() > 1 ? coords[1][i] : glm::vec2{0, 0});
 	}
 	const VkDeviceSize vertexBufferSize = sizeof(vkMesh.m_vertices[0]) * vkMesh.m_vertices.size();
 	CreateBufferWithStaging(vertexBufferSize, vkMesh.m_vertexBuffer, vkMesh.m_vertexAllocation, vkMesh.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -579,7 +581,7 @@ VkFormat Device::GetVkFormat(CPU::TextureFormat format) const
 	}
 }
 
-void Device::CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags) const
+void Device::CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags, VmaAllocationCreateFlags memoryCreateFlags) const
 {
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -589,9 +591,31 @@ void Device::CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& al
 
 	VmaAllocationCreateInfo allocInfo{};
 	allocInfo.usage = memoryUsageFlags;
+	allocInfo.flags = memoryCreateFlags;
 
 	vmaCreateBuffer(GetAllocator(), &bufferInfo, &allocInfo,
 		&buffer, &allocation, nullptr);
+}
+
+void Device::CreateAndMapBuffer(void*& mappedBuffer, VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags, VmaAllocationCreateFlags memoryCreateFlags) const
+{
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = size;
+	bufferInfo.usage = bufferUsageFlags;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	VmaAllocationCreateInfo allocCreateInfo{};
+	allocCreateInfo.usage = memoryUsageFlags;
+	allocCreateInfo.flags = memoryCreateFlags;
+
+	VmaAllocationInfo allocInfo{};
+	if (vmaCreateBuffer(GetAllocator(), &bufferInfo, &allocCreateInfo, &buffer, &allocation, &allocInfo) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Memory allocation failed");
+	}
+
+	mappedBuffer = allocInfo.pMappedData;
 }
 
 template <typename T>

@@ -57,7 +57,8 @@ public:
 	void EndSingleTimeCommands(CommandBuffer commandBuffer) const;
 
 	// VMA
-	void CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags) const;
+	void CreateBuffer(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags, VmaAllocationCreateFlags memoryCreateFlags = 0) const;
+	void CreateAndMapBuffer(void*& mappedBuffer, VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, VkBufferUsageFlags bufferUsageFlags, VmaMemoryUsage memoryUsageFlags, VmaAllocationCreateFlags memoryCreateFlags = 0) const;
 
 	template <typename T>
 	void CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, std::vector<T>& bufferData, VkBufferUsageFlags usageFlag) const;

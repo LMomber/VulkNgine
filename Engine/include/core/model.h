@@ -17,6 +17,7 @@ namespace CPU
 
 		const std::vector<glm::vec3>& GetVertices() const;
 		const std::vector<glm::vec3>& GetNormals() const;
+		const std::vector<glm::vec4>& GetTangents() const;
 		const std::vector<std::vector<glm::vec2>>& GetTexCoords() const;
 		const std::vector<uint32_t>& GetIndices() const;
 
@@ -29,8 +30,7 @@ namespace CPU
 
 		std::vector<glm::vec3> m_vertices{};
 		std::vector<glm::vec3> m_normals{};
-		std::vector<glm::vec3> m_tangents{};
-		std::vector<glm::vec3> m_bitangents{};
+		std::vector<glm::vec4> m_tangents{};
 		std::vector<std::vector<glm::vec2>> m_texCoords{};
 		std::vector<uint32_t> m_indices{};
 	};

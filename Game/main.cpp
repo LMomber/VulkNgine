@@ -51,7 +51,7 @@ int main() {
 	camera.projection[1][1] *= -1;
 
 	Transform& cameraTransform = registry.emplace<Transform>(entity);
-	cameraTransform.SetTranslation(glm::vec3(1, 2, 2));
+	cameraTransform.SetTranslation(glm::vec3(0, 0, 0));
 
 	try
 	{

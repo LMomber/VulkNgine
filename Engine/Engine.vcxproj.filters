@@ -1,103 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="source\core\engine.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\rendering\vulkan\core\vkDevice.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\rendering\vulkan\core\vkSurface.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\rendering\vulkan\core\vkSwapchain.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\rendering\vulkan\core\vkWindow.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\core\inputHandler.cpp" />
-    <ClCompile Include="source\core\transform.cpp" />
-    <ClCompile Include="source\core\input.cpp" />
-    <ClCompile Include="source\core\timer.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkPhysicalDevice.cpp" />
-    <ClCompile Include="source\rendering\vulkan\commands\vkQueue.cpp" />
-    <ClCompile Include="source\rendering\vulkan\commands\vkCommandPool.cpp" />
-    <ClCompile Include="source\rendering\vulkan\commands\vkCommandBuffer.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkPipeline.cpp" />
-    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
-    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp" />
-    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
-    <ClCompile Include="source\rendering\vulkan\vkRender.cpp" />
-    <ClCompile Include="source\core\sceneObject.cpp" />
-    <ClCompile Include="source\core\model.cpp" />
-    <ClCompile Include="source\core\material.cpp" />
-    <ClCompile Include="source\core\importer.cpp" />
-    <ClCompile Include="source\core\assetStorage.cpp" />
-    <ClCompile Include="source\rendering\textureResolver.cpp" />
-    <ClCompile Include="source\rendering\vulkan\resources\vkData.cpp" />
-    <ClCompile Include="source\rendering\vulkan\resources\vkResourceManager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\core\engine.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\rendering\vulkan\vkCommon.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\rendering\vulkan\core\vkDevice.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\rendering\vulkan\core\vkSurface.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\rendering\vulkan\core\vkSwapchain.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\rendering\vulkan\core\vkWindow.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="include\rendering\vulkan\vkRender.h" />
-    <ClInclude Include="include\core\inputHandler.h" />
-    <ClInclude Include="include\core\transform.h" />
-    <ClInclude Include="include\core\input.h" />
-    <ClInclude Include="include\rendering\renderComponents.h" />
-    <ClInclude Include="include\core\timer.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkPhysicalDevice.h" />
-    <ClInclude Include="include\rendering\vulkan\commands\vkQueue.h" />
-    <ClInclude Include="include\rendering\vulkan\commands\vkCommandPool.h" />
-    <ClInclude Include="include\rendering\vulkan\commands\vkCommandBuffer.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkPipeline.h" />
-    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorAllocator.h" />
-    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorLayoutCache.h" />
-    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorBuilder.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkPipelineCache.h" />
-    <ClInclude Include="include\core\hash.h" />
-    <ClInclude Include="external\vma\vk_mem_alloc.h" />
-    <ClInclude Include="include\core\sceneObject.h" />
-    <ClInclude Include="include\core\rid.h" />
-    <ClInclude Include="include\core\model.h" />
-    <ClInclude Include="include\core\material.h" />
-    <ClInclude Include="include\core\importer.h" />
-    <ClInclude Include="include\core\assetStorage.h" />
-    <ClInclude Include="include\core\pch.h" />
-    <ClInclude Include="include\core\common.h" />
-    <ClInclude Include="include\rendering\textureResolver.h" />
-    <ClInclude Include="include\rendering\vulkan\resources\vkData.h" />
-    <ClInclude Include="include\rendering\vulkan\resources\vkResourceManager.h" />
-    <ClInclude Include="include\rendering\vulkan\resources\vkTexture.h" />
-    <ClInclude Include="include\rendering\vulkan\resources\vkMesh.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="shaders\shader.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\shader.vert">
-      <Filter>shaders</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Filter Include="include">
       <UniqueIdentifier>{8a520d3b-dda2-48b3-a8ad-680c8f50411f}</UniqueIdentifier>
     </Filter>
@@ -107,5 +10,266 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{7975b188-b8b3-4369-b78d-a5575ec0fac4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="include\core">
+      <UniqueIdentifier>{b3d2f93d-17ec-4d83-8980-8f9e759fbf91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\rendering">
+      <UniqueIdentifier>{908b0e4b-ef1e-4d0f-b0cf-b6646c6ec637}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\rendering\vulkan">
+      <UniqueIdentifier>{c90f7db5-273d-46ac-9950-8671b42ec3d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\rendering\vulkan\commands">
+      <UniqueIdentifier>{b9ec89f7-274f-4284-ab50-d636cd01f3c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\rendering\vulkan\core">
+      <UniqueIdentifier>{8a07ec4d-4485-4311-941f-5c23a86cdc2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\rendering\vulkan\descriptors">
+      <UniqueIdentifier>{b3afa07b-df7a-422a-8e9d-b5a9cd9746c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\rendering\vulkan\resources">
+      <UniqueIdentifier>{acb42273-a9ed-46ac-bd36-af29bb3ae53e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\core">
+      <UniqueIdentifier>{a075feaa-8a84-41f0-ab85-0f57f866578b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\rendering">
+      <UniqueIdentifier>{de798701-41a7-40d2-944a-02c1f8e77287}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\rendering\vulkan">
+      <UniqueIdentifier>{1cb5bf14-ebb8-4962-90db-1d3cff7c71d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\rendering\vulkan\commands">
+      <UniqueIdentifier>{f3578e91-3036-42bb-9c7e-5da9ea864049}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\rendering\vulkan\core">
+      <UniqueIdentifier>{3e729327-36cc-4859-b83c-63dc8534baa6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\rendering\vulkan\descriptors">
+      <UniqueIdentifier>{a4e5e354-a71f-4722-a5fe-f99eb0295955}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\rendering\vulkan\resources">
+      <UniqueIdentifier>{65485780-522b-4f4f-9936-3da32679f745}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external">
+      <UniqueIdentifier>{22777ff4-56db-44e9-a957-04b7436801d7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\forwardRender.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\forwardRender.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\shader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\shader.vert">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\core\assetStorage.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\common.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\engine.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\hash.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\importer.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\input.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\inputHandler.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\material.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\model.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\pch.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\rid.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\sceneObject.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\timer.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\transform.h">
+      <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\renderComponents.h">
+      <Filter>include\rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\textureResolver.h">
+      <Filter>include\rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\vkCommon.h">
+      <Filter>include\rendering\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\vkRender.h">
+      <Filter>include\rendering\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\commands\vkCommandBuffer.h">
+      <Filter>include\rendering\vulkan\commands</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\commands\vkCommandPool.h">
+      <Filter>include\rendering\vulkan\commands</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\commands\vkQueue.h">
+      <Filter>include\rendering\vulkan\commands</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\core\vkDevice.h">
+      <Filter>include\rendering\vulkan\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\core\vkPhysicalDevice.h">
+      <Filter>include\rendering\vulkan\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\core\vkPipeline.h">
+      <Filter>include\rendering\vulkan\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\core\vkPipelineCache.h">
+      <Filter>include\rendering\vulkan\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\core\vkSurface.h">
+      <Filter>include\rendering\vulkan\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\core\vkSwapchain.h">
+      <Filter>include\rendering\vulkan\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\core\vkWindow.h">
+      <Filter>include\rendering\vulkan\core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorAllocator.h">
+      <Filter>include\rendering\vulkan\descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorBuilder.h">
+      <Filter>include\rendering\vulkan\descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorLayoutCache.h">
+      <Filter>include\rendering\vulkan\descriptors</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\resources\vkData.h">
+      <Filter>include\rendering\vulkan\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\resources\vkMesh.h">
+      <Filter>include\rendering\vulkan\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\resources\vkResourceManager.h">
+      <Filter>include\rendering\vulkan\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\resources\vkTexture.h">
+      <Filter>include\rendering\vulkan\resources</Filter>
+    </ClInclude>
+    <ClInclude Include="external\mikktspace\mikktspace.h">
+      <Filter>external</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\tangentSpaceWrapper.h">
+      <Filter>include\rendering</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\core\assetStorage.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\engine.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\importer.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\input.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\inputHandler.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\material.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\model.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\sceneObject.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\timer.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\core\transform.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\textureResolver.cpp">
+      <Filter>source\rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\vkRender.cpp">
+      <Filter>source\rendering\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\commands\vkCommandBuffer.cpp">
+      <Filter>source\rendering\vulkan\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\commands\vkCommandPool.cpp">
+      <Filter>source\rendering\vulkan\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\commands\vkQueue.cpp">
+      <Filter>source\rendering\vulkan\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\core\vkDevice.cpp">
+      <Filter>source\rendering\vulkan\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\core\vkPhysicalDevice.cpp">
+      <Filter>source\rendering\vulkan\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\core\vkPipeline.cpp">
+      <Filter>source\rendering\vulkan\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp">
+      <Filter>source\rendering\vulkan\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\core\vkSurface.cpp">
+      <Filter>source\rendering\vulkan\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\core\vkSwapchain.cpp">
+      <Filter>source\rendering\vulkan\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\core\vkWindow.cpp">
+      <Filter>source\rendering\vulkan\core</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp">
+      <Filter>source\rendering\vulkan\descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp">
+      <Filter>source\rendering\vulkan\descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp">
+      <Filter>source\rendering\vulkan\descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\resources\vkData.cpp">
+      <Filter>source\rendering\vulkan\resources</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vulkan\resources\vkResourceManager.cpp">
+      <Filter>source\rendering\vulkan\resources</Filter>
+    </ClCompile>
+    <ClCompile Include="external\mikktspace\mikktspace.c">
+      <Filter>external</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\tangentSpaceWrapper.cpp">
+      <Filter>source\rendering</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

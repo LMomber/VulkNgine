@@ -1,6 +1,7 @@
 #include "model.h"
 #include "material.h"
 
+#include "tangentSpaceWrapper.h"
 #include "assetStorage.h"
 
 using namespace CPU;
@@ -20,12 +21,10 @@ Mesh::Mesh(const aiScene& aiScene, const aiMesh& aiMesh)
 	m_numVertices = aiMesh.mNumVertices;
 	m_numFaces = aiMesh.mNumFaces;
 	m_material = Material(aiScene, aiMesh);
-		//= AssetStorage::Get().CreateMaterial(aiScene, aiMesh);
 
 	m_vertices.reserve(m_numVertices);
 	m_normals.reserve(m_numVertices);
 	m_tangents.reserve(m_numVertices);
-	m_bitangents.reserve(m_numVertices);
 
 	std::vector<uint32_t> uvChannels;
 	for (uint32_t channel = 0; channel < AI_MAX_NUMBER_OF_TEXTURECOORDS; ++channel)
@@ -52,8 +51,19 @@ Mesh::Mesh(const aiScene& aiScene, const aiMesh& aiMesh)
 
 		if (aiMesh.HasTangentsAndBitangents())
 		{
-			m_tangents.push_back(ToGlmVec3(aiMesh.mTangents[i]));
-			m_bitangents.push_back(ToGlmVec3(aiMesh.mBitangents[i]));
+			m_tangents.push_back(glm::vec4(ToGlmVec3(aiMesh.mTangents[i]), 1.f));
+		}
+		else
+		{
+			// I'm curious if this ever hits.. Leaving a breakpoint here for now.
+			// If it doesn't, get rid of the entire mikktspace code.
+			MikkTSpaceTangent::MikktSpaceMesh mesh{};
+			mesh.m_indices = m_indices;
+			mesh.m_normals = m_normals;
+			mesh.m_positions = m_vertices;
+			mesh.m_texcoords = m_texCoords[0];
+
+			MikkTSpaceTangent::GetTangents(mesh, m_tangents);
 		}
 
 		for (uint32_t j = 0; j < uvChannels.size(); j++)
@@ -82,6 +92,11 @@ const std::vector<glm::vec3>& Mesh::GetNormals() const
 	return m_normals;
 }
 
+const std::vector<glm::vec4>& CPU::Mesh::GetTangents() const
+{
+	return m_tangents;
+}
+
 const std::vector<std::vector<glm::vec2>>& Mesh::GetTexCoords() const
 {
 	return m_texCoords;
@@ -100,7 +115,7 @@ const Material& Mesh::GetMaterial() const
 Model::Model(const aiScene& aiScene, const aiNode& aiNode)
 {
 	assert(aiNode.mNumMeshes > 0);
-	
+
 	for (uint16_t i = 0; i < aiNode.mNumMeshes; i++)
 	{
 		m_meshes.emplace_back(aiScene, *aiScene.mMeshes[aiNode.mMeshes[i]]);

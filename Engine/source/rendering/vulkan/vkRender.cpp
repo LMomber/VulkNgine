@@ -22,19 +22,40 @@
 #include <set>
 #include <unordered_map>
 
-struct MVP
+struct CameraUBO
 {
-	alignas(16) glm::mat4 model;
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 projection;
+	glm::mat4 view;
+	glm::mat4 projection;
+	glm::vec4 position;
 };
+static_assert(sizeof(CameraUBO) == 144);
+
+struct ObjectUBO
+{
+	glm::mat4 model;
+};
+static_assert(sizeof(ObjectUBO) == 64);
+
+struct LightParameters
+{
+	glm::vec4 position; // vec3 with padding
+	glm::vec4 intensity; // rgb = color, w = intensity
+};
+static_assert(sizeof(LightParameters) == 32);
+
+struct LightBuffer
+{
+	uint32_t lightCount;
+	uint32_t padding[3]; // Padding for 16 byte boundary
+	LightParameters lights[MAX_LIGHTS_IN_SCENE];
+} lightData;
 
 Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
 	ChooseSharingMode();
 	CreateDescriptorPool();
-	CreateUniformBuffers();
+	CreateBuffers();
 
 	CreateMaterialDescriptorSetLayout();
 	CreateFallbackMaterial();
@@ -43,7 +64,7 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	aiScene* pScene = nullptr;
 	const std::string modelDir = "../Engine/models/DamagedHelmet.glb";
 	//const std::string modelDir = "../Engine/models/viking_room.obj";
-	const std::string textureDir = "../Engine/textures/viking_room.png";
+	//const std::string textureDir = "../Engine/textures/viking_room.png";
 	Importer::ImportScene(modelDir, root, pScene);
 
 	const Object* meshObj = nullptr;
@@ -91,6 +112,14 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 		modelsToRender[0].m_meshes.push_back(m_pDevice->CreateGpuMesh(mesh));
 	}
 
+	// Hard coded for now.
+	lightData.lights[lightData.lightCount] = { glm::vec4(-2.f, 3.f, 0.f, 0.f), glm::vec4(1.f, 0.f, 0.f, 10.f) };
+	lightData.lightCount++;
+	lightData.lights[lightData.lightCount] = { glm::vec4(-2.f, 3.f, 4.f, 0.f), glm::vec4(0.f, 1.f, 0.f, 10.f) };
+	lightData.lightCount++;
+	lightData.lights[lightData.lightCount] = { glm::vec4(2.f, 1.f, 0.f, 0.f), glm::vec4(0.f, 0.f, 1.f, 10.f) };
+	lightData.lightCount++;
+
 	CreateGraphicsPipeline();
 	CreateSyncObjects();
 }
@@ -109,12 +138,14 @@ Renderer::~Renderer()
 		vkFreeDescriptorSets(vkDevice, m_descriptorPool, static_cast<uint32_t>(modelsToRender[i].m_material.m_descriptorSets.size()), modelsToRender[i].m_material.m_descriptorSets.data());
 	}
 	vkDestroyDescriptorPool(vkDevice, m_descriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(vkDevice, m_uboDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(vkDevice, m_sceneBuffersDescriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(vkDevice, m_materialDescriptorSetLayout, nullptr);
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
-		vmaDestroyBuffer(m_pDevice->GetAllocator(), m_uniformBuffers[i], m_uniformAllocations[i]);
+		vmaDestroyBuffer(m_pDevice->GetAllocator(), m_cameraBuffers[i], m_cameraAllocations[i]);
+		vmaDestroyBuffer(m_pDevice->GetAllocator(), m_objectBuffers[i], m_objectAllocations[i]);
+		vmaDestroyBuffer(m_pDevice->GetAllocator(), m_lightBuffers[i], m_lightAllocations[i]);
 	}
 
 	const auto& rm = Vulkan::ResourceManager::Get();
@@ -140,7 +171,7 @@ Renderer::~Renderer()
 
 void Renderer::Update()
 {
-	UpdateMVP(m_pDevice->GetCurrentFrame());
+	UpdateBuffers(m_pDevice->GetCurrentFrame());
 }
 
 void Renderer::Render()
@@ -284,11 +315,11 @@ void Renderer::CreateMaterialDescriptorSetLayout()
 	emissiveLayoutBinding.pImmutableSamplers = nullptr;
 	emissiveLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 5> bindings = { 
-		albedoLayoutBinding, 
-		normalLayoutBinding, 
-		metallicRougnessLayoutBinding, 
-		occlusionLayoutBinding, 
+	std::array<VkDescriptorSetLayoutBinding, 5> bindings = {
+		albedoLayoutBinding,
+		normalLayoutBinding,
+		metallicRougnessLayoutBinding,
+		occlusionLayoutBinding,
 		emissiveLayoutBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -328,15 +359,15 @@ void Renderer::CreateGraphicsPipeline()
 	colorBlendAttachments.push_back(colorBlendAttachment);
 
 	std::vector<VkDescriptorSetLayout> layouts;
-	layouts.push_back(m_uboDescriptorSetLayout);
+	layouts.push_back(m_sceneBuffersDescriptorSetLayout);
 	layouts.push_back(m_materialDescriptorSetLayout);
 
 	std::vector<VkFormat> imageFormats;
 	imageFormats.push_back(m_pDevice->GetSwapchain()->GetImageFormat());
 
 	GraphicsPipelineInfo pipelineInfo{};
-	pipelineInfo.SetShader("../Engine/shaders/vert.spv", ShaderType::VERTEX);
-	pipelineInfo.SetShader("../Engine/shaders/frag.spv", ShaderType::FRAGMENT);
+	pipelineInfo.SetShader("../Engine/shaders/forwardRenderVert.spv", ShaderType::VERTEX);
+	pipelineInfo.SetShader("../Engine/shaders/forwardRenderFrag.spv", ShaderType::FRAGMENT);
 	pipelineInfo.SetDynamicStates(dynamicStates);
 	pipelineInfo.SetVertexInputState(bindingDescriptions, attributeDescriptions);
 	pipelineInfo.SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
@@ -352,46 +383,61 @@ void Renderer::CreateGraphicsPipeline()
 	m_pipeline = PipelineCache::GetOrCreateGraphicsPipeline(pipelineInfo);
 }
 
-void Renderer::CreateUniformBuffers()
+void Renderer::CreateBuffers()
 {
 	// Create buffers
-	const auto bufferSize = sizeof(MVP);
+	const auto cameraBufferSize = sizeof(CameraUBO);
+	const auto objectBufferSize = sizeof(ObjectUBO);
+	const auto lightBufferSize = sizeof(LightBuffer);
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = bufferSize;
-		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		// Uniform
+		m_pDevice->CreateAndMapBuffer(m_mappedCameraBuffers[i], cameraBufferSize, m_cameraBuffers[i], m_cameraAllocations[i],
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VMA_ALLOCATION_CREATE_MAPPED_BIT);
+		m_pDevice->CreateAndMapBuffer(m_mappedObjectBuffers[i], objectBufferSize, m_objectBuffers[i], m_objectAllocations[i],
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
-		VmaAllocationCreateInfo allocCreateInfo{};
-		allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-		allocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
-
-		VmaAllocationInfo allocInfo{};
-		if (vmaCreateBuffer(m_pDevice->GetAllocator(), &bufferInfo, &allocCreateInfo, &m_uniformBuffers[i], &m_uniformAllocations[i], &allocInfo) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Memory allocation failed");
-		}
-
-		m_mappedUniformBuffers[i] = allocInfo.pMappedData;
+		// Storage
+		m_pDevice->CreateAndMapBuffer(m_mappedLightBuffers[i], lightBufferSize, m_lightBuffers[i], m_lightAllocations[i], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VMA_ALLOCATION_CREATE_MAPPED_BIT);
 	}
 
-	// Create descriptor set layout
-	VkDescriptorSetLayoutBinding uniformLayoutBinding{};
-	uniformLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uniformLayoutBinding.binding = 0;
-	uniformLayoutBinding.descriptorCount = 1;
-	uniformLayoutBinding.pImmutableSamplers = nullptr;
-	uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	const int bindingCount = 3;
+	std::array<VkDescriptorSetLayoutBinding, bindingCount> bindings{};
+
+	// Camera
+	{
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		bindings[0].binding = 0;
+		bindings[0].descriptorCount = 1;
+		bindings[0].pImmutableSamplers = nullptr;
+		bindings[0].stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+	}
+
+	// Object
+	{
+		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		bindings[1].binding = 1;
+		bindings[1].descriptorCount = 1;
+		bindings[1].pImmutableSamplers = nullptr;
+		bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	}
+
+	// Light
+	{
+		bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		bindings[2].binding = 2;
+		bindings[2].descriptorCount = 1;
+		bindings[2].pImmutableSamplers = nullptr;
+		bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	}
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &uniformLayoutBinding;
+	layoutInfo.bindingCount = bindingCount;
+	layoutInfo.pBindings = bindings.data();
 
-	if (vkCreateDescriptorSetLayout(m_pDevice->GetVkDevice(), &layoutInfo, nullptr, &m_uboDescriptorSetLayout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(m_pDevice->GetVkDevice(), &layoutInfo, nullptr, &m_sceneBuffersDescriptorSetLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create descriptor set layout");
 	}
@@ -399,31 +445,63 @@ void Renderer::CreateUniformBuffers()
 	// Create descriptor set
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		m_uboDescriptorSets.emplace_back();
+		m_sceneBuffersDescriptorSets.emplace_back();
 	}
 
-	m_pDevice->CreateDescriptorSets(m_uboDescriptorSets, m_uboDescriptorSetLayout, m_descriptorPool);
+	m_pDevice->CreateDescriptorSets(m_sceneBuffersDescriptorSets, m_sceneBuffersDescriptorSetLayout, m_descriptorPool);
 
 	// Write to descriptor set
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		std::vector<VkWriteDescriptorSet> writes{};
-		writes.emplace_back();
+		std::vector<VkWriteDescriptorSet> writes(bindingCount);
 
-		VkDescriptorBufferInfo bufferInfo = {};
-		bufferInfo.buffer = m_uniformBuffers[i];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(MVP);
+		// Camera buffer
+		VkDescriptorBufferInfo cameraBufferInfo = {};
+		cameraBufferInfo.buffer = m_cameraBuffers[i];
+		cameraBufferInfo.offset = 0;
+		cameraBufferInfo.range = sizeof(CameraUBO);
 
 		writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writes[0].dstSet = m_uboDescriptorSets[i];
+		writes[0].dstSet = m_sceneBuffersDescriptorSets[i];
 		writes[0].dstBinding = 0;
 		writes[0].dstArrayElement = 0;
 		writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		writes[0].descriptorCount = 1;
-		writes[0].pBufferInfo = &bufferInfo;
-		writes[0].pImageInfo = NULL;
-		writes[0].pTexelBufferView = NULL;
+		writes[0].pBufferInfo = &cameraBufferInfo;
+		writes[0].pImageInfo = nullptr;
+		writes[0].pTexelBufferView = nullptr;
+
+		// Object buffer
+		VkDescriptorBufferInfo objectBufferInfo = {};
+		objectBufferInfo.buffer = m_objectBuffers[i];
+		objectBufferInfo.offset = 0;
+		objectBufferInfo.range = sizeof(ObjectUBO);
+
+		writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writes[1].dstSet = m_sceneBuffersDescriptorSets[i];
+		writes[1].dstBinding = 1;
+		writes[1].dstArrayElement = 0;
+		writes[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writes[1].descriptorCount = 1;
+		writes[1].pBufferInfo = &objectBufferInfo;
+		writes[1].pImageInfo = nullptr;
+		writes[1].pTexelBufferView = nullptr;
+
+		// Light buffer
+		VkDescriptorBufferInfo lightBufferInfo = {};
+		lightBufferInfo.buffer = m_lightBuffers[i];
+		lightBufferInfo.offset = 0;
+		lightBufferInfo.range = sizeof(LightBuffer);
+
+		writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writes[2].dstSet = m_sceneBuffersDescriptorSets[i];
+		writes[2].dstBinding = 2;
+		writes[2].dstArrayElement = 0;
+		writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		writes[2].descriptorCount = 1;
+		writes[2].pBufferInfo = &lightBufferInfo;
+		writes[2].pImageInfo = nullptr;
+		writes[2].pTexelBufferView = nullptr;
 
 		m_pDevice->UpdateDescriptorSets(writes);
 	}
@@ -452,18 +530,21 @@ void Renderer::CreateSyncObjects()
 void Renderer::CreateDescriptorPool()
 {
 	const uint16_t maxMaterials = 1000;
+	const uint16_t uniformBufferCount = 2;
 
-	std::array<VkDescriptorPoolSize, 2> poolSizes{};
+	std::array<VkDescriptorPoolSize, 3> poolSizes{};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * uniformBufferCount);
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * maxMaterials;
+	poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * uniformBufferCount) * maxMaterials;
+	poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
 	VkDescriptorPoolCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	createInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	createInfo.pPoolSizes = poolSizes.data();
-	createInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * maxMaterials;
+	createInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * uniformBufferCount) * maxMaterials;
 	createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	if (vkCreateDescriptorPool(m_pDevice->GetVkDevice(), &createInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
@@ -562,16 +643,14 @@ void Renderer::ChooseSharingMode()
 	m_sharingMode = m_queueSetIndices.size() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 }
 
-void Renderer::UpdateMVP(const int currentImage)
+void Renderer::UpdateBuffers(const int currentImage)
 {
 	assert(currentImage < MAX_FRAMES_IN_FLIGHT && "Current frame value is higher than the amount of frames in flight");
 
+	// Camera
 	const auto cameraEntity = Core::engine.GetRegistry().view<Transform>().front();
 	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
 	const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
-
-	Transform transform{};
-	transform.SetTranslation(glm::vec3(1.f, 2.f, 5.f));
 
 	const glm::vec3 trans = cameraTransform.GetTranslation();
 	const glm::quat rot = cameraTransform.GetRotation();
@@ -582,13 +661,29 @@ void Renderer::UpdateMVP(const int currentImage)
 	const glm::vec3 focusPoint = trans + forward;
 	const glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
 
-	MVP ubo{};
-	auto world = glm::rotate(transform.GetWorld(), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	ubo.model = glm::rotate(world, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-	ubo.view = glm::lookAtRH(trans, focusPoint, worldUp);
-	ubo.projection = camera.projection;
+	CameraUBO cameraUBO{};
+	cameraUBO.view = glm::lookAtRH(trans, focusPoint, worldUp);
+	cameraUBO.projection = camera.projection;
 
-	memcpy(m_mappedUniformBuffers[(currentImage)], &ubo, sizeof(ubo));
+	memcpy(m_mappedCameraBuffers[currentImage], &cameraUBO, sizeof(CameraUBO));
+
+	// Model
+	Transform transform{};
+	transform.SetTranslation(glm::vec3(0.f, 0.f, 3.f));
+
+	//auto world = glm::rotate(transform.GetWorld(), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	ObjectUBO objectUBO{};
+	objectUBO.model = transform.GetWorld();// glm::rotate(world, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
+
+	memcpy(m_mappedObjectBuffers[currentImage], &objectUBO, sizeof(ObjectUBO));
+
+	// Lights
+	if (lightData.lightCount != m_lightCounts[currentImage])
+	{
+		memcpy(m_mappedLightBuffers[currentImage], &lightData, sizeof(LightBuffer));
+		m_lightCounts[currentImage] = lightData.lightCount;
+	}
 }
 
 VkShaderModule Renderer::CreateShaderModule(const std::vector<char>& code)
@@ -686,7 +781,7 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 			commandBuffer.BindIndexBuffer(pMesh->m_indexBuffer, VK_INDEX_TYPE_UINT32);
 
 			const int descriptorSetIndex = m_pDevice->GetCurrentFrame();
-			const std::array<VkDescriptorSet, 2> sets{ m_uboDescriptorSets[descriptorSetIndex], modelsToRender[i].m_material.m_descriptorSets[descriptorSetIndex] };
+			const std::array<VkDescriptorSet, 2> sets{ m_sceneBuffersDescriptorSets[descriptorSetIndex], modelsToRender[i].m_material.m_descriptorSets[descriptorSetIndex] };
 			commandBuffer.BindDescriptorSets(m_pipeline->GetLayout(), sets.data(), 0, 2);
 
 			commandBuffer.DrawIndexed(static_cast<uint32_t>(pMesh->m_indices.size()));

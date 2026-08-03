@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -17,6 +17,89 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\forwardRender.frag" />
+    <None Include="shaders\forwardRender.vert" />
+    <None Include="shaders\shader.frag" />
+    <None Include="shaders\shader.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="external\mikktspace\mikktspace.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="include\core\assetStorage.h" />
+    <ClInclude Include="include\core\common.h" />
+    <ClInclude Include="include\core\engine.h" />
+    <ClInclude Include="include\core\hash.h" />
+    <ClInclude Include="include\core\importer.h" />
+    <ClInclude Include="include\core\input.h" />
+    <ClInclude Include="include\core\inputHandler.h" />
+    <ClInclude Include="include\core\material.h" />
+    <ClInclude Include="include\core\model.h" />
+    <ClInclude Include="include\core\pch.h" />
+    <ClInclude Include="include\core\rid.h" />
+    <ClInclude Include="include\core\sceneObject.h" />
+    <ClInclude Include="include\core\timer.h" />
+    <ClInclude Include="include\core\transform.h" />
+    <ClInclude Include="include\rendering\renderComponents.h" />
+    <ClInclude Include="include\rendering\tangentSpaceWrapper.h" />
+    <ClInclude Include="include\rendering\textureResolver.h" />
+    <ClInclude Include="include\rendering\vulkan\commands\vkCommandBuffer.h" />
+    <ClInclude Include="include\rendering\vulkan\commands\vkCommandPool.h" />
+    <ClInclude Include="include\rendering\vulkan\commands\vkQueue.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkDevice.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkPhysicalDevice.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkPipeline.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkPipelineCache.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkSurface.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkSwapchain.h" />
+    <ClInclude Include="include\rendering\vulkan\core\vkWindow.h" />
+    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorAllocator.h" />
+    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorBuilder.h" />
+    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorLayoutCache.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkData.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkMesh.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkResourceManager.h" />
+    <ClInclude Include="include\rendering\vulkan\resources\vkTexture.h" />
+    <ClInclude Include="include\rendering\vulkan\vkCommon.h" />
+    <ClInclude Include="include\rendering\vulkan\vkRender.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="external\mikktspace\mikktspace.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="source\core\assetStorage.cpp" />
+    <ClCompile Include="source\core\engine.cpp" />
+    <ClCompile Include="source\core\importer.cpp" />
+    <ClCompile Include="source\core\input.cpp" />
+    <ClCompile Include="source\core\inputHandler.cpp" />
+    <ClCompile Include="source\core\material.cpp" />
+    <ClCompile Include="source\core\model.cpp" />
+    <ClCompile Include="source\core\sceneObject.cpp" />
+    <ClCompile Include="source\core\timer.cpp" />
+    <ClCompile Include="source\core\transform.cpp" />
+    <ClCompile Include="source\rendering\tangentSpaceWrapper.cpp" />
+    <ClCompile Include="source\rendering\textureResolver.cpp" />
+    <ClCompile Include="source\rendering\vulkan\commands\vkCommandBuffer.cpp" />
+    <ClCompile Include="source\rendering\vulkan\commands\vkCommandPool.cpp" />
+    <ClCompile Include="source\rendering\vulkan\commands\vkQueue.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkDevice.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkPhysicalDevice.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkPipeline.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkSurface.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkSwapchain.cpp" />
+    <ClCompile Include="source\rendering\vulkan\core\vkWindow.cpp" />
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
+    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
+    <ClCompile Include="source\rendering\vulkan\resources\vkData.cpp" />
+    <ClCompile Include="source\rendering\vulkan\resources\vkResourceManager.cpp" />
+    <ClCompile Include="source\rendering\vulkan\vkRender.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -147,77 +230,6 @@
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="source\core\assetStorage.cpp" />
-    <ClCompile Include="source\core\importer.cpp" />
-    <ClCompile Include="source\core\material.cpp" />
-    <ClCompile Include="source\core\model.cpp" />
-    <ClCompile Include="source\core\sceneObject.cpp" />
-    <ClCompile Include="source\rendering\textureResolver.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkPipelineCache.cpp" />
-    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorBuilder.cpp" />
-    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorAllocator.cpp" />
-    <ClCompile Include="source\core\timer.cpp" />
-    <ClCompile Include="source\core\input.cpp" />
-    <ClCompile Include="source\core\inputHandler.cpp" />
-    <ClCompile Include="source\core\transform.cpp" />
-    <ClCompile Include="source\rendering\vulkan\commands\vkCommandBuffer.cpp" />
-    <ClCompile Include="source\rendering\vulkan\commands\vkCommandPool.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkPhysicalDevice.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkPipeline.cpp" />
-    <ClCompile Include="source\rendering\vulkan\commands\vkQueue.cpp" />
-    <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkSurface.cpp" />
-    <ClCompile Include="source\core\engine.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkWindow.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkDevice.cpp" />
-    <ClCompile Include="source\rendering\vulkan\core\vkSwapchain.cpp" />
-    <ClCompile Include="source\rendering\vulkan\resources\vkData.cpp" />
-    <ClCompile Include="source\rendering\vulkan\resources\vkResourceManager.cpp" />
-    <ClCompile Include="source\rendering\vulkan\vkRender.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="external\vma\vk_mem_alloc.h" />
-    <ClInclude Include="include\core\assetStorage.h" />
-    <ClInclude Include="include\core\common.h" />
-    <ClInclude Include="include\core\engine.h" />
-    <ClInclude Include="include\core\hash.h" />
-    <ClInclude Include="include\core\importer.h" />
-    <ClInclude Include="include\core\input.h" />
-    <ClInclude Include="include\core\inputHandler.h" />
-    <ClInclude Include="include\core\material.h" />
-    <ClInclude Include="include\core\model.h" />
-    <ClInclude Include="include\core\pch.h" />
-    <ClInclude Include="include\core\rid.h" />
-    <ClInclude Include="include\core\sceneObject.h" />
-    <ClInclude Include="include\rendering\renderComponents.h" />
-    <ClInclude Include="include\core\timer.h" />
-    <ClInclude Include="include\core\transform.h" />
-    <ClInclude Include="include\rendering\textureResolver.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkPipelineCache.h" />
-    <ClInclude Include="include\rendering\vulkan\commands\vkCommandBuffer.h" />
-    <ClInclude Include="include\rendering\vulkan\commands\vkCommandPool.h" />
-    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorBuilder.h" />
-    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorAllocator.h" />
-    <ClInclude Include="include\rendering\vulkan\descriptors\vkDescriptorLayoutCache.h" />
-    <ClInclude Include="include\rendering\vulkan\resources\vkData.h" />
-    <ClInclude Include="include\rendering\vulkan\resources\vkMesh.h" />
-    <ClInclude Include="include\rendering\vulkan\resources\vkResourceManager.h" />
-    <ClInclude Include="include\rendering\vulkan\resources\vkTexture.h" />
-    <ClInclude Include="include\rendering\vulkan\vkCommon.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkDevice.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkPhysicalDevice.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkPipeline.h" />
-    <ClInclude Include="include\rendering\vulkan\commands\vkQueue.h" />
-    <ClInclude Include="include\rendering\vulkan\vkRender.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkSurface.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkSwapchain.h" />
-    <ClInclude Include="include\rendering\vulkan\core\vkWindow.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

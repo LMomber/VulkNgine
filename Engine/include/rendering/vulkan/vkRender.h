@@ -5,6 +5,8 @@
 
 #include "vkData.h"
 
+#include "sceneObject.h"
+
 #pragma warning(push, 0)
 #include <vma/vk_mem_alloc.h>
 #pragma warning(pop)
@@ -17,6 +19,11 @@ struct FrameContext
 	VkSemaphore m_imageAvailableSemaphore;
 	VkSemaphore m_timelineSemaphore;
 	uint64_t m_timelineValue;
+};
+
+struct SceneData
+{
+	std::vector<Vulkan::Model> m_modelsToRender;
 };
 
 class CommandBuffer;
@@ -48,13 +55,16 @@ private:
 
 	void RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
+	void AddNodeTreeToSceneData(const Node& root);
+
 	std::shared_ptr<Device> m_pDevice;
 	std::shared_ptr<Pipeline> m_pipeline;
+
+	SceneData m_sceneData;
 
 	// PBR materials
 	VkDescriptorSetLayout m_materialDescriptorSetLayout;
 	Vulkan::Material fallbackMaterial;
-	std::vector<Vulkan::Model> modelsToRender;
 
 	// Scene buffers
 	VkDescriptorSetLayout m_sceneBuffersDescriptorSetLayout;

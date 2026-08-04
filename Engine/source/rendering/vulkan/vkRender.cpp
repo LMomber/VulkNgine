@@ -60,71 +60,24 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	CreateMaterialDescriptorSetLayout();
 	CreateFallbackMaterial();
 
-	Node root{ Object(ObjectType::TYPE_ROOT) };
-	aiScene* pScene = nullptr;
-	const std::string filePath = "../Engine/models/Sponza/glTF/Sponza.gltf";
-	//const std::string filePath = "../Engine/models/DamagedHelmet.glb";
-	//const std::string modelDir = "../Engine/models/viking_room.obj";
-	//const std::string textureDir = "../Engine/textures/viking_room.png";
-	Importer::ImportScene(filePath, root, pScene);
-
-	const Object* meshObj = nullptr;
-	Node* child = &root;
-
-	do
 	{
-		const Object& obj = child->GetObject();
-		if (obj.GetType() == ObjectType::TYPE_MESH)
-		{
-			meshObj = &obj;
-			break;
-		}
-		else
-		{
-			child = child->GetChildren()[0].get();
-			continue;
-		}
+		Node root{ Object(ObjectType::TYPE_ROOT) };
+		aiScene* pScene = nullptr;
+		const std::string filePath = "../Engine/models/Sponza/glTF/Sponza.gltf";
+		Importer::ImportScene(filePath, root, pScene);
 
-	} while (true);
-
-	if (!meshObj)
-	{
-		throw std::logic_error("No mesh found in the scene");
+		AddNodeTreeToSceneData(root);
 	}
 
-	const CPU::Model& model = AssetStorage::Get().GetMesh(meshObj->GetHandle());
-
-	for (uint16_t i = 0; i < model.m_meshes.size(); i++)
 	{
-		modelsToRender.emplace_back();
+		Node root{ Object(ObjectType::TYPE_ROOT) };
+		aiScene* pScene = nullptr;
+		const std::string filePath = "../Engine/models/DamagedHelmet.glb";
+		Importer::ImportScene(filePath, root, pScene);
 
-		modelsToRender[i].m_material.m_albedoTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::Albedo), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-		modelsToRender[i].m_material.m_normalTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::Normal), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-		modelsToRender[i].m_material.m_metallicRoughnessTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::MetallicRoughness), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-		modelsToRender[i].m_material.m_occlusionTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::AO), VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-		modelsToRender[i].m_material.m_emissiveTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::Emissive), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-		modelsToRender[i].m_material.CreateDescriptorSet(m_pDevice->GetVkDevice(), m_materialDescriptorSetLayout, m_pDevice->GetSampler(SamplerType::LinearRepeatAnisotropic), m_descriptorPool, fallbackMaterial);
+		AddNodeTreeToSceneData(root);
 	}
 
-	/*if (model.m_meshes.size() > 1)
-	{
-		throw std::logic_error("this shouldn't be");
-	}*/
-
-	/*modelsToRender.emplace_back();
-
-	modelsToRender[0].m_material.m_albedoTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::Albedo), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-	modelsToRender[0].m_material.m_normalTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::Normal), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-	modelsToRender[0].m_material.m_metallicRoughnessTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::MetallicRoughness), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-	modelsToRender[0].m_material.m_occlusionTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::AO), VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-	modelsToRender[0].m_material.m_emissiveTexture = m_pDevice->CreateGpuTexture(model.m_meshes[0].GetMaterial().GetTexture(CPU::TextureSemantic::Emissive), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-	modelsToRender[0].m_material.CreateDescriptorSet(m_pDevice->GetVkDevice(), m_materialDescriptorSetLayout, m_pDevice->GetSampler(SamplerType::LinearRepeatAnisotropic), m_descriptorPool, fallbackMaterial);*/
-
-	for (uint16_t i = 0; i < model.m_meshes.size(); i++)
-	{
-		const auto& mesh = model.m_meshes[i];
-		modelsToRender[i].m_mesh = m_pDevice->CreateGpuMesh(mesh);
-	}
 
 	// Hard coded for now.
 	lightData.lights[lightData.lightCount] = { glm::vec4(-2.f, 3.f, 0.f, 0.f), glm::vec4(1.f, 0.f, 0.f, 10.f) };
@@ -147,9 +100,9 @@ Renderer::~Renderer()
 	PipelineCache::Reset();
 	ShaderCache::Reset();
 
-	for (int i = 0; i < modelsToRender.size(); ++i)
+	for (int i = 0; i < m_sceneData.m_modelsToRender.size(); ++i)
 	{
-		vkFreeDescriptorSets(vkDevice, m_descriptorPool, static_cast<uint32_t>(modelsToRender[i].m_material.m_descriptorSets.size()), modelsToRender[i].m_material.m_descriptorSets.data());
+		vkFreeDescriptorSets(vkDevice, m_descriptorPool, static_cast<uint32_t>(m_sceneData.m_modelsToRender[i].m_material.m_descriptorSets.size()), m_sceneData.m_modelsToRender[i].m_material.m_descriptorSets.data());
 	}
 	vkDestroyDescriptorPool(vkDevice, m_descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(vkDevice, m_sceneBuffersDescriptorSetLayout, nullptr);
@@ -782,9 +735,9 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 
 	commandBuffer.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->Get());
 
-	for (uint32_t i = 0; i < modelsToRender.size(); i++)
+	for (uint32_t i = 0; i < m_sceneData.m_modelsToRender.size(); i++)
 	{
-			const Vulkan::Mesh* pMesh = Vulkan::ResourceManager::Get().meshOwner.GetOrNull(modelsToRender[i].m_mesh);
+			const Vulkan::Mesh* pMesh = Vulkan::ResourceManager::Get().meshOwner.GetOrNull(m_sceneData.m_modelsToRender[i].m_mesh);
 			assert(pMesh && "Mesh given by RID is null");
 
 			VkBuffer vertexBuffers[] = { pMesh->m_vertexBuffer };
@@ -793,7 +746,7 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 			commandBuffer.BindIndexBuffer(pMesh->m_indexBuffer, VK_INDEX_TYPE_UINT32);
 
 			const int descriptorSetIndex = m_pDevice->GetCurrentFrame();
-			const std::array<VkDescriptorSet, 2> sets{ m_sceneBuffersDescriptorSets[descriptorSetIndex], modelsToRender[i].m_material.m_descriptorSets[descriptorSetIndex] };
+			const std::array<VkDescriptorSet, 2> sets{ m_sceneBuffersDescriptorSets[descriptorSetIndex], m_sceneData.m_modelsToRender[i].m_material.m_descriptorSets[descriptorSetIndex] };
 			commandBuffer.BindDescriptorSets(m_pipeline->GetLayout(), sets.data(), 0, 2);
 
 			commandBuffer.DrawIndexed(static_cast<uint32_t>(pMesh->m_indices.size()));
@@ -805,6 +758,51 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 	commandBuffer.TransitionImageLayout(swapchainImage, imageFormat, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	commandBuffer.EndCommandBuffer();
+}
+
+void Renderer::AddNodeTreeToSceneData(const Node& root)
+{
+	const Object* meshObj = nullptr;
+	const Node* child = &root;
+
+	do
+	{
+		const Object& obj = child->GetObject();
+		if (obj.GetType() == ObjectType::TYPE_MESH)
+		{
+			meshObj = &obj;
+			break;
+		}
+		else
+		{
+			child = child->GetChildren()[0].get();
+			continue;
+		}
+
+	} while (true);
+
+	if (!meshObj)
+	{
+		throw std::logic_error("No mesh found in the scene");
+	}
+
+	const CPU::Model& model = AssetStorage::Get().GetMesh(meshObj->GetHandle());
+
+	for (uint16_t i = 0; i < model.m_meshes.size(); i++)
+	{
+		m_sceneData.m_modelsToRender.emplace_back();
+		size_t index = m_sceneData.m_modelsToRender.size()-1;
+
+		m_sceneData.m_modelsToRender[index].m_material.m_albedoTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::Albedo), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+		m_sceneData.m_modelsToRender[index].m_material.m_normalTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::Normal), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+		m_sceneData.m_modelsToRender[index].m_material.m_metallicRoughnessTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::MetallicRoughness), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+		m_sceneData.m_modelsToRender[index].m_material.m_occlusionTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::AO), VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+		m_sceneData.m_modelsToRender[index].m_material.m_emissiveTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::Emissive), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+		m_sceneData.m_modelsToRender[index].m_material.CreateDescriptorSet(m_pDevice->GetVkDevice(), m_materialDescriptorSetLayout, m_pDevice->GetSampler(SamplerType::LinearRepeatAnisotropic), m_descriptorPool, fallbackMaterial);
+		
+		const auto& mesh = model.m_meshes[i];
+		m_sceneData.m_modelsToRender[index].m_mesh = m_pDevice->CreateGpuMesh(mesh);
+	}
 }
 
 void FrameContext::Init(std::shared_ptr<Device> device)

@@ -2,7 +2,6 @@
 
 #include "pch.h"
 
-#include "material.h"
 #include "sceneObject.h"
 
 // Only static functions

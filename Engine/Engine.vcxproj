@@ -40,7 +40,7 @@
     <ClInclude Include="include\core\model.h" />
     <ClInclude Include="include\core\pch.h" />
     <ClInclude Include="include\core\rid.h" />
-    <ClInclude Include="include\core\sceneObject.h" />
+    <ClInclude Include="include\core\dataStructures.h" />
     <ClInclude Include="include\core\timer.h" />
     <ClInclude Include="include\core\transform.h" />
     <ClInclude Include="include\rendering\renderComponents.h" />
@@ -64,6 +64,7 @@
     <ClInclude Include="include\rendering\vulkan\resources\vkResourceManager.h" />
     <ClInclude Include="include\rendering\vulkan\resources\vkTexture.h" />
     <ClInclude Include="include\rendering\vulkan\vkCommon.h" />
+    <ClInclude Include="include\rendering\vulkan\vkModelStorage.h" />
     <ClInclude Include="include\rendering\vulkan\vkRender.h" />
   </ItemGroup>
   <ItemGroup>
@@ -80,7 +81,7 @@
     <ClCompile Include="source\core\inputHandler.cpp" />
     <ClCompile Include="source\core\material.cpp" />
     <ClCompile Include="source\core\model.cpp" />
-    <ClCompile Include="source\core\sceneObject.cpp" />
+    <ClCompile Include="source\core\dataStructures.cpp" />
     <ClCompile Include="source\core\timer.cpp" />
     <ClCompile Include="source\core\transform.cpp" />
     <ClCompile Include="source\rendering\tangentSpaceWrapper.cpp" />
@@ -100,6 +101,7 @@
     <ClCompile Include="source\rendering\vulkan\descriptors\vkDescriptorLayoutCache.cpp" />
     <ClCompile Include="source\rendering\vulkan\resources\vkData.cpp" />
     <ClCompile Include="source\rendering\vulkan\resources\vkResourceManager.cpp" />
+    <ClCompile Include="source\rendering\vulkan\vkModelStorage.cpp" />
     <ClCompile Include="source\rendering\vulkan\vkRender.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

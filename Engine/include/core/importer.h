@@ -2,7 +2,7 @@
 
 #include "pch.h"
 
-#include "sceneObject.h"
+#include "dataStructures.h"
 
 // Only static functions
 // Made it a class instead of a namespace to cleanly hide private functions

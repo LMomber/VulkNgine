@@ -1,6 +1,9 @@
 #include "importer.h"
 
-#include "sceneObject.h"
+#include "engine.h"
+#include "assetStorage.h"
+
+#include "../rendering/vulkan/vkRender.h" // Make platform agnostic later!
 
 static Transform AssimpMatrixToTransform(const aiMatrix4x4& mat)
 {
@@ -22,36 +25,38 @@ static Transform AssimpMatrixToTransform(const aiMatrix4x4& mat)
 
 void Importer::CopyNodes(const std::string& filePath, const aiScene& scene, const aiNode& node, Node& targetParent)
 {
-	// Empty node
-	Node* parent = &targetParent;
-	Transform transform;
+	// Empty node 
+	Node* nodeToPass = &targetParent;
 
-	//If node has meshes, create a new scene object for it
+	// Currently only supports mesh objects
+	// If node has meshes, create a new scene object for it 
 	if (node.mNumMeshes > 0)
 	{
-		ModelID meshID = AssetStorage::Get().CreateModel(filePath, scene, node);
-		Node* pNode = targetParent.AddChild(Object{ ObjectType::TYPE_MESH, AssetStorage::Get().CreateAssetID(meshID)});
-		transform = AssimpMatrixToTransform(node.mTransformation);
+		CPU::Model model(filePath, scene, node);
+		size_t hash = std::hash<std::string>{}(filePath);
 
-		//The new object is the parent for all child nodes
-		parent = pNode;
-	}
-	else
-	{
-		// if no meshes, skip the node, but keep its transformation
-		if (!targetParent.IsRoot())
+		std::vector<uint32_t> meshIndices = Core::engine.GetRenderer().CreateGpuModel(model, hash);
+
+		static auto& assetStorage = AssetStorage::Get();
+		ModelID modelID = assetStorage.AddToRenderIndices(meshIndices);
+
+		if (modelID.m_id == std::numeric_limits<size_t>::max())
 		{
-			parent->SetParent(&targetParent);
+			throw std::runtime_error("ID is larger than the numerical limit of size_t, something is wrong here.");
 		}
-		transform.SetFromMatrix(AssimpMatrixToTransform(node.mTransformation).GetWorld() * parent->GetTransform().GetWorld());
+
+		Node* pNode = targetParent.AddChild(Object{ ObjectType::TYPE_MODEL, assetStorage.CreateAssetID(modelID) });
+
+		//The new object is the parent for all child nodes 
+		nodeToPass = pNode;
 	}
 
-	parent->SetTransform(transform);
+	nodeToPass->SetLocalTransform(AssimpMatrixToTransform(node.mTransformation));
 
-	// continue for all child nodes
+	// continue for all child nodes 
 	for (unsigned int i = 0; i < node.mNumChildren; i++)
 	{
-		CopyNodes(filePath, scene, *node.mChildren[i], *parent);
+		CopyNodes(filePath, scene, *node.mChildren[i], *nodeToPass);
 	}
 }
 
@@ -104,7 +109,5 @@ void Importer::ImportScene(const std::string& filePath, Node& root, const aiScen
 
 	root.SetRoot();
 	aiNode* pAssimpNode = pScene->mRootNode;
-	root.GetTransform().SetFromMatrix(AssimpMatrixToTransform(pAssimpNode->mTransformation).GetWorld() * root.GetTransform().GetWorld());
 	CopyNodes(filePath, *pScene, *pAssimpNode, root);
-	//DoThepSceneProcessing(ppScene);
 }

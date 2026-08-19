@@ -5,7 +5,7 @@
 
 #include "vkData.h"
 
-#include "sceneObject.h"
+#include "../../core/dataStructures.h"
 
 #pragma warning(push, 0)
 #include <vma/vk_mem_alloc.h>
@@ -21,9 +21,10 @@ struct FrameContext
 	uint64_t m_timelineValue;
 };
 
-struct SceneData
+struct SceneRenderData
 {
-	std::vector<Vulkan::Model> m_modelsToRender;
+	std::vector<Vulkan::Model> m_meshesToRender;
+	std::vector<uint32_t> m_freeList;
 };
 
 class CommandBuffer;
@@ -36,6 +37,13 @@ public:
 
 	void Update();
 	void Render();
+
+	std::vector<uint32_t> CreateGpuModel(const CPU::Model& model, size_t hash);
+	void FreeGpuModels(const std::vector<uint32_t>& ids, bool shouldBeDestroyed);
+	void UpdateModelTransform(const std::vector<uint32_t>& ids, const glm::mat4& worldMatrix);
+	void QueueObjectBufferUpdate();
+
+	const std::vector<uint32_t> AddMeshesToRenderList(const std::vector<Vulkan::Model>& meshes);
 
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
@@ -55,12 +63,12 @@ private:
 
 	void RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex) const;
 
-	void AddNodeTreeToSceneData(const Node& root);
+	void DestroyGpuModel(const Vulkan::Model& model);
 
 	std::shared_ptr<Device> m_pDevice;
 	std::shared_ptr<Pipeline> m_pipeline;
 
-	SceneData m_sceneData;
+	SceneRenderData m_sceneRenderData;
 
 	// PBR materials
 	VkDescriptorSetLayout m_materialDescriptorSetLayout;
@@ -77,10 +85,12 @@ private:
 	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> m_objectBuffers;
 	std::array<VmaAllocation, MAX_FRAMES_IN_FLIGHT> m_objectAllocations;
 	std::array<void*, MAX_FRAMES_IN_FLIGHT> m_mappedObjectBuffers;
+	std::array<bool, MAX_FRAMES_IN_FLIGHT> m_objectBufferUpdate{ true };
 
 	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> m_lightBuffers;
 	std::array<VmaAllocation, MAX_FRAMES_IN_FLIGHT> m_lightAllocations;
 	std::array<void*, MAX_FRAMES_IN_FLIGHT> m_mappedLightBuffers;
+	std::array<uint32_t, MAX_FRAMES_IN_FLIGHT> m_lightCounts{ 0 };
 	//
 
 	VkDescriptorPool m_descriptorPool;
@@ -90,6 +100,4 @@ private:
 
 	std::vector<uint32_t> m_queueSetIndices;
 	VkSharingMode m_sharingMode;
-
-	std::array<uint32_t, MAX_FRAMES_IN_FLIGHT> m_lightCounts{ 0 };
 };

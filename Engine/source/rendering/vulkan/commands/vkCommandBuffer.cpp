@@ -83,6 +83,13 @@ void CommandBuffer::BindDescriptorSets(VkPipelineLayout layout, const VkDescript
 	vkCmdBindDescriptorSets(m_commandBuffer, m_pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
 }
 
+void CommandBuffer::BindPushConstants(const VkPushConstantsInfo& info) const
+{
+	ASSERT_COMMAND_BUFFER(m_commandBuffer);
+
+	vkCmdPushConstants2(m_commandBuffer, &info);
+}
+
 void CommandBuffer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const
 {
 	VkImageMemoryBarrier barrier{};

@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <iostream>
 #include <cstdlib>
+#include <limits>
 
 #define PRINT_FPS
 
@@ -42,16 +43,57 @@ int main() {
 	Timer timer;
 
 	auto& registry = engine.GetRegistry();
-	auto entity = registry.create();
-	Camera& camera = registry.emplace<Camera>(entity);
 
-	auto extent = engine.GetDevice().GetExtent();
-	float aspectRatio = static_cast<float>(extent.width) / static_cast<float>(extent.height);
-	camera.projection = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f);
-	camera.projection[1][1] *= -1;
+	{
+		auto entity = registry.create();
+		Camera& camera = registry.emplace<Camera>(entity);
 
-	Transform& cameraTransform = registry.emplace<Transform>(entity);
-	cameraTransform.SetTranslation(glm::vec3(0, 0, 0));
+		auto extent = engine.GetDevice().GetExtent();
+		float aspectRatio = static_cast<float>(extent.width) / static_cast<float>(extent.height);
+		camera.projection = glm::perspective(45.f, aspectRatio, 0.1f, 10000.f);
+		camera.projection[1][1] *= -1;
+
+		Transform& transform = registry.emplace<Transform>(entity);
+		transform.SetTranslation(glm::vec3(0.f, 1.f, 0.f));
+	}
+
+	uint32_t sponza = UINT_MAX;
+	uint32_t helmet1 = UINT_MAX;
+	uint32_t helmet2 = UINT_MAX;
+
+	{
+		auto entity = registry.create();
+		Transform& transform = registry.emplace<Transform>(entity);
+		transform.SetTranslation(glm::vec3(0.f));
+
+		std::string filePath = "../Engine/models/Sponza/glTF/Sponza.gltf";
+		sponza = engine.LoadModelFromFile(filePath, transform);
+	}
+
+	{
+		auto entity = registry.create();
+		Transform& transform = registry.emplace<Transform>(entity);
+		transform.SetTranslation(glm::vec3(2.f, 1.f, 0.f));
+		transform.SetScale(glm::vec3(0.5f));
+		transform.SetRotation(glm::angleAxis(90.f, glm::vec3(0.f, 1.f, 0.f)));
+
+		std::string filePath = "../Engine/models/DamagedHelmet.glb";
+		helmet1 = engine.LoadModelFromFile(filePath, transform);
+	}
+
+	{
+		auto entity = registry.create();
+		Transform& transform = registry.emplace<Transform>(entity);
+		transform.SetTranslation(glm::vec3(0.f, 1.f, 0.f));
+
+		std::string filePath = "../Engine/models/DamagedHelmet.glb";
+
+		helmet2 = engine.LoadModelFromFile(filePath, transform);
+	}
+
+	//engine.FreeSceneObject(sponza, true);
+	//engine.FreeSceneObject(helmet1, true);
+	//engine.FreeSceneObject(helmet2);
 
 	try
 	{

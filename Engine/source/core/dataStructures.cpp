@@ -1,4 +1,4 @@
-#include "sceneObject.h"
+#include "dataStructures.h"
 
 Object::Object(ObjectType type, AssetID id) noexcept
 	: m_type(type), m_id(id)
@@ -56,19 +56,29 @@ void Node::SetParent(Node* parent) noexcept
 	m_parent = parent;
 }
 
+Transform& Node::GetLocalTransform() noexcept
+{
+	return m_localTransform;
+}
+
+void Node::SetLocalTransform(const Transform& transform) noexcept
+{
+	m_localTransform = transform;
+}
+
+Transform& Node::GetWorldTransform() noexcept
+{
+	return m_worldTransform;
+}
+
+void Node::SetWorldTransform(const Transform& transform) noexcept
+{
+	m_worldTransform = transform;
+}
+
 const std::vector<std::unique_ptr<Node>>& Node::GetChildren() const noexcept
 {
 	return m_children;
-}
-
-Transform& Node::GetTransform() noexcept
-{
-	return m_transform;
-}
-
-void Node::SetTransform(const Transform& transform) noexcept
-{
-	m_transform = transform;
 }
 
 bool Node::IsRoot() const noexcept

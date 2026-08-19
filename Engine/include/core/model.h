@@ -1,10 +1,7 @@
 #pragma once
 
-//#include "rid.h"
-
 #include "pch.h"
 
-#include "common.h"
 #include "material.h"
 
 namespace CPU

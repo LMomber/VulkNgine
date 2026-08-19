@@ -24,5 +24,8 @@ namespace Vulkan
 	{
 		RID m_mesh{};
 		Material m_material;
+		bool m_isInvisible = false;
+
+		size_t m_hash = 0;
 	};
 }

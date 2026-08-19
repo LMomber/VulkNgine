@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <algorithm>
 
 // From Godot:
 class RID
@@ -20,11 +21,6 @@ public:
 	bool operator==(const RID& other) const noexcept { return m_id == other.m_id; }
 	bool operator!=(const RID& other) const noexcept { return m_id != other.m_id; }
 
-	// Not useful for RIDs, force explicit behaviour
-	bool operator>(const RID& other) = delete;
-	bool operator<(const RID& other) = delete;
-	bool operator>=(const RID& other) = delete;
-	bool operator<=(const RID& other) = delete;
 private:
 	int32_t m_id = -1;
 };
@@ -51,11 +47,30 @@ public:
 
 	const T* GetOrNull(const RID rid) const;
 	bool Owns(const RID rid) const;
-	void Free(const RID rid);
 	uint32_t GetRIDCount() const;
 
 	template<typename Fn>
-	void FreeAll(Fn destroyFunc) {
+	void Free(const RID rid, Fn destroyFunc) 
+	{
+		if (rid.IsNull() || (m_rids.find(rid) == m_rids.end()))
+		{
+			throw std::runtime_error("Tried cleaning up a non-existend RID.");
+		}
+
+		auto& value = m_rids[rid];
+		destroyFunc(value);
+
+		m_freeList.push_back(rid);
+	}
+
+	template<typename Fn>
+	void FreeAll(Fn destroyFunc) 
+	{
+		for (RID index : m_freeList)
+		{
+			m_rids.erase(index);
+		}
+
 		for (auto& [rid, value] : m_rids) {
 			destroyFunc(value);
 		}
@@ -63,16 +78,27 @@ public:
 	}
 private:
 	std::unordered_map<RID, T> m_rids{};
+	std::vector<RID> m_freeList;
 	int32_t m_currentBase = -1; // Starting from -1 so that we can check p_rid == RID().
 };
 
 template<typename T>
 inline RID RID_Owner<T>::CreateRID(const T& value)
 {
-	m_currentBase++;
-	RID rid = RID(m_currentBase);
+	RID rid;
+	if (m_freeList.empty())
+	{
+		m_currentBase++;
+		rid = RID(m_currentBase);
+	}
+	else
+	{
+		rid = m_freeList.back();
+		m_freeList.pop_back();
+	}
 
 	InitializeRID(rid, value);
+
 	return rid;
 }
 
@@ -102,17 +128,6 @@ inline bool RID_Owner<T>::Owns(const RID rid) const
 	}
 
 	return m_rids.find(rid) != m_rids.end();
-}
-
-template<typename T>
-inline void RID_Owner<T>::Free(const RID rid)
-{
-	if (rid.IsNull() || (m_rids.find(rid) == m_rids.end()))
-	{
-		std::runtime_error("Tried cleaning up a non-existend RID.");
-	}
-
-	m_rids.erase(rid);
 }
 
 template<typename T>

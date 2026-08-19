@@ -2,19 +2,19 @@
 
 using namespace glm;
 
-const glm::mat4& Transform::GetWorld()
+const glm::mat4& Transform::GetMatrix()
 {
-    if (m_worldMatrixDirty)
+    if (m_matrixDirty)
     {
         const auto translation = glm::translate(glm::mat4(1.0f), m_translation);
         const auto rotation = glm::toMat4(m_rotation);
         const auto scale = glm::scale(glm::mat4(1.0f), m_scale);
  
-        m_worldMatrix = translation * rotation * scale;
-        m_worldMatrixDirty = false;
+        m_matrix = translation * rotation * scale;
+        m_matrixDirty = false;
     }
 
-    return m_worldMatrix;
+    return m_matrix;
 }
 
 void Transform::SetFromMatrix(const glm::mat4& m44)
@@ -54,11 +54,11 @@ void Transform::ResetToIdentity()
     m_scale = glm::vec3(1.0f, 1.0f, 1.0f);
     m_rotation = glm::identity<glm::quat>();
 
-    m_worldMatrix = glm::identity<glm::mat4>();
-    m_worldMatrixDirty = true;
+    m_matrix = glm::identity<glm::mat4>();
+    m_matrixDirty = true;
 }
 
 void Transform::SetMatrixDirty()
 {
-    m_worldMatrixDirty = true;
+    m_matrixDirty = true;
 }

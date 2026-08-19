@@ -30,6 +30,7 @@
 
 const int MAX_FRAMES_IN_FLIGHT = 3;
 const int MAX_LIGHTS_IN_SCENE = 100;
+const int MAX_MODELS_IN_SCENE = 10'000;
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;

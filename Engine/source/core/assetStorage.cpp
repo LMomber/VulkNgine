@@ -1,47 +1,51 @@
 #include "assetStorage.h"
 
+#include "engine.h"
+#include "vkRender.h"
+
 AssetStorage& AssetStorage::Get()
 {
-    static AssetStorage assetStorage;
-    return assetStorage;
-}
-
-ModelID AssetStorage::CreateModel(const std::string& filePath, const aiScene& aiScene, const aiNode& aiNode)
-{
-    ModelID id{ static_cast<uint32_t>(m_modelStorage.size()) };
-    m_modelStorage.emplace_back(filePath, aiScene, aiNode);
-    return id;
-}
-
-MaterialID AssetStorage::CreateMaterial(const std::string& filePath, const aiScene& aiScene, const aiMesh& aiMesh)
-{
-    MaterialID id{ static_cast<uint32_t>(m_materialStorage.size()) };
-    m_materialStorage.emplace_back(filePath, aiScene, aiMesh);
-    return id;
+	static AssetStorage assetStorage;
+	return assetStorage;
 }
 
 AssetID AssetStorage::CreateAssetID(ModelID id)
 {
-    AssetID h;
-    h.m_type = AssetType::Mesh;
-    h.m_mesh = id;
-    return h;
+	AssetID h;
+	h.m_type = AssetType::Model;
+	h.m_model = id;
+	return h;
 }
 
-AssetID AssetStorage::CreateAssetID(MaterialID id)
+const std::vector<uint32_t>& AssetStorage::GetRenderIndices(AssetID id) const
 {
-    AssetID h;
-    h.m_type = AssetType::Material;
-    h.m_material = id;
-    return h;
+	if (id.m_raw == std::numeric_limits<size_t>().max())
+	{
+		throw std::logic_error("Asset ID is uninitialized.");
+	}
+
+	if (id.m_raw >= m_renderIndices.size())
+	{
+		throw std::logic_error("Render ID is larger than models to render.");
+	}
+
+	return m_renderIndices[id.m_raw];
 }
 
-const CPU::Model& AssetStorage::GetMesh(AssetID id) const
+ModelID AssetStorage::AddToRenderIndices(const std::vector<uint32_t>& ids)
 {
-    if (id.m_raw >= m_modelStorage.size())
-    {
-        throw std::logic_error("Mesh ID is larger than storage size.");
-    }
+	uint32_t index;
+	if (m_freeList.empty())
+	{
+		m_renderIndices.push_back(ids);
+		index = static_cast<uint32_t>(m_renderIndices.size()) - 1;
+	}
+	else
+	{
+		index = m_freeList.back();
+		m_renderIndices[index] = ids;
+	}
 
-    return m_modelStorage[id.m_raw];
+	ModelID id{ index };
+	return id;
 }

@@ -26,7 +26,7 @@ struct Transform
 
 	/// <summary>Gets the matrix that transforms from local space to world space.
 	/// Calling this function recomputes the matrix when necessary.</summary>
-	[[nodiscard]] const glm::mat4& GetWorld();
+	[[nodiscard]] const glm::mat4& GetMatrix();
 
 	void SetTranslation(const glm::vec3& translation)
 	{
@@ -54,8 +54,8 @@ private:
 	glm::vec3 m_scale = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::quat m_rotation = glm::identity<glm::quat>();
 
-	glm::mat4 m_worldMatrix = glm::identity<glm::mat4>();
-	bool m_worldMatrixDirty = true;
+	glm::mat4 m_matrix = glm::identity<glm::mat4>();
+	bool m_matrixDirty = true;
 
 	void SetMatrixDirty();
 };

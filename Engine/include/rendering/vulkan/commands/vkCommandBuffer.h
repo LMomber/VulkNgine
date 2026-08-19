@@ -37,6 +37,7 @@ public:
 		uint32_t descriptorSetCount = 1,
 		uint32_t dynamicOffsetCount = 0,
 		const uint32_t* pDynamicOffsets = nullptr) const;
+	void BindPushConstants(const VkPushConstantsInfo& info) const;
 
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
 

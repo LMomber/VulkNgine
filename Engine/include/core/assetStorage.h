@@ -3,29 +3,8 @@
 #include "pch.h"
 
 #include "material.h"
-#include "model.h"
 
-// TODO: Add camera
-enum class AssetType : uint8_t
-{
-	None,
-	Mesh,
-	Material
-};
-
-struct AssetID
-{
-	AssetType m_type = AssetType::None;
-
-	union
-	{
-		uint32_t m_raw;
-		ModelID m_mesh;
-		MaterialID m_material;
-	};
-
-	AssetID() : m_raw(0) {}
-};
+#include "dataStructures.h"
 
 // Singleton
 class AssetStorage
@@ -33,15 +12,12 @@ class AssetStorage
 public:
 	static AssetStorage& Get();
 
-	ModelID CreateModel(const std::string& filePath, const aiScene& aiScene, const aiNode& aiNode);
-	MaterialID CreateMaterial(const std::string& filePath, const aiScene& aiScene, const aiMesh& aiMesh);
-
 	AssetID CreateAssetID(ModelID id);
-	AssetID CreateAssetID(MaterialID id); // Not used for now
 
-	const CPU::Model& GetMesh(AssetID id) const;
+	ModelID AddToRenderIndices(const std::vector<uint32_t>& ids);
+	const std::vector<uint32_t>& GetRenderIndices(AssetID id) const;
 
 private:
-	std::vector<CPU::Model> m_modelStorage{};
-	std::vector<CPU::Material> m_materialStorage{};
+	std::vector<std::vector<uint32_t>> m_renderIndices;
+	std::vector<uint32_t> m_freeList;
 };

@@ -39,6 +39,7 @@ public:
 	VkInstance GetInstance() const;
 	VkSurfaceKHR GetSurface() const;
 	VkExtent2D GetExtent() const;
+	VkDescriptorPool GetDescriptorPool() const;
 
 	std::shared_ptr<PhysicalDevice> GetPhysicalDevice() const;
 	std::shared_ptr<Window> GetVkWindow() const;
@@ -87,6 +88,7 @@ private:
 
 	void CreateInstance();
 	void CreateLogicalDevice(QueueFamilyIndices indices);
+	void CreateDescriptorPool();
 
 	std::vector<const char*> GetRequiredExtensions() const;
 
@@ -111,6 +113,8 @@ private:
 	std::shared_ptr<Window> m_pVkWindow = nullptr;
 	std::shared_ptr<PhysicalDevice> m_pPhysicalDevice = nullptr;
 	std::shared_ptr<Queue> m_pQueue = nullptr;
+
+	VkDescriptorPool m_descriptorPool;
 
 	VmaAllocator m_allocator;
 

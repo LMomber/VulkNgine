@@ -5,6 +5,7 @@
 #define ASSERT_VK_LOGICAL_DEVICE(device) assert(device != VK_NULL_HANDLE && "Vulkan device is either uninitialized or deleted")
 #define ASSERT_VK_PHYSICAL_DEVICE(device) assert(device != VK_NULL_HANDLE && "Vulkan physical device is either uninitialized or deleted")
 #define ASSERT_VK_INSTANCE(swapchain) assert(swapchain != VK_NULL_HANDLE && "Vulkan instance is either uninitialized or deleted")
+#define ASSERT_VK_DESCRIPTOR_POOL(descriptorPool) assert(descriptorPool != VK_NULL_HANDLE && "Vulkan descriptor pool is either uninitialized or deleted")
 
 #define ASSERT_VK_SWAPCHAIN_CLASS(swapchain) assert(swapchain && "Vulkan swapchain is either uninitialized or deleted")
 #define ASSERT_VK_SURFACE_CLASS(surface) assert(surface && "Vulkan window surface is either uninitialized or deleted")

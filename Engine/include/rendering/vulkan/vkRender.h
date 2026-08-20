@@ -52,7 +52,6 @@ private:
 	void CreateGraphicsPipeline();
 	void CreateBuffers();
 	void CreateSyncObjects();
-	void CreateDescriptorPool();
 	void CreateFallbackMaterial();
 
 	void ChooseSharingMode();
@@ -93,7 +92,6 @@ private:
 	std::array<uint32_t, MAX_FRAMES_IN_FLIGHT> m_lightCounts{ 0 };
 	//
 
-	VkDescriptorPool m_descriptorPool;
 	std::vector<VkSemaphore> m_renderFinishedPerImage;
 
 	std::array<FrameContext, MAX_FRAMES_IN_FLIGHT> m_frameContexts{};

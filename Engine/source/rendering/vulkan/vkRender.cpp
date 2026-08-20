@@ -63,7 +63,6 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
 	ChooseSharingMode();
-	CreateDescriptorPool();
 	CreateBuffers();
 
 	CreateMaterialDescriptorSetLayout();
@@ -96,11 +95,11 @@ Renderer::~Renderer()
 		auto& model = m_sceneRenderData.m_meshesToRender[i];
 		if (hashes.insert(model.m_hash).second && !model.m_isInvisible)
 		{
-			vkFreeDescriptorSets(vkDevice, m_descriptorPool, static_cast<uint32_t>(model.m_material.m_descriptorSets.size()),
+			vkFreeDescriptorSets(vkDevice, m_pDevice->GetDescriptorPool(), static_cast<uint32_t>(model.m_material.m_descriptorSets.size()),
 				model.m_material.m_descriptorSets.data());
 		}
 	}
-	vkDestroyDescriptorPool(vkDevice, m_descriptorPool, nullptr);
+	vkDestroyDescriptorPool(vkDevice, m_pDevice->GetDescriptorPool(), nullptr);
 	vkDestroyDescriptorSetLayout(vkDevice, m_sceneBuffersDescriptorSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(vkDevice, m_materialDescriptorSetLayout, nullptr);
 
@@ -421,7 +420,7 @@ void Renderer::CreateBuffers()
 		m_sceneBuffersDescriptorSets.emplace_back();
 	}
 
-	m_pDevice->CreateDescriptorSets(m_sceneBuffersDescriptorSets, m_sceneBuffersDescriptorSetLayout, m_descriptorPool);
+	m_pDevice->CreateDescriptorSets(m_sceneBuffersDescriptorSets, m_sceneBuffersDescriptorSetLayout, m_pDevice->GetDescriptorPool());
 
 	// Write to descriptor set
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -497,33 +496,6 @@ void Renderer::CreateSyncObjects()
 		if (vkCreateSemaphore(m_pDevice->GetVkDevice(), &semInfo, nullptr, &m_renderFinishedPerImage[i]) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create renderFinished semaphore for image");
 		}
-	}
-}
-
-void Renderer::CreateDescriptorPool()
-{
-	const uint16_t maxMaterials = 1000;
-	const uint16_t uniformBufferCount = 1;
-	const uint16_t storageBufferCount = 2;
-
-	std::array<VkDescriptorPoolSize, 3> poolSizes{};
-	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * uniformBufferCount);
-	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * uniformBufferCount) * maxMaterials;
-	poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * storageBufferCount;
-
-	VkDescriptorPoolCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	createInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-	createInfo.pPoolSizes = poolSizes.data();
-	createInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * uniformBufferCount) * maxMaterials;
-	createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-
-	if (vkCreateDescriptorPool(m_pDevice->GetVkDevice(), &createInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create descriptor pool");
 	}
 }
 
@@ -803,7 +775,7 @@ std::vector<uint32_t> Renderer::CreateGpuModel(const CPU::Model& model, size_t h
 		gpuMesh.m_material.m_metallicRoughnessTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::MetallicRoughness), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 		gpuMesh.m_material.m_occlusionTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::AO), VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 		gpuMesh.m_material.m_emissiveTexture = m_pDevice->CreateGpuTexture(model.m_meshes[i].GetMaterial().GetTexture(CPU::TextureSemantic::Emissive), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-		gpuMesh.m_material.CreateDescriptorSet(m_pDevice->GetVkDevice(), m_materialDescriptorSetLayout, m_pDevice->GetSampler(SamplerType::LinearRepeatAnisotropic), m_descriptorPool, fallbackMaterial);
+		gpuMesh.m_material.CreateDescriptorSet(m_pDevice->GetVkDevice(), m_materialDescriptorSetLayout, m_pDevice->GetSampler(SamplerType::LinearRepeatAnisotropic), m_pDevice->GetDescriptorPool(), fallbackMaterial);
 
 		const auto& mesh = model.m_meshes[i];
 		gpuMesh.m_mesh = m_pDevice->CreateGpuMesh(mesh);
@@ -916,7 +888,7 @@ void Renderer::DestroyGpuModel(const Vulkan::Model& model)
 		});
 
 	// Descriptor Set
-	vkFreeDescriptorSets(m_pDevice->GetVkDevice(), m_descriptorPool, static_cast<uint32_t>(model.m_material.m_descriptorSets.size()),
+	vkFreeDescriptorSets(m_pDevice->GetVkDevice(), m_pDevice->GetDescriptorPool(), static_cast<uint32_t>(model.m_material.m_descriptorSets.size()),
 		model.m_material.m_descriptorSets.data());
 }
 

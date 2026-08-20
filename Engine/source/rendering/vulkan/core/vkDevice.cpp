@@ -10,6 +10,9 @@
 #include <vma/vk_mem_alloc.h>
 #pragma warning(pop)
 
+#include "../external/imgui/imgui_impl_vulkan.h"
+#include "../external/imgui/imgui_impl_glfw.h"
+
 #include <iostream>
 #include <set>
 #include <algorithm>
@@ -30,6 +33,7 @@ const bool g_enableValidationLayers = true;
 void Device::Initialize()
 {
 	m_pVkWindow = std::make_shared<Window>();
+
 	CreateInstance();
 	InitDebugMessenger();
 	m_pSurface = std::make_unique<VK::Surface>(m_instance, m_pVkWindow->GetWindow());
@@ -48,11 +52,35 @@ void Device::Initialize()
 
 	vmaCreateAllocator(&allocatorInfo, &m_allocator);
 
+	CreateDescriptorPool();
 	CreateTextureSampler(m_samplers.m_linearRepeatAnisotropic, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_TRUE);
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui::SetCurrentContext(ImGui::GetCurrentContext());
+
+	// Imgui
+	ImGui_ImplGlfw_InitForVulkan(m_pVkWindow->GetWindow(), true);
+
+	ImGui_ImplVulkan_InitInfo init_info{};
+	init_info.Instance = m_instance;
+	init_info.PhysicalDevice = m_pPhysicalDevice->GetDevice();
+	init_info.Device = m_device;
+	init_info.Queue = m_pQueue->GetQueue(QueueType::GRAPHICS);
+	init_info.DescriptorPoolSize = 10;
+	init_info.MinImageCount = m_pSwapchain->GetImageCount();
+	init_info.ImageCount = m_pSwapchain->GetImageCount();
+
+	ImGui_ImplVulkan_Init(&init_info);
 }
 
 void Device::ShutDown()
 {
+	// Shut down ImGui first
+	ImGui_ImplVulkan_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
 	vkDestroySampler(m_device, m_samplers.m_linearRepeatAnisotropic, nullptr);
 
 	m_pQueue.reset();
@@ -188,6 +216,12 @@ VkExtent2D Device::GetExtent() const
 	return m_pSwapchain->GetExtent();
 }
 
+VkDescriptorPool Device::GetDescriptorPool() const
+{
+	ASSERT_VK_DESCRIPTOR_POOL(m_descriptorPool);
+	return m_descriptorPool;
+}
+
 const VmaAllocator& Device::GetAllocator() const
 {
 	return m_allocator;
@@ -269,6 +303,33 @@ void Device::CreateLogicalDevice(QueueFamilyIndices indices)
 	if (vkCreateDevice(m_pPhysicalDevice->GetDevice(), &createInfo, nullptr, &m_device) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create logical device");
+	}
+}
+
+void Device::CreateDescriptorPool()
+{
+	const uint16_t maxMaterials = 1000;
+	const uint16_t uniformBufferCount = 1;
+	const uint16_t storageBufferCount = 2;
+
+	std::array<VkDescriptorPoolSize, 3> poolSizes{};
+	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * uniformBufferCount);
+	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * uniformBufferCount) * maxMaterials;
+	poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * storageBufferCount;
+
+	VkDescriptorPoolCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	createInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+	createInfo.pPoolSizes = poolSizes.data();
+	createInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * uniformBufferCount) * maxMaterials;
+	createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+	if (vkCreateDescriptorPool(m_device, &createInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create descriptor pool");
 	}
 }
 

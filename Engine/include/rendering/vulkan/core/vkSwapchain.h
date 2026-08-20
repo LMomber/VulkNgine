@@ -22,6 +22,7 @@ public:
 	const std::array<VkImageView, 3>& GetDepthViews() const { return m_depthImageViews; }
 	const VkFormat GetDepthFormat() const{ return m_depthFormat; }
 	const VkFormat GetImageFormat() const{ return m_imageFormat; }
+	uint32_t GetImageCount() const { return m_imageCount; };
 
 private:
 	void CreateSwapchain();
@@ -50,4 +51,6 @@ private:
 	std::array<VkImage, 3> m_depthImages;
 	std::array<VkDeviceMemory, 3> m_depthImageMemory;
 	std::array<VkImageView, 3> m_depthImageViews;
+
+	uint32_t m_imageCount = 0;
 };

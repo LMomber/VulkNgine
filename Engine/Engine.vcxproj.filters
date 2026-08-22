@@ -58,6 +58,9 @@
     <Filter Include="external\imgui">
       <UniqueIdentifier>{3bbb74f9-a3d8-4c36-b1e6-bd35cb3f8092}</UniqueIdentifier>
     </Filter>
+    <Filter Include="external\imGuizmo">
+      <UniqueIdentifier>{1967a310-fe4d-4d64-ac7a-2624b7ab5643}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\forwardRender.frag">
@@ -186,19 +189,19 @@
       <Filter>include\rendering</Filter>
     </ClInclude>
     <ClInclude Include="include\rendering\vulkan\vkModelStorage.h" />
+    <ClInclude Include="external\imGuizmo\ImGuizmo.h">
+      <Filter>external\imGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imconfig.h">
+      <Filter>external\imgui</Filter>
+    </ClInclude>
     <ClInclude Include="external\imgui\imgui.h">
       <Filter>external\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="external\imgui\imgui_impl_vulkan.h">
-      <Filter>external\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="include\core\editorUI.h">
-      <Filter>include\core</Filter>
     </ClInclude>
     <ClInclude Include="external\imgui\imgui_impl_glfw.h">
       <Filter>external\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="external\imgui\imconfig.h">
+    <ClInclude Include="external\imgui\imgui_impl_vulkan.h">
       <Filter>external\imgui</Filter>
     </ClInclude>
     <ClInclude Include="external\imgui\imgui_internal.h">
@@ -212,6 +215,12 @@
     </ClInclude>
     <ClInclude Include="external\imgui\imstb_truetype.h">
       <Filter>external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\vulkan\vkEditorUI.h">
+      <Filter>include\rendering\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\consoleBuffer.h">
+      <Filter>include\core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -301,19 +310,19 @@
     </ClCompile>
     <ClCompile Include="source\core\assetStorage.cpp" />
     <ClCompile Include="source\rendering\vulkan\vkModelStorage.cpp" />
+    <ClCompile Include="external\imGuizmo\ImGuizmo.cpp">
+      <Filter>external\imGuizmo</Filter>
+    </ClCompile>
     <ClCompile Include="external\imgui\imgui.cpp">
       <Filter>external\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="external\imgui\imgui_impl_vulkan.cpp">
+    <ClCompile Include="external\imgui\imgui_draw.cpp">
       <Filter>external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="source\core\editorUI.cpp">
-      <Filter>source\core</Filter>
     </ClCompile>
     <ClCompile Include="external\imgui\imgui_impl_glfw.cpp">
       <Filter>external\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="external\imgui\imgui_draw.cpp">
+    <ClCompile Include="external\imgui\imgui_impl_vulkan.cpp">
       <Filter>external\imgui</Filter>
     </ClCompile>
     <ClCompile Include="external\imgui\imgui_tables.cpp">
@@ -321,6 +330,12 @@
     </ClCompile>
     <ClCompile Include="external\imgui\imgui_widgets.cpp">
       <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_demo.cpp">
+      <Filter>external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="source\rendering\vkEditorUI.cpp">
+      <Filter>source\rendering\vulkan</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

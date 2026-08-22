@@ -2,6 +2,10 @@
 
 #include "pch.h"
 
+#pragma warning(push, 0)
+#include <vma/vk_mem_alloc.h>
+#pragma warning(pop)
+
 #define ASSERT_VK_LOGICAL_DEVICE(device) assert(device != VK_NULL_HANDLE && "Vulkan device is either uninitialized or deleted")
 #define ASSERT_VK_PHYSICAL_DEVICE(device) assert(device != VK_NULL_HANDLE && "Vulkan physical device is either uninitialized or deleted")
 #define ASSERT_VK_INSTANCE(swapchain) assert(swapchain != VK_NULL_HANDLE && "Vulkan instance is either uninitialized or deleted")
@@ -79,4 +83,14 @@ struct SwapChainSupportDetails
 	VkSurfaceCapabilitiesKHR m_capabilities;
 	std::vector<VkSurfaceFormatKHR> m_formats;
 	std::vector<VkPresentModeKHR> m_presentModes;
+};
+
+struct RenderTarget
+{
+	VkImage m_image;
+	VkImageView m_imageView;
+	VkFormat m_format;
+	VkExtent2D m_extent;
+	VkDescriptorSet m_imguiTexture;
+	VmaAllocation m_allocation;
 };

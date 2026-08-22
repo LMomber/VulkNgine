@@ -20,6 +20,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
+#include "imgui/imgui_impl_vulkan.h"
+
 #include <stdexcept>
 #include <array>
 #include <set>
@@ -78,6 +80,10 @@ Renderer::Renderer(std::shared_ptr<Device> device) :
 
 	CreateGraphicsPipeline();
 	CreateSyncObjects();
+
+	INIT_WRAPPER("editor UI", m_pEditorUI = std::make_shared<EditorUI>(m_pDevice));
+
+	CreateRenderTargets();
 }
 
 Renderer::~Renderer()
@@ -110,6 +116,8 @@ Renderer::~Renderer()
 		vmaDestroyBuffer(m_pDevice->GetAllocator(), m_lightBuffers[i], m_lightAllocations[i]);
 	}
 
+	DestroyRenderTargets();
+
 	const auto& rm = Vulkan::ResourceManager::Get();
 
 	rm.meshOwner.FreeAll([this](Vulkan::Mesh& mesh) {
@@ -133,11 +141,53 @@ Renderer::~Renderer()
 
 void Renderer::Update()
 {
-	UpdateBuffers(m_pDevice->GetCurrentFrame());
+	uint32_t currentImage = m_pDevice->GetCurrentFrame();
+
+	// Camera
+	const auto cameraEntity = Core::engine.GetRegistry().view<Transform, Camera>().front();
+	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
+	const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
+
+	const glm::vec3 trans = cameraTransform.GetTranslation();
+	const glm::quat rot = cameraTransform.GetRotation();
+
+	const glm::vec3 localForward = glm::vec3(0.f, 0.f, 1.f);
+	const glm::vec3 forward = glm::normalize(glm::rotate(rot, localForward));
+
+	const glm::vec3 focusPoint = trans + forward;
+	const glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
+
+	CameraUBO cameraUBO{};
+	cameraUBO.view = glm::lookAtRH(trans, focusPoint, worldUp);
+	cameraUBO.projection = camera.projection;
+
+	memcpy(m_mappedCameraBuffers[currentImage], &cameraUBO, sizeof(CameraUBO));
+
+	UpdateBuffers(currentImage);
 }
 
 void Renderer::Render()
 {
+	int width, height;
+	GLFWwindow* pWindow = m_pDevice->GetWindow();
+	glfwGetFramebufferSize(pWindow, &width, &height);
+
+	if (width == 0 || height == 0)
+	{
+		glfwGetFramebufferSize(pWindow, &width, &height);
+		glfwWaitEvents();
+		return;
+	}
+
+	VkExtent2D extent = m_pDevice->GetSwapchain()->GetExtent();
+	if (static_cast<uint32_t>(width) != extent.width || static_cast<uint32_t>(height) != extent.height)
+	{
+		m_pDevice->GetSwapchain()->RecreateSwapchain();
+		DestroyRenderTargets();
+		CreateRenderTargets();
+		return;
+	}
+
 	uint32_t currentFrame = m_pDevice->GetCurrentFrame();
 	FrameContext& frame = m_frameContexts[currentFrame];
 	VkDevice device = m_pDevice->GetVkDevice();
@@ -156,62 +206,40 @@ void Renderer::Render()
 
 	vkWaitSemaphores(device, &waitInfo, UINT64_MAX);
 
-	// Acquire next swapchain image
-	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(
-		device,
-		swapchain,
-		UINT64_MAX,
-		frame.m_imageAvailableSemaphore,
-		VK_NULL_HANDLE,
-		&imageIndex);
+	uint32_t imageIndex = m_pDevice->GetSwapchain()->AcquireNextImage(frame.m_imageAvailableSemaphore);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	// If the swapchain is recreated, skip rendering
+	if (imageIndex == std::numeric_limits<uint32_t>().max())
 	{
-		m_pDevice->GetSwapchain()->RecreateSwapchain();
 		return;
 	}
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-	{
-		throw std::runtime_error("Failed to acquire swapchain image");
-	}
 
-	// Record draw commands
+	// Record main command buffer
 	m_pDevice->GetQueue()->ResetCommandPools(currentFrame);
-	CommandBuffer commandBuffer =
+	CommandBuffer mainCmdBuffer =
 		m_pDevice->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, currentFrame);
-	const VkCommandBuffer* pVkCommandBuffer = commandBuffer.GetVkPtr();
+	RecordCommandBuffer(mainCmdBuffer, imageIndex);
 
-	RecordCommandBuffer(commandBuffer, imageIndex);
+	// Record imgui command buffer
+	CommandBuffer imguiCmdBuffer =
+		m_pDevice->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, currentFrame);
+	m_pEditorUI->Render(&imguiCmdBuffer, m_renderTargets[imageIndex]);
 
 	// Submit to queue
+	std::vector<VkCommandBuffer> commandBuffers{};
+	commandBuffers.push_back(*mainCmdBuffer.GetVkPtr());
+	commandBuffers.push_back(*imguiCmdBuffer.GetVkPtr());
+
+	std::vector<VkSemaphore> waitSemaphores;
+	waitSemaphores.push_back(frame.m_imageAvailableSemaphore);
+
+	std::vector<VkSemaphore> signalSemaphores;
+	signalSemaphores.push_back(frame.m_timelineSemaphore);
+	signalSemaphores.push_back(m_renderFinishedPerImage[imageIndex]);
+
 	uint64_t signalValue = ++frame.m_timelineValue;
 
-	VkTimelineSemaphoreSubmitInfo timelineInfo{};
-	timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-	timelineInfo.signalSemaphoreValueCount = 2;
-	timelineInfo.pSignalSemaphoreValues = &signalValue;
-
-	VkSemaphore waitSemaphores[] = { frame.m_imageAvailableSemaphore };
-	VkSemaphore signalSemaphores[] = { frame.m_timelineSemaphore, m_renderFinishedPerImage[imageIndex] };
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = pVkCommandBuffer;
-	submitInfo.signalSemaphoreCount = 2;
-	submitInfo.pSignalSemaphores = signalSemaphores;
-	submitInfo.pNext = &timelineInfo;
-
-	VkResult submitRes = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	if (submitRes != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to submit draw command buffer");
-	}
+	m_pDevice->SubmitToQueue(commandBuffers, waitSemaphores, signalSemaphores, graphicsQueue, signalValue);
 
 	// Present
 	VkPresentInfoKHR presentInfo{};
@@ -571,6 +599,35 @@ void Renderer::CreateFallbackMaterial()
 
 }
 
+void Renderer::CreateRenderTargets()
+{
+	const auto format = VK_FORMAT_B8G8R8A8_SRGB;
+	const auto extent = m_pDevice->GetSwapchain()->GetExtent();
+
+	for (uint16_t i = 0; i < m_renderTargets.size(); i++)
+	{
+		m_pDevice->CreateImage(extent.width, extent.height, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+			VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_AUTO, m_renderTargets[i].m_image, m_renderTargets[i].m_allocation);
+		m_pDevice->CreateImageView(m_renderTargets[i].m_image, format, VK_IMAGE_ASPECT_COLOR_BIT, m_renderTargets[i].m_imageView);
+		m_renderTargets[i].m_format = format;
+		m_renderTargets[i].m_extent = extent;
+		m_renderTargets[i].m_imguiTexture = ImGui_ImplVulkan_AddTexture(m_renderTargets[i].m_imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	}
+}
+
+void Renderer::DestroyRenderTargets()
+{
+	for (auto& rt : m_renderTargets)
+	{
+		Vulkan::Texture texture{};
+		texture.m_image = rt.m_image;
+		texture.m_imageView = rt.m_imageView;
+		texture.m_allocation = rt.m_allocation;
+
+		m_pDevice->DestroyGpuTexture(texture);
+	}
+}
+
 void Renderer::ChooseSharingMode()
 {
 	QueueFamilyIndices queueFamilyIndices = m_pDevice->GetPhysicalDevice()->FindQueueFamilies(m_pDevice->GetPhysicalDevice()->GetDevice(), m_pDevice->GetSurface());
@@ -592,26 +649,6 @@ void Renderer::ChooseSharingMode()
 void Renderer::UpdateBuffers(const int currentImage)
 {
 	assert(currentImage < MAX_FRAMES_IN_FLIGHT && "Current frame value is higher than the amount of frames in flight");
-
-	// Camera
-	const auto cameraEntity = Core::engine.GetRegistry().view<Transform, Camera>().front();
-	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
-	const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
-
-	const glm::vec3 trans = cameraTransform.GetTranslation();
-	const glm::quat rot = cameraTransform.GetRotation();
-
-	const glm::vec3 localForward = glm::vec3(0.f, 0.f, 1.f);
-	const glm::vec3 forward = glm::normalize(glm::rotate(rot, localForward));
-
-	const glm::vec3 focusPoint = trans + forward;
-	const glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
-
-	CameraUBO cameraUBO{};
-	cameraUBO.view = glm::lookAtRH(trans, focusPoint, worldUp);
-	cameraUBO.projection = camera.projection;
-
-	memcpy(m_mappedCameraBuffers[currentImage], &cameraUBO, sizeof(CameraUBO));
 
 	// Objects
 	if (m_objectBufferUpdate[currentImage])
@@ -655,20 +692,21 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 
 	const auto swapchain = m_pDevice->GetSwapchain();
 	const auto& extent = swapchain->GetExtent();
-	const auto& imageViews = swapchain->GetImageViews();
-	const auto imageFormat = swapchain->GetImageFormat();
+	const VkImage image = m_renderTargets[imageIndex].m_image;
+	const VkImageView imageView = m_renderTargets[imageIndex].m_imageView;
+	const VkFormat imageFormat = m_renderTargets[imageIndex].m_format;
 	const auto depthFormat = swapchain->GetDepthFormat();
-	VkImage swapchainImage = swapchain->GetImages()[imageIndex];
-	VkImage depthImage = swapchain->GetDepthImages()[imageIndex];
+	const VkImage depthImage = swapchain->GetDepthImages()[imageIndex];
+	const VkImageView depthImageView = swapchain->GetDepthViews()[imageIndex];
 
 	// 1. Transition swapchain image to COLOR_ATTACHMENT_OPTIMAL
-	commandBuffer.TransitionImageLayout(swapchainImage, imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	commandBuffer.TransitionImageLayout(image, imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	commandBuffer.TransitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 	// 2. Begin dynamic rendering
 	VkRenderingAttachmentInfo colorAttachment{};
 	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	colorAttachment.imageView = imageViews[imageIndex];
+	colorAttachment.imageView = imageView;
 	colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -676,7 +714,7 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 
 	VkRenderingAttachmentInfo depthAttachment{};
 	depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-	depthAttachment.imageView = swapchain->GetDepthViews()[imageIndex];
+	depthAttachment.imageView = depthImageView;
 	depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -746,9 +784,6 @@ void Renderer::RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	commandBuffer.EndRendering();
-
-	// 3. Transition swapchain image back to PRESENT_SRC_KHR
-	commandBuffer.TransitionImageLayout(swapchainImage, imageFormat, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	commandBuffer.EndCommandBuffer();
 }
@@ -890,35 +925,4 @@ void Renderer::DestroyGpuModel(const Vulkan::Model& model)
 	// Descriptor Set
 	vkFreeDescriptorSets(m_pDevice->GetVkDevice(), m_pDevice->GetDescriptorPool(), static_cast<uint32_t>(model.m_material.m_descriptorSets.size()),
 		model.m_material.m_descriptorSets.data());
-}
-
-void FrameContext::Init(std::shared_ptr<Device> device)
-{
-	VkSemaphoreCreateInfo semaphoreInfo{};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	if (vkCreateSemaphore(device->GetVkDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphore) != VK_SUCCESS)
-	{
-		throw std::logic_error("Failed to create semaphore for FrameContext");
-	}
-
-	VkSemaphoreTypeCreateInfo timelineCreateInfo{};
-	timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-	timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-	timelineCreateInfo.initialValue = 0;
-
-	VkSemaphoreCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	createInfo.pNext = &timelineCreateInfo;
-
-	if (vkCreateSemaphore(device->GetVkDevice(), &createInfo, nullptr, &m_timelineSemaphore) != VK_SUCCESS)
-	{
-		throw std::logic_error("Failed to create timeline semaphore for FrameContext");
-	}
-}
-
-void FrameContext::Destroy(std::shared_ptr<Device> device) const
-{
-	if (m_imageAvailableSemaphore) vkDestroySemaphore(device->GetVkDevice(), m_imageAvailableSemaphore, nullptr);
-	if (m_timelineSemaphore) vkDestroySemaphore(device->GetVkDevice(), m_timelineSemaphore, nullptr);
 }

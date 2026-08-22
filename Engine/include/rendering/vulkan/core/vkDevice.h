@@ -54,6 +54,9 @@ public:
 	uint32_t GetCurrentFrame() const;
 	void AdvanceCurrentFrame();
 
+	void SubmitToQueue(std::vector<VkCommandBuffer> commandBuffers, std::vector<VkSemaphore> waitSemaphores,
+		std::vector<VkSemaphore> signalSemaphores, VkQueue queue, uint64_t signalValue) const;
+
 	CommandBuffer BeginSingleTimeCommands(unsigned int currentFrame) const;
 	void EndSingleTimeCommands(CommandBuffer commandBuffer) const;
 
@@ -66,10 +69,10 @@ public:
 	void CreateBufferWithStaging(VkDeviceSize size, VkBuffer& buffer, VmaAllocation& allocation, void* bufferData, VkBufferUsageFlags usageFlag) const;
 
 	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags ImageUsageFlags, VmaMemoryUsage memoryUsageFlags, VkImage& image, VmaAllocation& imageAllocation) const;
-	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
+	void CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView& dstImageView) const;
 	//
 
-	void CreateTextureImage(const std::shared_ptr<CPU::MaterialTexture> srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode) const;
+	void CreateTextureImage(const std::shared_ptr<CPU::MaterialTexture> srcTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode, Vulkan::Texture& dstTexture) const;
 	void CreateTextureSampler(VkSampler& sampler, VkFilter filter, VkSamplerAddressMode addressMode, VkBool32 useAnisotropy) const;
 
 	RID CreateGpuTexture(const std::shared_ptr<CPU::MaterialTexture> srcTexture, VkFormat format, VkImageAspectFlags aspectFlags, VkImageUsageFlagBits usageFlags, VmaMemoryUsage memoryFlags, VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE) const;
@@ -131,4 +134,14 @@ private:
 	VkDebugUtilsMessengerEXT m_debugMessenger{};
 
 	uint32_t m_currentFrame = 0;
+};
+
+struct FrameContext
+{
+	void Init(std::shared_ptr<Device> device);
+	void Destroy(std::shared_ptr<Device> device) const;
+
+	VkSemaphore m_imageAvailableSemaphore;
+	VkSemaphore m_timelineSemaphore;
+	uint64_t m_timelineValue;
 };

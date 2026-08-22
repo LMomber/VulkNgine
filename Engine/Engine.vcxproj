@@ -25,6 +25,10 @@
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="external\imGuizmo\ImGuizmo.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="external\imgui\imconfig.h" />
     <ClInclude Include="external\imgui\imgui.h" />
     <ClInclude Include="external\imgui\imgui_impl_glfw.h" />
@@ -39,7 +43,7 @@
     </ClInclude>
     <ClInclude Include="include\core\assetStorage.h" />
     <ClInclude Include="include\core\common.h" />
-    <ClInclude Include="include\core\editorUI.h" />
+    <ClInclude Include="include\core\consoleBuffer.h" />
     <ClInclude Include="include\core\engine.h" />
     <ClInclude Include="include\core\hash.h" />
     <ClInclude Include="include\core\importer.h" />
@@ -73,11 +77,19 @@
     <ClInclude Include="include\rendering\vulkan\resources\vkResourceManager.h" />
     <ClInclude Include="include\rendering\vulkan\resources\vkTexture.h" />
     <ClInclude Include="include\rendering\vulkan\vkCommon.h" />
+    <ClInclude Include="include\rendering\vulkan\vkEditorUI.h" />
     <ClInclude Include="include\rendering\vulkan\vkModelStorage.h" />
     <ClInclude Include="include\rendering\vulkan\vkRender.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="external\imGuizmo\ImGuizmo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
     <ClCompile Include="external\imgui\imgui.cpp" />
+    <ClCompile Include="external\imgui\imgui_demo.cpp" />
     <ClCompile Include="external\imgui\imgui_draw.cpp" />
     <ClCompile Include="external\imgui\imgui_impl_glfw.cpp" />
     <ClCompile Include="external\imgui\imgui_impl_vulkan.cpp" />
@@ -90,7 +102,6 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
     </ClCompile>
     <ClCompile Include="source\core\assetStorage.cpp" />
-    <ClCompile Include="source\core\editorUI.cpp" />
     <ClCompile Include="source\core\engine.cpp" />
     <ClCompile Include="source\core\importer.cpp" />
     <ClCompile Include="source\core\input.cpp" />
@@ -102,6 +113,7 @@
     <ClCompile Include="source\core\transform.cpp" />
     <ClCompile Include="source\rendering\tangentSpaceWrapper.cpp" />
     <ClCompile Include="source\rendering\textureResolver.cpp" />
+    <ClCompile Include="source\rendering\vkEditorUI.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkCommandBuffer.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkCommandPool.cpp" />
     <ClCompile Include="source\rendering\vulkan\commands\vkQueue.cpp" />

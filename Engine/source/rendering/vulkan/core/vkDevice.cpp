@@ -63,6 +63,7 @@ void Device::Initialize()
 	ImGui_ImplGlfw_InitForVulkan(m_pVkWindow->GetWindow(), true);
 
 	ImGui_ImplVulkan_InitInfo init_info{};
+	init_info.ApiVersion = VK_API_VERSION_1_3;
 	init_info.Instance = m_instance;
 	init_info.PhysicalDevice = m_pPhysicalDevice->GetDevice();
 	init_info.Device = m_device;
@@ -70,6 +71,14 @@ void Device::Initialize()
 	init_info.DescriptorPoolSize = 10;
 	init_info.MinImageCount = m_pSwapchain->GetImageCount();
 	init_info.ImageCount = m_pSwapchain->GetImageCount();
+	init_info.UseDynamicRendering = true;
+	init_info.PipelineInfoMain.PipelineRenderingCreateInfo.sType =
+		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+
+	init_info.PipelineInfoMain.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	std::array<VkFormat, 1> formats{ m_pSwapchain->GetImageFormat()};
+	init_info.PipelineInfoMain.PipelineRenderingCreateInfo.pColorAttachmentFormats =
+		formats.data();
 
 	ImGui_ImplVulkan_Init(&init_info);
 }
@@ -248,6 +257,34 @@ uint32_t Device::GetCurrentFrame() const
 void Device::AdvanceCurrentFrame()
 {
 	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void Device::SubmitToQueue(std::vector<VkCommandBuffer> commandBuffers, std::vector<VkSemaphore> waitSemaphores, 
+	std::vector<VkSemaphore> signalSemaphores, VkQueue queue, uint64_t signalValue) const
+{
+	VkTimelineSemaphoreSubmitInfo timelineInfo{};
+	timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+	timelineInfo.signalSemaphoreValueCount = 2;
+	timelineInfo.pSignalSemaphoreValues = &signalValue;
+
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
+	submitInfo.pWaitSemaphores = waitSemaphores.data();
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+	submitInfo.pCommandBuffers = commandBuffers.data();
+	submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
+	submitInfo.pSignalSemaphores = signalSemaphores.data();
+	submitInfo.pNext = &timelineInfo;
+
+	VkResult submitRes = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+	if (submitRes != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to submit draw command buffer");
+	}
 }
 
 void Device::CreateLogicalDevice(QueueFamilyIndices indices)
@@ -518,8 +555,8 @@ RID Device::CreateGpuTexture(const std::shared_ptr<CPU::MaterialTexture> srcText
 	}
 
 	Vulkan::Texture dstTexture{};
-	CreateTextureImage(srcTexture, dstTexture, usageFlags, memoryFlags, sharingMode);
-	dstTexture.m_imageView = CreateImageView(dstTexture.m_image, format, aspectFlags);
+	CreateTextureImage(srcTexture, usageFlags, memoryFlags, sharingMode, dstTexture);
+	CreateImageView(dstTexture.m_image, format, aspectFlags, dstTexture.m_imageView);
 
 	return Vulkan::ResourceManager::Get().textureOwner.CreateRID(dstTexture);
 }
@@ -594,10 +631,8 @@ void Device::DestroyGpuMesh(const Vulkan::Mesh& mesh) const
 	vmaDestroyBuffer(GetAllocator(), mesh.m_indexBuffer, mesh.m_indexAllocation);
 }
 
-VkImageView Device::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const
+void Device::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView& dstImageView) const
 {
-	VkImageView imageView;
-
 	VkImageViewCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	createInfo.image = image;
@@ -609,12 +644,10 @@ VkImageView Device::CreateImageView(VkImage image, VkFormat format, VkImageAspec
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 
-	if (vkCreateImageView(m_device, &createInfo, nullptr, &imageView) != VK_SUCCESS)
+	if (vkCreateImageView(m_device, &createInfo, nullptr, &dstImageView) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create image view");
 	}
-
-	return imageView;
 }
 
 VkFormat Device::GetVkFormat(CPU::TextureFormat format) const
@@ -754,7 +787,7 @@ void Device::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkIma
 		&image, &imageAllocation, nullptr);
 }
 
-void Device::CreateTextureImage(const std::shared_ptr<CPU::MaterialTexture> srcTexture, Vulkan::Texture& dstTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode) const
+void Device::CreateTextureImage(const std::shared_ptr<CPU::MaterialTexture> srcTexture, VkImageUsageFlagBits flags, VmaMemoryUsage memoryFlag, VkSharingMode sharingMode, Vulkan::Texture& dstTexture) const
 {
 	VkDeviceSize imageSize = srcTexture->m_width * srcTexture->m_height * 4;
 
@@ -840,4 +873,35 @@ void Device::CreateTextureSampler(VkSampler& sampler, VkFilter filter, VkSampler
 	{
 		throw std::runtime_error("Failed to create sampler");
 	}
+}
+
+void FrameContext::Init(std::shared_ptr<Device> device)
+{
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	if (vkCreateSemaphore(device->GetVkDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphore) != VK_SUCCESS)
+	{
+		throw std::logic_error("Failed to create semaphore for FrameContext");
+	}
+
+	VkSemaphoreTypeCreateInfo timelineCreateInfo{};
+	timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+	timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+	timelineCreateInfo.initialValue = 0;
+
+	VkSemaphoreCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	createInfo.pNext = &timelineCreateInfo;
+
+	if (vkCreateSemaphore(device->GetVkDevice(), &createInfo, nullptr, &m_timelineSemaphore) != VK_SUCCESS)
+	{
+		throw std::logic_error("Failed to create timeline semaphore for FrameContext");
+	}
+}
+
+void FrameContext::Destroy(std::shared_ptr<Device> device) const
+{
+	if (m_imageAvailableSemaphore) vkDestroySemaphore(device->GetVkDevice(), m_imageAvailableSemaphore, nullptr);
+	if (m_timelineSemaphore) vkDestroySemaphore(device->GetVkDevice(), m_timelineSemaphore, nullptr);
 }

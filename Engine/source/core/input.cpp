@@ -3,6 +3,8 @@
 #include "engine.h"
 #include "vkDevice.h"
 
+#include "imgui/imgui.h"
+
 using namespace Core;
 
 enum KeyAction
@@ -92,6 +94,14 @@ void Input::Update()
 
         mousebuttons_action[i] = KeyAction::None;
     }
+
+    // ImGui
+    auto& IO = ImGui::GetIO();
+    glm::vec2 mousePos = GetMousePosition();
+    IO.MousePos.x = mousePos.x;
+    IO.MousePos.y = mousePos.y;
+
+    IO.MouseDown[0] = GetMouseButton(Input::MouseButton::Left);
 }
 
 bool Input::IsMouseAvailable() const { return true; }

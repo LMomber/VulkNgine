@@ -2,6 +2,7 @@
 
 #include "vkCommon.h"
 #include "vkDevice.h"
+#include "vkEditorUI.h"
 
 #include "vkData.h"
 
@@ -10,16 +11,6 @@
 #pragma warning(push, 0)
 #include <vma/vk_mem_alloc.h>
 #pragma warning(pop)
-
-struct FrameContext
-{
-	void Init(std::shared_ptr<Device> device);
-	void Destroy(std::shared_ptr<Device> device) const;
-
-	VkSemaphore m_imageAvailableSemaphore;
-	VkSemaphore m_timelineSemaphore;
-	uint64_t m_timelineValue;
-};
 
 struct SceneRenderData
 {
@@ -53,6 +44,8 @@ private:
 	void CreateBuffers();
 	void CreateSyncObjects();
 	void CreateFallbackMaterial();
+	void CreateRenderTargets();
+	void DestroyRenderTargets();
 
 	void ChooseSharingMode();
 
@@ -66,8 +59,11 @@ private:
 
 	std::shared_ptr<Device> m_pDevice;
 	std::shared_ptr<Pipeline> m_pipeline;
+	std::shared_ptr<EditorUI> m_pEditorUI;
 
 	SceneRenderData m_sceneRenderData;
+
+	std::array<RenderTarget, MAX_FRAMES_IN_FLIGHT> m_renderTargets;
 
 	// PBR materials
 	VkDescriptorSetLayout m_materialDescriptorSetLayout;

@@ -81,26 +81,57 @@ void Swapchain::CreateSwapchain()
 	m_extent = extent;
 }
 
-void Swapchain::RecreateSwapchain()
+// Acquire next swapchain image
+uint32_t Swapchain::AcquireNextImage(VkSemaphore imageAvailableSemaphore)
 {
-	int width = 0, height = 0;
-	auto window = m_pVkWindow->GetWindow();
+	uint32_t imageIndex;
+	VkResult result = vkAcquireNextImageKHR(
+		m_device,
+		m_swapChain,
+		UINT64_MAX,
+		imageAvailableSemaphore,
+		VK_NULL_HANDLE,
+		&imageIndex);
 
-	while (width == 0 || height == 0)
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		glfwGetFramebufferSize(window, &width, &height);
-		glfwWaitEvents();
+		RecreateSwapchain();
+		return std::numeric_limits<uint32_t>().max();
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		throw std::runtime_error("Failed to acquire swapchain image");
 	}
 
+	m_currentImageIndex = imageIndex;
+
+	return imageIndex;
+}
+
+void Swapchain::RecreateSwapchain()
+{
 	vkDeviceWaitIdle(m_device);
 
 	CleanUp();
 	
+	m_currentImageIndex = std::numeric_limits<uint32_t>().max();
 	m_oldSwapChain = m_swapChain;
 
 	CreateSwapchain();
 	CreateImageViews();
 	CreateDepthResources();
+}
+
+VkImage Swapchain::GetCurrentImage() const
+{
+	assert(m_currentImageIndex != std::numeric_limits<uint16_t>().max() && "Current image index is not set yet.");
+	return m_images[m_currentImageIndex];
+}
+
+VkImageView Swapchain::GetCurrentImageView() const
+{
+	assert(m_currentImageIndex != std::numeric_limits<uint16_t>().max() && "Current image index is not set yet.");
+	return m_imageViews[m_currentImageIndex];
 }
 
 void Swapchain::CreateImageViews()

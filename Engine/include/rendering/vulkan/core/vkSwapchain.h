@@ -10,11 +10,14 @@ public:
 	Swapchain(const VkDevice& device, const VkSurfaceKHR& surface, std::shared_ptr<Window> window, std::shared_ptr<PhysicalDevice> physicalDevice);
 	~Swapchain();
 
+	uint32_t AcquireNextImage(VkSemaphore imageAvailableSemaphore);
 	void RecreateSwapchain();
-	
+
 	VkSwapchainKHR GetVkSwapChain() const { return m_swapChain; }
-	const VkExtent2D& GetExtent() const { return m_extent; }
-	VkFormat GetFormat() const { return m_imageFormat; }
+	const VkExtent2D GetExtent() const { return m_extent; }
+
+	VkImage GetCurrentImage() const;
+	VkImageView GetCurrentImageView() const;
 
 	const std::vector<VkImage>& GetImages() const { return m_images; }
 	const std::vector<VkImageView>& GetImageViews() const { return m_imageViews; }
@@ -46,6 +49,7 @@ private:
 
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_imageViews;
+	uint32_t m_currentImageIndex = std::numeric_limits<uint32_t>().max();
 
 	VkFormat m_depthFormat;
 	std::array<VkImage, 3> m_depthImages;

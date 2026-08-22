@@ -54,21 +54,21 @@ int main() {
 		camera.projection[1][1] *= -1;
 
 		Transform& transform = registry.emplace<Transform>(entity);
-		transform.SetTranslation(glm::vec3(0.f, 1.f, 0.f));
+		transform.SetTranslation(glm::vec3(0.f, 2.f, -4.f));
 	}
 
-	uint32_t sponza = UINT_MAX;
+	//uint32_t sponza = UINT_MAX;
 	uint32_t helmet1 = UINT_MAX;
 	uint32_t helmet2 = UINT_MAX;
 
-	{
+	/*{
 		auto entity = registry.create();
 		Transform& transform = registry.emplace<Transform>(entity);
 		transform.SetTranslation(glm::vec3(0.f));
 
 		std::string filePath = "../Engine/models/Sponza/glTF/Sponza.gltf";
 		sponza = engine.LoadModelFromFile(filePath, transform);
-	}
+	}*/
 
 	{
 		auto entity = registry.create();
@@ -84,7 +84,7 @@ int main() {
 	{
 		auto entity = registry.create();
 		Transform& transform = registry.emplace<Transform>(entity);
-		transform.SetTranslation(glm::vec3(0.f, 1.f, 0.f));
+		transform.SetTranslation(glm::vec3(0.f, 3.f, 0.f));
 
 		std::string filePath = "../Engine/models/DamagedHelmet.glb";
 

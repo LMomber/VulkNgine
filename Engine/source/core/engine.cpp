@@ -46,6 +46,8 @@ void Core::Engine::Update(double deltaTime)
 		}
 
 		m_pRenderer->QueueObjectBufferUpdate();
+
+		m_pRenderer->SetNodeToInspect(&m_sceneData[0].m_node);
 		once = false;
 	}
 
@@ -94,6 +96,19 @@ GLFWwindow* Core::Engine::GetWindow() const
 entt::registry& Core::Engine::GetRegistry()
 {
 	return m_registry;
+}
+
+void Core::Engine::UpdateNodeTransform(Node* pNode)
+{
+	if (!pNode->IsRoot())
+	{
+		throw std::runtime_error("node passed to UpdateNodeTransform() in not a root node.");
+	}
+
+	glm::mat4 combinedMatrix = pNode->GetWorldTransform().GetMatrix() * pNode->GetLocalTransform().GetMatrix();
+	UpdateChildMatrices(combinedMatrix, pNode);
+
+	m_pRenderer->QueueObjectBufferUpdate();
 }
 
 uint32_t Core::Engine::LoadModelFromFile(const std::string& filePath, Transform& transform)

@@ -189,9 +189,6 @@
       <Filter>include\rendering</Filter>
     </ClInclude>
     <ClInclude Include="include\rendering\vulkan\vkModelStorage.h" />
-    <ClInclude Include="external\imGuizmo\ImGuizmo.h">
-      <Filter>external\imGuizmo</Filter>
-    </ClInclude>
     <ClInclude Include="external\imgui\imconfig.h">
       <Filter>external\imgui</Filter>
     </ClInclude>
@@ -221,6 +218,9 @@
     </ClInclude>
     <ClInclude Include="include\core\consoleBuffer.h">
       <Filter>include\core</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imGuizmo\ImGuizmo.h">
+      <Filter>external\imGuizmo</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -310,9 +310,6 @@
     </ClCompile>
     <ClCompile Include="source\core\assetStorage.cpp" />
     <ClCompile Include="source\rendering\vulkan\vkModelStorage.cpp" />
-    <ClCompile Include="external\imGuizmo\ImGuizmo.cpp">
-      <Filter>external\imGuizmo</Filter>
-    </ClCompile>
     <ClCompile Include="external\imgui\imgui.cpp">
       <Filter>external\imgui</Filter>
     </ClCompile>
@@ -336,6 +333,9 @@
     </ClCompile>
     <ClCompile Include="source\rendering\vkEditorUI.cpp">
       <Filter>source\rendering\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imGuizmo\ImGuizmo.cpp">
+      <Filter>external\imGuizmo</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

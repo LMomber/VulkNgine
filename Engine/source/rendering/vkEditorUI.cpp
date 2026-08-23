@@ -4,6 +4,10 @@
 
 #include "imgui/imgui_internal.h"
 
+#include "glm/gtc/type_ptr.hpp"
+
+#include "../core/engine.h"
+
 EditorUI::EditorUI(std::shared_ptr<Device> device) :
 	m_pDevice(device)
 {
@@ -21,16 +25,19 @@ EditorUI::EditorUI(std::shared_ptr<Device> device) :
 	m_LastConsoleSize = consoleBuf.buffer.size();
 }
 
-void EditorUI::Render(CommandBuffer* commandBuffer, const RenderTarget& renderTarget)
+void EditorUI::Render(CommandBuffer* commandBuffer, const RenderTarget& renderTarget, entt::entity cameraEntity)
 {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 	ImGuizmo::BeginFrame();
 
+	static ImGuizmo::OPERATION operation(ImGuizmo::ROTATE);
+	static ImGuizmo::MODE mode(ImGuizmo::WORLD);
+
 	ImGui::DockSpaceOverViewport();
 
-	RenderEditorWindows(renderTarget.m_imguiTexture);
+	RenderEditorWindows(renderTarget.m_imguiTexture, cameraEntity, operation, mode);
 	RecordCommandBuffer(commandBuffer, renderTarget);
 
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -40,7 +47,22 @@ void EditorUI::Render(CommandBuffer* commandBuffer, const RenderTarget& renderTa
 	}
 }
 
-void EditorUI::RenderEditorWindows(const VkDescriptorSet gameTexture)
+void EditorUI::SetNodeToInspect(Node* pNode)
+{
+	m_pNode = pNode;
+
+	if (m_pNode)
+	{
+		m_pTransform = &m_pNode->GetWorldTransform();
+		m_selectedMatrix = m_pTransform->GetMatrix();
+	}
+	else
+	{
+		m_pTransform = nullptr;
+	}
+}
+
+void EditorUI::RenderEditorWindows(const VkDescriptorSet gameTexture, entt::entity cameraEntity, ImGuizmo::OPERATION& operation, ImGuizmo::MODE& mode)
 {
 	// Settings window
 	ImGui::Begin("Settings");
@@ -52,7 +74,11 @@ void EditorUI::RenderEditorWindows(const VkDescriptorSet gameTexture)
 		"Game Viewport",
 		nullptr,
 		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground);
-	GameViewport(gameTexture);
+	GameViewport(gameTexture, cameraEntity, operation, mode);
+	ImGui::End();
+
+	ImGui::Begin("Inspector");
+	InspectorUI(operation, mode);
 	ImGui::End();
 
 	// Console window
@@ -109,8 +135,11 @@ void EditorUI::RecordCommandBuffer(CommandBuffer* commandBuffer, const RenderTar
 	commandBuffer->EndCommandBuffer();
 }
 
-void EditorUI::GameViewport(const VkDescriptorSet gameTexture)
+void EditorUI::GameViewport(const VkDescriptorSet gameTexture, entt::entity cameraEntity, ImGuizmo::OPERATION& operation, ImGuizmo::MODE& mode)
 {
+	ImGuizmo::SetOrthographic(true);
+	ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+
 	ImVec2 pos = ImGui::GetCursorScreenPos();
 	ImVec2 avail = ImGui::GetContentRegionAvail();
 
@@ -121,6 +150,37 @@ void EditorUI::GameViewport(const VkDescriptorSet gameTexture)
 	avail.y += 30;
 
 	ImGui::GetWindowDrawList()->AddImage((ImTextureID)gameTexture, pos, avail);
+	ImGuizmo::SetRect(pos.x, pos.y, avail.x, avail.y);
+
+	if (m_pTransform)
+	{
+		auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
+		const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
+
+		const glm::vec3 trans = cameraTransform.GetTranslation();
+		const glm::quat rot = cameraTransform.GetRotation();
+
+		const glm::vec3 localForward = glm::vec3(0.f, 0.f, 1.f);
+		const glm::vec3 forward = glm::normalize(glm::rotate(rot, localForward));
+
+		const glm::vec3 focusPoint = trans + forward;
+		const glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
+
+		glm::mat4 viewMatrix = glm::lookAtRH(trans, focusPoint, worldUp);
+		glm::mat4 projectionMatrix = camera.projection;
+
+		if (ImGuizmo::Manipulate(glm::value_ptr(viewMatrix),
+			glm::value_ptr(projectionMatrix),
+			operation,
+			mode,
+			glm::value_ptr(m_selectedMatrix),
+			nullptr,
+			m_useSnap ? &m_snap.x : nullptr))
+		{
+			m_pTransform->SetFromMatrix(m_selectedMatrix);
+			Core::engine.UpdateNodeTransform(m_pNode);
+		}
+	}
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.ImageBorderSize = 0.f;
@@ -150,50 +210,128 @@ void EditorUI::ConsoleUI()
 void EditorUI::TimeSettings()
 {
 	ImGui::Button("StartTest");
-    if (!m_startSimulation)
-    {
-        if (ImGui::Button("Start"))
-        {
-            m_startSimulation = true;
-            m_stopTime = !m_stopTime;
-        }
-    }
-    else
-    {
-        if (m_stopTime)
-        {
-            if (ImGui::Button("Resume"))
-            {
-                m_stopTime = !m_stopTime;
-            }
-            if (ImGui::Button("Single Step"))
-            {
-                m_singleStep = true;
-            }
-        }
-        else
-        {
-            if (ImGui::Button("Pause"))
-            {
-                m_stopTime = !m_stopTime;
-            }
-        }
-    }
+	if (!m_startSimulation)
+	{
+		if (ImGui::Button("Start"))
+		{
+			m_startSimulation = true;
+			m_stopTime = !m_stopTime;
+		}
+	}
+	else
+	{
+		if (m_stopTime)
+		{
+			if (ImGui::Button("Resume"))
+			{
+				m_stopTime = !m_stopTime;
+			}
+			if (ImGui::Button("Single Step"))
+			{
+				m_singleStep = true;
+			}
+		}
+		else
+		{
+			if (ImGui::Button("Pause"))
+			{
+				m_stopTime = !m_stopTime;
+			}
+		}
+	}
 
-    ImGui::SameLine();
+	ImGui::SameLine();
 
-    if (m_fixedStep)
-    {
-        if (ImGui::Button("Set Dynamic Timestep"))
-        {
-            m_fixedStep = false;
-        }
-    }
-    else
-    {
-        if (ImGui::Button("Set Fixed Timestep"))
-        {
-            m_fixedStep = true;
-        }
-    }
+	if (m_fixedStep)
+	{
+		if (ImGui::Button("Set Dynamic Timestep"))
+		{
+			m_fixedStep = false;
+		}
+	}
+	else
+	{
+		if (ImGui::Button("Set Fixed Timestep"))
+		{
+			m_fixedStep = true;
+		}
+	}
+}
+
+void EditorUI::EditTransform(ImGuizmo::OPERATION& operation, ImGuizmo::MODE& mode)
+{
+	if (ImGui::RadioButton("Translate", operation == ImGuizmo::TRANSLATE)) operation = ImGuizmo::TRANSLATE;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Rotate", operation == ImGuizmo::ROTATE)) operation = ImGuizmo::ROTATE;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Scale", operation == ImGuizmo::SCALE)) operation = ImGuizmo::SCALE;
+
+	if (operation != ImGuizmo::SCALE)
+	{
+		if (ImGui::RadioButton("Local", mode == ImGuizmo::LOCAL)) mode = ImGuizmo::LOCAL;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("World", mode == ImGuizmo::WORLD)) mode = ImGuizmo::WORLD;
+	}
+
+	ImGui::Checkbox("##something", &m_useSnap);
+	ImGui::SameLine();
+
+	switch (operation)
+	{
+	case ImGuizmo::TRANSLATE:
+		m_snap = m_snapTranslation;
+		ImGui::InputFloat3("Snap", &m_snap.x);
+		break;
+	case ImGuizmo::ROTATE:
+		m_snap = m_snapRotation;
+		ImGui::InputFloat("Angle Snap", &m_snap.x);
+		break;
+	case ImGuizmo::SCALE:
+		m_snap = m_snapScale;
+		ImGui::InputFloat("Scale Snap", &m_snap.x);
+		break;
+	default:
+		break;
+	}
+
+	const auto& matrix = m_pTransform->GetMatrix();
+	glm::vec3 position = matrix[3];
+
+	float tempTr[3] = { position.x, position.y, position.z };
+	if (ImGui::InputFloat3("Tr", tempTr))
+	{
+		m_pTransform->SetTranslation(glm::vec3(tempTr[0], tempTr[1], tempTr[2]));
+		Core::engine.UpdateNodeTransform(m_pNode);
+	}
+
+	glm::vec3 tempRt{ 0.f };
+	glm::vec3 eulerAngles = glm::degrees(glm::eulerAngles(glm::quat_cast(m_pTransform->GetMatrix())));
+	tempRt[0] = eulerAngles.x;
+	tempRt[1] = eulerAngles.y;
+	tempRt[2] = eulerAngles.z;
+
+	if (ImGui::InputFloat3("Rt", glm::value_ptr(tempRt)))
+	{
+		glm::vec3 newEulerAngles = glm::radians(glm::vec3(tempRt[0], tempRt[1], tempRt[2]));
+
+		glm::vec3 translation = glm::vec3(m_pTransform->GetTranslation());
+		glm::mat4 newRotationMatrix = glm::mat4(1.0f);
+
+		newRotationMatrix = glm::rotate(newRotationMatrix, newEulerAngles.x, glm::vec3(1.0f, 0.0f, 0.0f));  // X-axis
+		newRotationMatrix = glm::rotate(newRotationMatrix, newEulerAngles.y, glm::vec3(0.0f, 1.0f, 0.0f));  // Y-axis
+		newRotationMatrix = glm::rotate(newRotationMatrix, newEulerAngles.z, glm::vec3(0.0f, 0.0f, 1.0f));  // Z-axis
+
+		m_pTransform->SetFromMatrix(newRotationMatrix);
+		m_pTransform->SetTranslation(translation);
+
+		Core::engine.UpdateNodeTransform(m_pNode);
+	}
+}
+
+void EditorUI::InspectorUI(ImGuizmo::OPERATION& operation, ImGuizmo::MODE& mode)
+{
+	if (m_pNode)
+	{
+		EditTransform(operation, mode);
+	}
 }

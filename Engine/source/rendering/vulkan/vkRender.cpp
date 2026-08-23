@@ -144,9 +144,15 @@ void Renderer::Update()
 	uint32_t currentImage = m_pDevice->GetCurrentFrame();
 
 	// Camera
-	const auto cameraEntity = Core::engine.GetRegistry().view<Transform, Camera>().front();
-	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(cameraEntity);
-	const auto& camera = Core::engine.GetRegistry().get<Camera>(cameraEntity);
+	static bool once = true;
+	if (once)
+	{
+		m_renderCameraEntity = Core::engine.GetRegistry().view<Transform, Camera>().front();
+		once = false;
+	}
+
+	auto& cameraTransform = Core::engine.GetRegistry().get<Transform>(m_renderCameraEntity);
+	const auto& camera = Core::engine.GetRegistry().get<Camera>(m_renderCameraEntity);
 
 	const glm::vec3 trans = cameraTransform.GetTranslation();
 	const glm::quat rot = cameraTransform.GetRotation();
@@ -160,6 +166,7 @@ void Renderer::Update()
 	CameraUBO cameraUBO{};
 	cameraUBO.view = glm::lookAtRH(trans, focusPoint, worldUp);
 	cameraUBO.projection = camera.projection;
+	cameraUBO.projection[1][1] *= -1;
 
 	memcpy(m_mappedCameraBuffers[currentImage], &cameraUBO, sizeof(CameraUBO));
 
@@ -223,7 +230,7 @@ void Renderer::Render()
 	// Record imgui command buffer
 	CommandBuffer imguiCmdBuffer =
 		m_pDevice->GetQueue()->GetOrCreateCommandBuffer(QueueType::GRAPHICS, currentFrame);
-	m_pEditorUI->Render(&imguiCmdBuffer, m_renderTargets[imageIndex]);
+	m_pEditorUI->Render(&imguiCmdBuffer, m_renderTargets[imageIndex], m_renderCameraEntity);
 
 	// Submit to queue
 	std::vector<VkCommandBuffer> commandBuffers{};
@@ -266,6 +273,11 @@ void Renderer::Render()
 
 	// Advance to next frame
 	m_pDevice->AdvanceCurrentFrame();
+}
+
+void Renderer::SetNodeToInspect(Node* pNode)
+{
+	m_pEditorUI->SetNodeToInspect(pNode);
 }
 
 void Renderer::CreateMaterialDescriptorSetLayout()

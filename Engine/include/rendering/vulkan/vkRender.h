@@ -29,6 +29,8 @@ public:
 	void Update();
 	void Render();
 
+	void SetNodeToInspect(Node* pNode);
+
 	std::vector<uint32_t> CreateGpuModel(const CPU::Model& model, size_t hash);
 	void FreeGpuModels(const std::vector<uint32_t>& ids, bool shouldBeDestroyed);
 	void UpdateModelTransform(const std::vector<uint32_t>& ids, const glm::mat4& worldMatrix);
@@ -60,6 +62,8 @@ private:
 	std::shared_ptr<Device> m_pDevice;
 	std::shared_ptr<Pipeline> m_pipeline;
 	std::shared_ptr<EditorUI> m_pEditorUI;
+
+	entt::entity m_renderCameraEntity;
 
 	SceneRenderData m_sceneRenderData;
 

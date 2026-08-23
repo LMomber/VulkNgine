@@ -23,6 +23,8 @@ namespace Core
 		const Input& GetInput() const;
 		GLFWwindow* GetWindow() const;
 		entt::registry& GetRegistry();
+
+		void UpdateNodeTransform(Node* pNode);
 		
 		[[nodiscard]] uint32_t LoadModelFromFile(const std::string& filePath, Transform& transform);
 		void FreeSceneObject(uint32_t sceneID, bool shouldBeDestroyed = false);

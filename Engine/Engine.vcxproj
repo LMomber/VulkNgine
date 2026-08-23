@@ -25,10 +25,7 @@
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="external\imGuizmo\ImGuizmo.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="external\imGuizmo\ImGuizmo.h" />
     <ClInclude Include="external\imgui\imconfig.h" />
     <ClInclude Include="external\imgui\imgui.h" />
     <ClInclude Include="external\imgui\imgui_impl_glfw.h" />
@@ -83,8 +80,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="external\imGuizmo\ImGuizmo.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
     </ClCompile>
@@ -188,12 +183,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(ProjectDir)\libs\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)\intermediate\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(ProjectDir)\include\core;$(ProjectDir)\include\rendering;$(ProjectDir)\include\rendering\vulkan;$(ProjectDir)\include\rendering\vulkan\commands;$(ProjectDir)\include\rendering\vulkan\core;$(ProjectDir)\include\rendering\vulkan\descriptors;$(ProjectDir)\include\rendering\vulkan\memory;$(ProjectDir)\include\rendering\vulkan\resources;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\include\core;$(ProjectDir)\include\rendering;$(ProjectDir)\include\rendering\vulkan;$(ProjectDir)\include\rendering\vulkan\commands;$(ProjectDir)\include\rendering\vulkan\core;$(ProjectDir)\include\rendering\vulkan\descriptors;$(ProjectDir)\include\rendering\vulkan\memory;$(ProjectDir)\include\rendering\vulkan\resources;$(ProjectDir)\external\imgui;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(ProjectDir)\libs\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)\intermediate\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(ProjectDir)\include\core;$(ProjectDir)\include\rendering;$(ProjectDir)\include\rendering\vulkan;$(ProjectDir)\include\rendering\vulkan\commands;$(ProjectDir)\include\rendering\vulkan\core;$(ProjectDir)\include\rendering\vulkan\descriptors;$(ProjectDir)\include\rendering\vulkan\memory;$(ProjectDir)\include\rendering\vulkan\resources;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\include\core;$(ProjectDir)\include\rendering;$(ProjectDir)\include\rendering\vulkan;$(ProjectDir)\include\rendering\vulkan\commands;$(ProjectDir)\include\rendering\vulkan\core;$(ProjectDir)\include\rendering\vulkan\descriptors;$(ProjectDir)\include\rendering\vulkan\memory;$(ProjectDir)\include\rendering\vulkan\resources;$(ProjectDir)\external\imgui;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -1,5 +1,13 @@
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe forwardRender.vert -o forwardRenderVert.spv
+@echo off
 
-C:/VulkanSDK/1.4.328.1/Bin/glslc.exe forwardRender.frag -o forwardRenderFrag.spv
+for %%f in (*.vert) do (
+    echo Compiling %%f... ^> %%~nfVert.spv
+    C:/VulkanSDK/1.4.328.1/Bin/glslc.exe "%%f" -o "%%~nfVert.spv"
+)
+
+for %%f in (*.frag) do (
+    echo Compiling %%f... ^> %%~nfFrag.spv
+    C:/VulkanSDK/1.4.328.1/Bin/glslc.exe "%%f" -o "%%~nfFrag.spv"
+)
+
 pause
-

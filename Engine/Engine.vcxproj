@@ -21,8 +21,8 @@
   <ItemGroup>
     <None Include="shaders\forwardRender.frag" />
     <None Include="shaders\forwardRender.vert" />
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
+    <None Include="shaders\lightRepresentation.frag" />
+    <None Include="shaders\lightRepresentation.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imGuizmo\ImGuizmo.h" />

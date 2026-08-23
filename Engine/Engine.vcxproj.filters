@@ -69,10 +69,10 @@
     <None Include="shaders\forwardRender.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\shader.frag">
+    <None Include="shaders\lightRepresentation.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\shader.vert">
+    <None Include="shaders\lightRepresentation.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
@@ -120,9 +120,6 @@
       <Filter>include\core</Filter>
     </ClInclude>
     <ClInclude Include="include\rendering\renderComponents.h">
-      <Filter>include\rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="include\rendering\textureResolver.h">
       <Filter>include\rendering</Filter>
     </ClInclude>
     <ClInclude Include="include\rendering\vulkan\vkCommon.h">
@@ -221,6 +218,9 @@
     </ClInclude>
     <ClInclude Include="external\imGuizmo\ImGuizmo.h">
       <Filter>external\imGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\textureResolver.h">
+      <Filter>include\rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

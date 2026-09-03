@@ -18,11 +18,15 @@ public:
 
 	VkImage GetCurrentImage() const;
 	VkImageView GetCurrentImageView() const;
+	ImageLayout& GetCurrentImageLayout();
+	VkImage GetCurrentDepthImage() const;
 
 	const std::vector<VkImage>& GetImages() const { return m_images; }
 	const std::vector<VkImageView>& GetImageViews() const { return m_imageViews; }
+	std::array<ImageLayout, 3>& GetImageLayouts() { return m_imageLayouts; }
 	const std::array<VkImage, 3>& GetDepthImages() const { return m_depthImages; }
 	const std::array<VkImageView, 3>& GetDepthViews() const { return m_depthImageViews; }
+	std::array<ImageLayout, 3>& GetDepthImageLayouts() { return m_depthImageLayouts; }
 	const VkFormat GetDepthFormat() const{ return m_depthFormat; }
 	const VkFormat GetImageFormat() const{ return m_imageFormat; }
 	uint32_t GetImageCount() const { return m_imageCount; };
@@ -49,12 +53,14 @@ private:
 
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_imageViews;
+	std::array<ImageLayout, 3> m_imageLayouts;
 	uint32_t m_currentImageIndex = std::numeric_limits<uint32_t>().max();
 
 	VkFormat m_depthFormat;
 	std::array<VkImage, 3> m_depthImages;
 	std::array<VkDeviceMemory, 3> m_depthImageMemory;
 	std::array<VkImageView, 3> m_depthImageViews;
+	std::array<ImageLayout, 3> m_depthImageLayouts;
 
 	uint32_t m_imageCount = 0;
 };

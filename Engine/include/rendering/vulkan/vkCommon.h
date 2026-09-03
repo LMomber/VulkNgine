@@ -85,10 +85,16 @@ struct SwapChainSupportDetails
 	std::vector<VkPresentModeKHR> m_presentModes;
 };
 
+struct ImageLayout
+{
+	VkImageLayout m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+};
+
 struct RenderTarget
 {
 	VkImage m_image;
 	VkImageView m_imageView;
+	ImageLayout m_imageLayout;
 	VkFormat m_format;
 	VkExtent2D m_extent;
 	VkDescriptorSet m_imguiTexture;

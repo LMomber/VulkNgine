@@ -20,6 +20,11 @@ public:
 	void SetViewPort(const VkViewport* pViewports, uint32_t firstViewport = 0, uint32_t viewportCount = 1) const;
 	void SetScissor(const VkRect2D* pScissors, uint32_t firstScissor = 0, uint32_t scissorCount = 1) const;
 
+	void Draw(uint32_t vertexCount, 
+		uint32_t instanceCount = 1, 
+		uint32_t firstVertex = 0, 
+		uint32_t firstInstance = 0) const;
+
 	void DrawIndexed(uint32_t indexCount,
 		uint32_t instanceCount = 1,
 		uint32_t firstIndex = 0,
@@ -39,7 +44,7 @@ public:
 		const uint32_t* pDynamicOffsets = nullptr) const;
 	void BindPushConstants(const VkPushConstantsInfo& info) const;
 
-	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
+	void TransitionImageLayout(VkImage image, VkFormat format, ImageLayout& imageLayout, VkImageLayout newLayout) const;
 
 	void MemoryBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, VkDependencyFlags flags = 0) const;
 	void BufferMemoryBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, VkDependencyFlags flags = 0) const;

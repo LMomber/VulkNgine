@@ -120,6 +120,12 @@ void Swapchain::RecreateSwapchain()
 	CreateSwapchain();
 	CreateImageViews();
 	CreateDepthResources();
+
+	for (uint32_t i = 0; i < m_imageLayouts.size(); i++)
+	{
+		m_imageLayouts[i].m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+		m_depthImageLayouts[i].m_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+	}
 }
 
 VkImage Swapchain::GetCurrentImage() const
@@ -132,6 +138,18 @@ VkImageView Swapchain::GetCurrentImageView() const
 {
 	assert(m_currentImageIndex != std::numeric_limits<uint16_t>().max() && "Current image index is not set yet.");
 	return m_imageViews[m_currentImageIndex];
+}
+
+ImageLayout& Swapchain::GetCurrentImageLayout()
+{
+	assert(m_currentImageIndex != std::numeric_limits<uint16_t>().max() && "Current image index is not set yet.");
+	return m_imageLayouts[m_currentImageIndex];
+}
+
+VkImage Swapchain::GetCurrentDepthImage() const
+{
+	assert(m_currentImageIndex != std::numeric_limits<uint16_t>().max() && "Current image index is not set yet.");
+	return m_depthImages[m_currentImageIndex];
 }
 
 void Swapchain::CreateImageViews()
@@ -178,7 +196,7 @@ void Swapchain::CreateDepthResources()
 	imageInfo.format = m_depthFormat;
 	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.flags = 0;

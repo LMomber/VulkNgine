@@ -13,5 +13,6 @@ namespace Vulkan
 		VmaAllocation m_allocation;
 		VkImage m_image;
 		VkImageView m_imageView;
+		ImageLayout m_layout;
 	};
 }

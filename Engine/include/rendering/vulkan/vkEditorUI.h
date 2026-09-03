@@ -22,19 +22,20 @@ public:
 	EditorUI(std::shared_ptr<Device> device);
 
     // Render all windows
-    void Render(CommandBuffer* commandBuffer, const RenderTarget& renderTarget, entt::entity cameraEntity);
+    void Render(CommandBuffer* commandBuffer, RenderTarget& renderTarget, entt::entity cameraEntity);
     void SetNodeToInspect(Node* pNode);
 
 private:
     std::shared_ptr<Device> m_pDevice;
 
+    std::streambuf* m_OriginalCoutBuf = nullptr;
     ImGuiConsoleBuf consoleBuf;
     size_t m_LastConsoleSize;
 
     Node* m_pNode = nullptr;
 
     void RenderEditorWindows(const VkDescriptorSet gameTexture, entt::entity cameraEntity, ImGuizmo::OPERATION& operation, ImGuizmo::MODE& mode);
-    void RecordCommandBuffer(CommandBuffer* commandBuffer, const RenderTarget& renderTarget);
+    void RecordCommandBuffer(CommandBuffer* commandBuffer, RenderTarget& renderTarget);
 
     // Setting up the separate UI windows
     void GameViewport(const VkDescriptorSet gameTexture, entt::entity cameraEntity, ImGuizmo::OPERATION& operation, ImGuizmo::MODE& mode);

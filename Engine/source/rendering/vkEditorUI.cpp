@@ -21,11 +21,15 @@ EditorUI::EditorUI(std::shared_ptr<Device> device) :
 
 	style.FrameRounding = 2.0f;
 
+	m_OriginalCoutBuf = std::cout.rdbuf();
+	consoleBuf.originalBuf = m_OriginalCoutBuf;
+
 	std::cout.rdbuf(&consoleBuf);
+
 	m_LastConsoleSize = consoleBuf.buffer.size();
 }
 
-void EditorUI::Render(CommandBuffer* commandBuffer, const RenderTarget& renderTarget, entt::entity cameraEntity)
+void EditorUI::Render(CommandBuffer* commandBuffer, RenderTarget& renderTarget, entt::entity cameraEntity)
 {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -89,22 +93,17 @@ void EditorUI::RenderEditorWindows(const VkDescriptorSet gameTexture, entt::enti
 	ImGui::Render();
 }
 
-void EditorUI::RecordCommandBuffer(CommandBuffer* commandBuffer, const RenderTarget& renderTarget)
+void EditorUI::RecordCommandBuffer(CommandBuffer* commandBuffer, RenderTarget& renderTarget)
 {
-	const VkImage swapchainImage = m_pDevice->GetSwapchain()->GetCurrentImage();
-	const VkImageView swapchainImageView = m_pDevice->GetSwapchain()->GetCurrentImageView();
-	const VkFormat swapchainFormat = m_pDevice->GetSwapchain()->GetImageFormat();
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = 0;
-	beginInfo.pInheritanceInfo = nullptr;
-
-	commandBuffer->BeginCommandBuffer(&beginInfo);
+	const auto& swapchain = m_pDevice->GetSwapchain();
+	const VkImage swapchainImage = swapchain->GetCurrentImage();
+	const VkImageView swapchainImageView = swapchain->GetCurrentImageView();
+	const VkFormat swapchainFormat = swapchain->GetImageFormat();
 
 	commandBuffer->TransitionImageLayout(renderTarget.m_image, renderTarget.m_format,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	commandBuffer->TransitionImageLayout(swapchainImage, swapchainFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		renderTarget.m_imageLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	commandBuffer->TransitionImageLayout(swapchainImage, swapchainFormat, swapchain->GetCurrentImageLayout(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	VkRenderingAttachmentInfo colorAttachment{};
 	colorAttachment.sType =
@@ -130,9 +129,7 @@ void EditorUI::RecordCommandBuffer(CommandBuffer* commandBuffer, const RenderTar
 
 	commandBuffer->EndRendering();
 
-	commandBuffer->TransitionImageLayout(swapchainImage, swapchainFormat, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-	commandBuffer->EndCommandBuffer();
+	commandBuffer->TransitionImageLayout(swapchainImage, swapchainFormat, swapchain->GetCurrentImageLayout(), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 }
 
 void EditorUI::GameViewport(const VkDescriptorSet gameTexture, entt::entity cameraEntity, ImGuizmo::OPERATION& operation, ImGuizmo::MODE& mode)
@@ -196,11 +193,16 @@ void EditorUI::ConsoleUI()
 {
 	ImGui::BeginChild("ConsoleScroll", ImVec2(0, 0), false);
 
+	const bool wasAtBottom =
+		ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f;
+
 	ImGui::TextUnformatted(consoleBuf.buffer.c_str());
 
 	if (consoleBuf.buffer.size() != m_LastConsoleSize)
 	{
-		ImGui::SetScrollHereY(1.0f);
+		if (wasAtBottom)
+			ImGui::SetScrollHereY(1.0f);
+
 		m_LastConsoleSize = consoleBuf.buffer.size();
 	}
 

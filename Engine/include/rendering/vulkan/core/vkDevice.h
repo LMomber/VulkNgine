@@ -21,7 +21,8 @@ typedef VmaAllocator_T* VmaAllocator;
 
 enum SamplerType
 {
-	LinearRepeatAnisotropic
+	LinearRepeatAnisotropic,
+	NearestClamp
 };
 
 class PhysicalDevice;
@@ -49,7 +50,7 @@ public:
 	VkFormat GetVkFormat(CPU::TextureFormat format) const;
 
 	const VmaAllocator& GetAllocator() const;
-	const VkSampler GetSampler(const SamplerType type);
+	const VkSampler GetSampler(const SamplerType type) const;
 
 	uint32_t GetCurrentFrame() const;
 	void AdvanceCurrentFrame();
@@ -129,6 +130,7 @@ private:
 	struct Samplers
 	{
 		VkSampler m_linearRepeatAnisotropic;
+		VkSampler m_nearestClamp;
 	} m_samplers;
 
 	VkDebugUtilsMessengerEXT m_debugMessenger{};

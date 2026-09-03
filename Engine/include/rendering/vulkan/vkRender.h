@@ -41,13 +41,19 @@ public:
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 private:
+	void InitializeSwapchainImages();
+
 	void CreateMaterialDescriptorSetLayout();
-	void CreateGraphicsPipeline();
+	void CreateDepthDescriptorSet();
+	void CreateForwardRenderPipeline();
+	void CreateLightRepresentationPipeline();
 	void CreateBuffers();
 	void CreateSyncObjects();
 	void CreateFallbackMaterial();
 	void CreateRenderTargets();
 	void DestroyRenderTargets();
+
+	void UpdateDepthDescriptors();
 
 	void ChooseSharingMode();
 
@@ -55,13 +61,20 @@ private:
 
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
-	void RecordCommandBuffer(CommandBuffer commandBuffer, uint32_t imageIndex) const;
+	void RecordForwardRenderPass(CommandBuffer commandBuffer, uint32_t imageIndex);
+	void RecordLightRepresentationPass(CommandBuffer commandBuffer, uint32_t imageIndex);
 
 	void DestroyGpuModel(const Vulkan::Model& model);
 
 	std::shared_ptr<Device> m_pDevice;
-	std::shared_ptr<Pipeline> m_pipeline;
 	std::shared_ptr<EditorUI> m_pEditorUI;
+
+	// Pipelines
+	std::shared_ptr<Pipeline> m_forwardRenderPipeline;
+	std::shared_ptr<Pipeline> m_lightRepresentationPipeline;
+
+	VkDescriptorSetLayout m_depthDescriptorSetLayout;
+	std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> m_depthDescriptorSets;
 
 	entt::entity m_renderCameraEntity;
 

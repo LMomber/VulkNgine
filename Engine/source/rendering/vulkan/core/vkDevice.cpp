@@ -53,7 +53,9 @@ void Device::Initialize()
 	vmaCreateAllocator(&allocatorInfo, &m_allocator);
 
 	CreateDescriptorPool();
+
 	CreateTextureSampler(m_samplers.m_linearRepeatAnisotropic, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_TRUE);
+	CreateTextureSampler(m_samplers.m_nearestClamp, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_FALSE);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -76,7 +78,7 @@ void Device::Initialize()
 		VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 
 	init_info.PipelineInfoMain.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	std::array<VkFormat, 1> formats{ m_pSwapchain->GetImageFormat()};
+	std::array<VkFormat, 1> formats{ m_pSwapchain->GetImageFormat() };
 	init_info.PipelineInfoMain.PipelineRenderingCreateInfo.pColorAttachmentFormats =
 		formats.data();
 
@@ -91,6 +93,7 @@ void Device::ShutDown()
 	ImGui::DestroyContext();
 
 	vkDestroySampler(m_device, m_samplers.m_linearRepeatAnisotropic, nullptr);
+	vkDestroySampler(m_device, m_samplers.m_nearestClamp, nullptr);
 
 	m_pQueue.reset();
 	m_pSwapchain.reset();
@@ -153,11 +156,21 @@ void Device::CreateInstance()
 
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	if (g_enableValidationLayers) {
+		VkValidationFeatureEnableEXT enabledFeatures[] = {
+			VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
+		};
+
+		VkValidationFeaturesEXT validationFeatures{};
+		validationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+		validationFeatures.enabledValidationFeatureCount = 1;
+		validationFeatures.pEnabledValidationFeatures = enabledFeatures;
+		validationFeatures.pNext = &debugCreateInfo;
+
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 
 		PopulateDebugMessengerCreateInfo(debugCreateInfo);
-		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&validationFeatures;
 	}
 	else {
 		createInfo.enabledLayerCount = 0;
@@ -236,12 +249,15 @@ const VmaAllocator& Device::GetAllocator() const
 	return m_allocator;
 }
 
-const VkSampler Device::GetSampler(const SamplerType type)
+const VkSampler Device::GetSampler(const SamplerType type) const
 {
 	switch (type)
 	{
 	case LinearRepeatAnisotropic:
 		return m_samplers.m_linearRepeatAnisotropic;
+		break;
+	case NearestClamp:
+		return m_samplers.m_nearestClamp;
 		break;
 	default:
 		throw std::logic_error("Sampler not implemented yet.");
@@ -259,7 +275,7 @@ void Device::AdvanceCurrentFrame()
 	m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Device::SubmitToQueue(std::vector<VkCommandBuffer> commandBuffers, std::vector<VkSemaphore> waitSemaphores, 
+void Device::SubmitToQueue(std::vector<VkCommandBuffer> commandBuffers, std::vector<VkSemaphore> waitSemaphores,
 	std::vector<VkSemaphore> signalSemaphores, VkQueue queue, uint64_t signalValue) const
 {
 	VkTimelineSemaphoreSubmitInfo timelineInfo{};
@@ -289,7 +305,6 @@ void Device::SubmitToQueue(std::vector<VkCommandBuffer> commandBuffers, std::vec
 
 void Device::CreateLogicalDevice(QueueFamilyIndices indices)
 {
-
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.m_graphicsFamily.value(), indices.m_presentFamily.value(), indices.m_transferFamily.value() };
 
@@ -613,7 +628,7 @@ RID Device::CreateGpuMesh(const CPU::Mesh& mesh) const
 	vkMesh.m_vertices.reserve(verts.size());
 	for (uint32_t i = 0; i < verts.size(); i++)
 	{
-		vkMesh.m_vertices.emplace_back(verts[i], normals[i], glm::vec3(tangents[i]), coords[0][i], coords.size() > 1 ? coords[1][i] : glm::vec2{0, 0});
+		vkMesh.m_vertices.emplace_back(verts[i], normals[i], glm::vec3(tangents[i]), coords[0][i], coords.size() > 1 ? coords[1][i] : glm::vec2{ 0, 0 });
 	}
 	const VkDeviceSize vertexBufferSize = sizeof(vkMesh.m_vertices[0]) * vkMesh.m_vertices.size();
 	CreateBufferWithStaging(vertexBufferSize, vkMesh.m_vertexBuffer, vkMesh.m_vertexAllocation, vkMesh.m_vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -837,11 +852,11 @@ void Device::CreateTextureImage(const std::shared_ptr<CPU::MaterialTexture> srcT
 
 	CommandBuffer commandBuffer = BeginSingleTimeCommands(GetCurrentFrame());
 	commandBuffer.TransitionImageLayout(dstTexture.m_image, GetVkFormat(srcTexture->m_format),
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		dstTexture.m_layout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	commandBuffer.CopyBufferToImage(stagingBuffer, dstTexture.m_image,
 		static_cast<uint32_t>(srcTexture->m_width), static_cast<uint32_t>(srcTexture->m_height));
 	commandBuffer.TransitionImageLayout(dstTexture.m_image, GetVkFormat(srcTexture->m_format),
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		dstTexture.m_layout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	EndSingleTimeCommands(commandBuffer);
 
 	vmaDestroyBuffer(GetAllocator(), stagingBuffer, stagingAllocation);
@@ -864,7 +879,9 @@ void Device::CreateTextureSampler(VkSampler& sampler, VkFilter filter, VkSampler
 	createInfo.unnormalizedCoordinates = VK_FALSE;
 	createInfo.compareEnable = VK_FALSE;
 	createInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-	createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	if (filter == VK_FILTER_LINEAR) createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	else if (filter == VK_FILTER_NEAREST) createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	else throw std::logic_error("Mipmap mode not implemented for given VkFilter.");
 	createInfo.mipLodBias = 0.0f;
 	createInfo.minLod = 0.0f;
 	createInfo.maxLod = 0.0f;
